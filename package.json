@@ -1,0 +1,8 @@
+{
+  "scripts": {
+    "start": "node gen.mjs && pnpx mintlify dev"
+  },
+  "dependencies": {
+    "mintlify": "^4.0.267"
+  }
+}
