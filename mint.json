@@ -26,27 +26,22 @@
         "name": "Try now",
         "url": "https://admin.deco.cx/spaces/new"
     },
-    "tabs": [
-        {
-            "name": "API Reference",
-            "url": "api-reference"
-        }
-    ],
+    "tabs": [],
     "anchors": [
         {
             "name": "Documentation",
             "icon": "book-open-cover",
-            "url": "https://mintlify.com/docs"
+            "url": "https://docs.deco.cx/"
         },
         {
             "name": "Community",
             "icon": "slack",
-            "url": "https://mintlify.com/community"
+            "url": "https://deco.cx/en/community"
         },
         {
             "name": "Blog",
             "icon": "newspaper",
-            "url": "https://mintlify.com/blog"
+            "url": "https://deco.cx/en/blog"
         }
     ],
     "navigation": [
@@ -595,9 +590,9 @@
         }
     ],
     "footerSocials": {
-        "x": "https://x.com/mintlify",
-        "github": "https://github.com/mintlify",
-        "linkedin": "https://linkedin.com/company/mintlify"
+        "x": "https://x.com/deco_cx",
+        "github": "https://github.com/deco-cx",
+        "linkedin": "https://www.linkedin.com/company/deco-cx"
     },
     "versions": [
         "Português",
