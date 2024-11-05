@@ -5,6 +5,7 @@
         "dark": "/images/logo.svg",
         "light": "/images/logo.svg"
     },
+    "theme": "venus",
     "favicon": "/favicon.svg",
     "colors": {
         "primary": "#0D9373",
@@ -291,266 +292,27 @@
             "version": "Português"
         },
         {
-            "group": "apis-compostas",
+            "group": "Getting Started",
             "pages": [
-                "pt/apis-compostas/gtm",
-                "pt/apis-compostas/nuvemshop",
-                "pt/apis-compostas/shopify",
+                "en/getting-started/adding-an-app",
+                "en/getting-started/changes-and-publishing",
+                "en/getting-started/creating-a-new-page",
+                "en/getting-started/creating-a-site",
                 {
-                    "group": "vtex",
+                    "group": "custom-domains",
                     "pages": [
-                        "pt/apis-compostas/vtex/installing-vtex-is"
+                        "en/getting-started/custom-domains/apex-domains"
                     ],
-                    "version": "Português"
-                }
-            ],
-            "version": "Português"
-        },
-        {
-            "group": "comece-agora",
-            "pages": [
-                "pt/comece-agora/adicionar-um-app",
-                "pt/comece-agora/criar-um-site",
-                "pt/comece-agora/criar-uma-pagina",
-                {
-                    "group": "dominios-customizados",
-                    "pages": [
-                        "pt/comece-agora/dominios-customizados/como-redirecionar-dominio-sem-www"
-                    ],
-                    "version": "Português"
+                    "version": "English"
                 },
-                "pt/comece-agora/gtm",
-                "pt/comece-agora/headless-cms",
-                "pt/comece-agora/mudando-e-publicando",
-                "pt/comece-agora/overview"
-            ],
-            "version": "Português"
-        },
-        {
-            "group": "conceitos",
-            "pages": [
-                "pt/conceitos/action",
-                "pt/conceitos/app",
-                "pt/conceitos/block",
-                "pt/conceitos/loader",
-                "pt/conceitos/matcher",
-                "pt/conceitos/section",
-                "pt/conceitos/segment"
-            ],
-            "version": "Português"
-        },
-        {
-            "group": "decopilot",
-            "pages": [
-                "pt/decopilot/assistant",
-                "pt/decopilot/how-to-access"
-            ],
-            "version": "Português"
-        },
-        {
-            "group": "funcionalidades-da-plataforma",
-            "pages": [
-                "pt/funcionalidades-da-plataforma/ab-test",
-                "pt/funcionalidades-da-plataforma/feature-flags"
-            ],
-            "version": "Português"
-        },
-        {
-            "group": "funcionalidades-de-desenvolvimento",
-            "pages": [
-                "pt/funcionalidades-de-desenvolvimento/analytics",
-                {
-                    "group": "apps",
-                    "pages": [
-                        "pt/funcionalidades-de-desenvolvimento/apps/ab-test",
-                        "pt/funcionalidades-de-desenvolvimento/apps/creating-an-app",
-                        "pt/funcionalidades-de-desenvolvimento/apps/making-an-app-installable"
-                    ],
-                    "version": "Português"
-                },
-                {
-                    "group": "blocks",
-                    "pages": [
-                        "pt/funcionalidades-de-desenvolvimento/blocks/exporting-default-props"
-                    ],
-                    "version": "Português"
-                },
-                "pt/funcionalidades-de-desenvolvimento/deco-records",
-                {
-                    "group": "interactive-sections",
-                    "pages": [
-                        "pt/funcionalidades-de-desenvolvimento/interactive-sections/partial"
-                    ],
-                    "version": "Português"
-                },
-                {
-                    "group": "islands",
-                    "pages": [
-                        "pt/funcionalidades-de-desenvolvimento/islands/actions",
-                        "pt/funcionalidades-de-desenvolvimento/islands/fetching-data-client"
-                    ],
-                    "version": "Português"
-                },
-                "pt/funcionalidades-de-desenvolvimento/loaders",
-                "pt/funcionalidades-de-desenvolvimento/modifying-status",
-                {
-                    "group": "section-properties",
-                    "pages": [
-                        "pt/funcionalidades-de-desenvolvimento/section-properties/annotations",
-                        "pt/funcionalidades-de-desenvolvimento/section-properties/standard-data-types",
-                        "pt/funcionalidades-de-desenvolvimento/section-properties/using-secrets",
-                        "pt/funcionalidades-de-desenvolvimento/section-properties/utility-types",
-                        "pt/funcionalidades-de-desenvolvimento/section-properties/widgets"
-                    ],
-                    "version": "Português"
-                },
-                {
-                    "group": "sections",
-                    "pages": [
-                        "pt/funcionalidades-de-desenvolvimento/sections/accept-a-section",
-                        "pt/funcionalidades-de-desenvolvimento/sections/error-fallback",
-                        "pt/funcionalidades-de-desenvolvimento/sections/loading-fallback",
-                        "pt/funcionalidades-de-desenvolvimento/sections/redirecting-users"
-                    ],
-                    "version": "Português"
-                },
-                "pt/funcionalidades-de-desenvolvimento/troubleshooting"
-            ],
-            "version": "Português"
-        },
-        {
-            "group": "funcionalidades-do-cms",
-            "pages": [
-                {
-                    "group": "advanced",
-                    "pages": [
-                        "pt/funcionalidades-do-cms/advanced/actions",
-                        "pt/funcionalidades-do-cms/advanced/apps",
-                        "pt/funcionalidades-do-cms/advanced/experiments",
-                        "pt/funcionalidades-do-cms/advanced/loaders",
-                        "pt/funcionalidades-do-cms/advanced/redirects",
-                        "pt/funcionalidades-do-cms/advanced/segments",
-                        "pt/funcionalidades-do-cms/advanced/seo"
-                    ],
-                    "version": "Português"
-                },
-                {
-                    "group": "content",
-                    "pages": [
-                        "pt/funcionalidades-do-cms/content/assets",
-                        "pt/funcionalidades-do-cms/content/blog",
-                        "pt/funcionalidades-do-cms/content/pages",
-                        "pt/funcionalidades-do-cms/content/records",
-                        "pt/funcionalidades-do-cms/content/releases",
-                        "pt/funcionalidades-do-cms/content/sections"
-                    ],
-                    "version": "Português"
-                },
-                "pt/funcionalidades-do-cms/home",
-                {
-                    "group": "management",
-                    "pages": [
-                        "pt/funcionalidades-do-cms/management/apex-domains",
-                        "pt/funcionalidades-do-cms/management/custom-domains"
-                    ],
-                    "version": "Português"
-                }
-            ],
-            "version": "Português"
-        },
-        {
-            "group": "guia-de-desenvolvimento",
-            "pages": [
-                "pt/guia-de-desenvolvimento/creating-loaders",
-                "pt/guia-de-desenvolvimento/editable-sections",
-                "pt/guia-de-desenvolvimento/examples",
-                "pt/guia-de-desenvolvimento/fetching-data",
-                "pt/guia-de-desenvolvimento/go-live-ab-testing",
-                "pt/guia-de-desenvolvimento/hello-world",
-                "pt/guia-de-desenvolvimento/htmx",
-                "pt/guia-de-desenvolvimento/setup"
-            ],
-            "version": "Português"
-        },
-        {
-            "group": "hospede-seu-site-por-conta-propria",
-            "pages": [
-                "pt/hospede-seu-site-por-conta-propria/architecture",
-                "pt/hospede-seu-site-por-conta-propria/envs",
-                "pt/hospede-seu-site-por-conta-propria/site"
-            ],
-            "version": "Português"
-        },
-        {
-            "group": "performance",
-            "pages": [
-                "pt/performance/edge-async-render",
-                "pt/performance/guide",
-                "pt/performance/islands",
-                "pt/performance/lazy-3rd-party-scripts",
-                "pt/performance/loaders",
-                {
-                    "group": "medias",
-                    "pages": [
-                        "pt/performance/medias/css",
-                        "pt/performance/medias/fonts",
-                        "pt/performance/medias/images",
-                        "pt/performance/medias/svg-sprites"
-                    ],
-                    "version": "Português"
-                },
-                "pt/performance/why"
-            ],
-            "version": "Português"
-        },
-        {
-            "group": "referencia-da-api",
-            "pages": [
-                "pt/referencia-da-api/invoke",
-                "pt/referencia-da-api/use-script",
-                "pt/referencia-da-api/use-section"
-            ],
-            "version": "Português"
-        },
-        {
-            "group": "treinamento-comercial",
-            "pages": [
-                "pt/treinamento-comercial/agencias-parceiras",
-                "pt/treinamento-comercial/agenda",
-                "pt/treinamento-comercial/diagnostico-inicial",
-                "pt/treinamento-comercial/headless-composable",
-                "pt/treinamento-comercial/introducao",
-                "pt/treinamento-comercial/nichos-de-clientes",
-                "pt/treinamento-comercial/objecoes",
-                "pt/treinamento-comercial/produto",
-                "pt/treinamento-comercial/proximos-passos",
-                "pt/treinamento-comercial/qa-comercial",
-                "pt/treinamento-comercial/sales-deck",
-                "pt/treinamento-comercial/seu-primeiro-case",
-                "pt/treinamento-comercial/web-performance"
-            ],
-            "version": "Português"
-        },
-        {
-            "group": "API Reference",
-            "pages": [
-                "en/api-reference/invoke",
-                "en/api-reference/use-script",
-                "en/api-reference/use-section"
+                "en/getting-started/gtm",
+                "en/getting-started/headless-cms",
+                "en/getting-started/overview"
             ],
             "version": "English"
         },
         {
-            "group": "api-reference",
-            "pages": [
-                "en/api-reference/invoke",
-                "en/api-reference/use-script",
-                "en/api-reference/use-section"
-            ],
-            "version": "English"
-        },
-        {
-            "group": "CMS Capabilities",
+            "group": "Cms Capabilities",
             "pages": [
                 {
                     "group": "advanced",
@@ -590,74 +352,16 @@
             "version": "English"
         },
         {
-            "group": "cms-capabilities",
+            "group": "Developing Guide",
             "pages": [
-                {
-                    "group": "advanced",
-                    "pages": [
-                        "en/cms-capabilities/advanced/actions",
-                        "en/cms-capabilities/advanced/apps",
-                        "en/cms-capabilities/advanced/experiments",
-                        "en/cms-capabilities/advanced/loaders",
-                        "en/cms-capabilities/advanced/redirects",
-                        "en/cms-capabilities/advanced/segments",
-                        "en/cms-capabilities/advanced/seo"
-                    ],
-                    "version": "English"
-                },
-                {
-                    "group": "content",
-                    "pages": [
-                        "en/cms-capabilities/content/assets",
-                        "en/cms-capabilities/content/blog",
-                        "en/cms-capabilities/content/pages",
-                        "en/cms-capabilities/content/records",
-                        "en/cms-capabilities/content/releases",
-                        "en/cms-capabilities/content/sections"
-                    ],
-                    "version": "English"
-                },
-                "en/cms-capabilities/home",
-                {
-                    "group": "management",
-                    "pages": [
-                        "en/cms-capabilities/management/apex-domains",
-                        "en/cms-capabilities/management/custom-domains"
-                    ],
-                    "version": "English"
-                }
-            ],
-            "version": "English"
-        },
-        {
-            "group": "Composable APIs",
-            "pages": [
-                "en/composable-apis/gtm",
-                "en/composable-apis/nuvemshop",
-                "en/composable-apis/shopify",
-                {
-                    "group": "vtex",
-                    "pages": [
-                        "en/composable-apis/vtex/installing-vtex-is"
-                    ],
-                    "version": "English"
-                }
-            ],
-            "version": "English"
-        },
-        {
-            "group": "composable-apis",
-            "pages": [
-                "en/composable-apis/gtm",
-                "en/composable-apis/nuvemshop",
-                "en/composable-apis/shopify",
-                {
-                    "group": "vtex",
-                    "pages": [
-                        "en/composable-apis/vtex/installing-vtex-is"
-                    ],
-                    "version": "English"
-                }
+                "en/developing-guide/creating-loaders",
+                "en/developing-guide/editable-sections",
+                "en/developing-guide/examples",
+                "en/developing-guide/fetching-data",
+                "en/developing-guide/go-live-ab-testing",
+                "en/developing-guide/hello-world",
+                "en/developing-guide/htmx",
+                "en/developing-guide/setup"
             ],
             "version": "English"
         },
@@ -671,14 +375,6 @@
                 "en/concepts/matcher",
                 "en/concepts/section",
                 "en/concepts/segment"
-            ],
-            "version": "English"
-        },
-        {
-            "group": "Decopilot",
-            "pages": [
-                "en/decopilot/assistant",
-                "en/decopilot/how-to-access"
             ],
             "version": "English"
         },
@@ -743,16 +439,74 @@
             "version": "English"
         },
         {
-            "group": "Developing Guide",
+            "group": "Decopilot",
             "pages": [
-                "en/developing-guide/creating-loaders",
-                "en/developing-guide/editable-sections",
-                "en/developing-guide/examples",
-                "en/developing-guide/fetching-data",
-                "en/developing-guide/go-live-ab-testing",
-                "en/developing-guide/hello-world",
-                "en/developing-guide/htmx",
-                "en/developing-guide/setup"
+                "en/decopilot/assistant",
+                "en/decopilot/how-to-access"
+            ],
+            "version": "English"
+        },
+        {
+            "group": "Performance",
+            "pages": [
+                "en/performance/edge-async-render",
+                "en/performance/guide",
+                "en/performance/islands",
+                "en/performance/lazy-3rd-party-scripts",
+                "en/performance/loaders",
+                {
+                    "group": "medias",
+                    "pages": [
+                        "en/performance/medias/css",
+                        "en/performance/medias/fonts",
+                        "en/performance/medias/images",
+                        "en/performance/medias/svg-sprites"
+                    ],
+                    "version": "English"
+                },
+                "en/performance/why"
+            ],
+            "version": "English"
+        },
+        {
+            "group": "SDK",
+            "pages": [
+                "en/sdk/ab-test",
+                "en/sdk/feature-flags"
+            ],
+            "version": "English"
+        },
+        {
+            "group": "api-reference",
+            "pages": [
+                "en/api-reference/invoke",
+                "en/api-reference/use-script",
+                "en/api-reference/use-section"
+            ],
+            "version": "English"
+        },
+        {
+            "group": "self-host",
+            "pages": [
+                "en/self-host/architecture",
+                "en/self-host/envs",
+                "en/self-host/site"
+            ],
+            "version": "English"
+        },
+        {
+            "group": "composable-apis",
+            "pages": [
+                "en/composable-apis/gtm",
+                "en/composable-apis/nuvemshop",
+                "en/composable-apis/shopify",
+                {
+                    "group": "vtex",
+                    "pages": [
+                        "en/composable-apis/vtex/installing-vtex-is"
+                    ],
+                    "version": "English"
+                }
             ],
             "version": "English"
         },
@@ -831,99 +585,11 @@
             "version": "English"
         },
         {
-            "group": "Getting Started",
-            "pages": [
-                "en/getting-started/adding-an-app",
-                "en/getting-started/changes-and-publishing",
-                "en/getting-started/creating-a-new-page",
-                "en/getting-started/creating-a-site",
-                {
-                    "group": "custom-domains",
-                    "pages": [
-                        "en/getting-started/custom-domains/apex-domains"
-                    ],
-                    "version": "English"
-                },
-                "en/getting-started/gtm",
-                "en/getting-started/headless-cms",
-                "en/getting-started/overview"
-            ],
-            "version": "English"
-        },
-        {
-            "group": "getting-started",
-            "pages": [
-                "en/getting-started/adding-an-app",
-                "en/getting-started/changes-and-publishing",
-                "en/getting-started/creating-a-new-page",
-                "en/getting-started/creating-a-site",
-                {
-                    "group": "custom-domains",
-                    "pages": [
-                        "en/getting-started/custom-domains/apex-domains"
-                    ],
-                    "version": "English"
-                },
-                "en/getting-started/gtm",
-                "en/getting-started/headless-cms",
-                "en/getting-started/overview"
-            ],
-            "version": "English"
-        },
-        {
-            "group": "Performance",
-            "pages": [
-                "en/performance/edge-async-render",
-                "en/performance/guide",
-                "en/performance/islands",
-                "en/performance/lazy-3rd-party-scripts",
-                "en/performance/loaders",
-                {
-                    "group": "medias",
-                    "pages": [
-                        "en/performance/medias/css",
-                        "en/performance/medias/fonts",
-                        "en/performance/medias/images",
-                        "en/performance/medias/svg-sprites"
-                    ],
-                    "version": "English"
-                },
-                "en/performance/why"
-            ],
-            "version": "English"
-        },
-        {
             "group": "Reference",
             "pages": [
                 "en/reference/analytics",
                 "en/reference/deco-records",
                 "en/reference/troubleshooting"
-            ],
-            "version": "English"
-        },
-        {
-            "group": "SDK",
-            "pages": [
-                "en/sdk/ab-test",
-                "en/sdk/feature-flags"
-            ],
-            "version": "English"
-        },
-        {
-            "group": "Self Host",
-            "pages": [
-                "en/self-host/architecture",
-                "en/self-host/envs",
-                "en/self-host/site"
-            ],
-            "version": "English"
-        },
-        {
-            "group": "self-host",
-            "pages": [
-                "en/self-host/architecture",
-                "en/self-host/envs",
-                "en/self-host/site"
             ],
             "version": "English"
         }
