@@ -10,11 +10,27 @@ function slugify(text) {
         .replace(/\p{Diacritic}/gu, '')
 }
 
+const sortDir = (a, b) => {
+    const aPrefix = (a.name ?? a).slice(0, 2)
+    const bPrefix = (b.name ?? b).slice(0, 2)
+    const aIsNumber = !isNaN(aPrefix)
+    const bIsNumber = !isNaN(bPrefix)
+
+    if (aIsNumber && bIsNumber) {
+        return Number(aPrefix) - Number(bPrefix)
+    } else if (aIsNumber) {
+        return -1
+    } else if (bIsNumber) {
+        return 1
+    } else {
+        return a.name.localeCompare(b.name)
+    }
+};
+
 async function gen(folder, lang) {
     // Sort by 00_, 01_, 02_, etc.
-    const files = (await readdir(folder, { withFileTypes: true })).sort(
-        (a, b) => Number(a.name.slice(0, -2)) - Number(b.name.slice(0, -2)),
-    )
+    console.log((await readdir(folder, { withFileTypes: true })));
+    const files = (await readdir(folder, { withFileTypes: true })).sort(sortDir)
     const navigation = {
         // Get filename without 00_
         group: folder.replaceAll('\\', '/').split('/').pop().replace(/\d+_/g, ''),
@@ -48,8 +64,8 @@ async function gen(folder, lang) {
 if (existsSync('pt')) await rm('pt', { recursive: true, force: true })
 if (existsSync('en')) await rm('en', { recursive: true, force: true })
 
-const navigationPT = await Promise.all((await readdir('docs/pt')).map(path => gen(`docs/pt/${path}`, 'Português')))
-const navigationEN = await Promise.all((await readdir('docs/en')).map(path => gen(`docs/en/${path}`, 'English')))
+const navigationPT = await Promise.all((await readdir('docs/pt')).sort(sortDir).map(path => gen(`docs/pt/${path}`, 'Português')))
+const navigationEN = await Promise.all((await readdir('docs/en')).sort(sortDir).map(path => gen(`docs/en/${path}`, 'English')))
 
 const mintJson = JSON.parse(await readFile('mint.json', 'utf8'))
 mintJson.navigation = [...navigationPT, ...navigationEN]
