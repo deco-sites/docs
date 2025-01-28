@@ -33,7 +33,14 @@ async function gen(folder, lang) {
     const files = (await readdir(folder, { withFileTypes: true })).sort(sortDir)
     const navigation = {
         // Get filename without 00_
-        group: folder.replaceAll('\\', '/').split('/').pop().replace(/\d+_/g, ''),
+        group: folder.replaceAll('\\', '/')
+            .split('/').pop()
+            .replace(/\d+_/g, '')
+            .replace(/-/g, " ")
+            .replaceAll("api", "API")
+            .replaceAll("cms", "CMS")
+            .replaceAll("sdk", "SDK")
+            .replace(/\b\w/g, char => char.toUpperCase()),
         pages: [],
         version: lang,
     }
@@ -44,7 +51,8 @@ async function gen(folder, lang) {
         const finalPath = path
             .replaceAll('\\', '/')
             .replace(/\d+_/g, '')
-            .replace(/^docs\//, '')
+            .replaceAll(/_/g, '-')
+            .replace(/^docs\//, '');
         const slug = slugify(finalPath)
 
         if (file.isDirectory()) {

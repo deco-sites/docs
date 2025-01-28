@@ -41,58 +41,58 @@
     ],
     "navigation": [
         {
-            "group": "getting_started",
+            "group": "Getting_started",
             "pages": [
-                "pt/getting_started/overview",
-                "pt/getting_started/creating_a_site",
-                "pt/getting_started/creating_a_new_page",
-                "pt/getting_started/changes_and_publishing",
+                "pt/getting-started/overview",
+                "pt/getting-started/creating-a-site",
+                "pt/getting-started/creating-a-new-page",
+                "pt/getting-started/changes-and-publishing",
                 {
-                    "group": "custom_domains",
+                    "group": "Custom_domains",
                     "pages": [
-                        "pt/getting_started/custom_domains/apex_domains"
+                        "pt/getting-started/custom-domains/apex-domains"
                     ],
                     "version": "Português"
                 },
-                "pt/getting_started/adding_an_app",
-                "pt/getting_started/gtm"
+                "pt/getting-started/adding-an-app",
+                "pt/getting-started/gtm"
             ],
             "version": "Português"
         },
         {
-            "group": "cms_capabilities",
+            "group": "CMS_capabilities",
             "pages": [
-                "pt/cms_capabilities/home",
+                "pt/cms-capabilities/home",
                 {
-                    "group": "content",
+                    "group": "Content",
                     "pages": [
-                        "pt/cms_capabilities/content/assets",
-                        "pt/cms_capabilities/content/blog",
-                        "pt/cms_capabilities/content/pages",
-                        "pt/cms_capabilities/content/records",
-                        "pt/cms_capabilities/content/releases",
-                        "pt/cms_capabilities/content/sections"
+                        "pt/cms-capabilities/content/assets",
+                        "pt/cms-capabilities/content/blog",
+                        "pt/cms-capabilities/content/pages",
+                        "pt/cms-capabilities/content/records",
+                        "pt/cms-capabilities/content/releases",
+                        "pt/cms-capabilities/content/sections"
                     ],
                     "version": "Português"
                 },
                 {
-                    "group": "advanced",
+                    "group": "Advanced",
                     "pages": [
-                        "pt/cms_capabilities/advanced/actions",
-                        "pt/cms_capabilities/advanced/apps",
-                        "pt/cms_capabilities/advanced/experiments",
-                        "pt/cms_capabilities/advanced/loaders",
-                        "pt/cms_capabilities/advanced/redirects",
-                        "pt/cms_capabilities/advanced/segments",
-                        "pt/cms_capabilities/advanced/seo"
+                        "pt/cms-capabilities/advanced/actions",
+                        "pt/cms-capabilities/advanced/apps",
+                        "pt/cms-capabilities/advanced/experiments",
+                        "pt/cms-capabilities/advanced/loaders",
+                        "pt/cms-capabilities/advanced/redirects",
+                        "pt/cms-capabilities/advanced/segments",
+                        "pt/cms-capabilities/advanced/seo"
                     ],
                     "version": "Português"
                 },
                 {
-                    "group": "management",
+                    "group": "Management",
                     "pages": [
-                        "pt/cms_capabilities/management/apex-domains",
-                        "pt/cms_capabilities/management/custom-domains"
+                        "pt/cms-capabilities/management/apex-domains",
+                        "pt/cms-capabilities/management/custom-domains"
                     ],
                     "version": "Português"
                 }
@@ -100,21 +100,21 @@
             "version": "Português"
         },
         {
-            "group": "developing_guide",
+            "group": "Developing_guide",
             "pages": [
-                "pt/developing_guide/setup",
-                "pt/developing_guide/editable-sections",
-                "pt/developing_guide/hello-world",
-                "pt/developing_guide/htmx",
-                "pt/developing_guide/fetching-data",
-                "pt/developing_guide/creating-loaders",
-                "pt/developing_guide/examples",
-                "pt/developing_guide/go-live-ab-testing"
+                "pt/developing-guide/setup",
+                "pt/developing-guide/editable-sections",
+                "pt/developing-guide/hello-world",
+                "pt/developing-guide/htmx",
+                "pt/developing-guide/fetching-data",
+                "pt/developing-guide/creating-loaders",
+                "pt/developing-guide/examples",
+                "pt/developing-guide/go-live-ab-testing"
             ],
             "version": "Português"
         },
         {
-            "group": "concepts",
+            "group": "Concepts",
             "pages": [
                 "pt/concepts/action",
                 "pt/concepts/app",
@@ -127,65 +127,66 @@
             "version": "Português"
         },
         {
-            "group": "developing_capabilities",
+            "group": "Developing_capabilities",
             "pages": [
-                "pt/developing_capabilities/analytics",
+                "pt/developing-capabilities/analytics",
                 {
-                    "group": "apps",
+                    "group": "Apps",
                     "pages": [
-                        "pt/developing_capabilities/apps/ab-test",
-                        "pt/developing_capabilities/apps/creating-an-app",
-                        "pt/developing_capabilities/apps/making-an-app-installable"
+                        "pt/developing-capabilities/apps/ab-test",
+                        "pt/developing-capabilities/apps/creating-an-app",
+                        "pt/developing-capabilities/apps/making-an-app-installable"
                     ],
                     "version": "Português"
                 },
                 {
-                    "group": "blocks",
+                    "group": "Blocks",
                     "pages": [
-                        "pt/developing_capabilities/blocks/exporting-default-props"
+                        "pt/developing-capabilities/blocks/exporting-default-props"
                     ],
                     "version": "Português"
                 },
-                "pt/developing_capabilities/deco-records",
+                "pt/developing-capabilities/deco-records",
                 {
-                    "group": "interactive-sections",
+                    "group": "Interactive Sections",
                     "pages": [
-                        "pt/developing_capabilities/interactive-sections/partial"
-                    ],
-                    "version": "Português"
-                },
-                {
-                    "group": "islands",
-                    "pages": [
-                        "pt/developing_capabilities/islands/actions",
-                        "pt/developing_capabilities/islands/fetching-data-client"
-                    ],
-                    "version": "Português"
-                },
-                "pt/developing_capabilities/loaders",
-                "pt/developing_capabilities/modifying-status",
-                {
-                    "group": "section-properties",
-                    "pages": [
-                        "pt/developing_capabilities/section-properties/annotations",
-                        "pt/developing_capabilities/section-properties/standard-data-types",
-                        "pt/developing_capabilities/section-properties/using-secrets",
-                        "pt/developing_capabilities/section-properties/utility-types",
-                        "pt/developing_capabilities/section-properties/widgets"
+                        "pt/developing-capabilities/interactive-sections/partial"
                     ],
                     "version": "Português"
                 },
                 {
-                    "group": "sections",
+                    "group": "Islands",
                     "pages": [
-                        "pt/developing_capabilities/sections/accept-a-section",
-                        "pt/developing_capabilities/sections/error-fallback",
-                        "pt/developing_capabilities/sections/loading-fallback",
-                        "pt/developing_capabilities/sections/redirecting-users"
+                        "pt/developing-capabilities/islands/actions",
+                        "pt/developing-capabilities/islands/fetching-data-client"
                     ],
                     "version": "Português"
                 },
-                "pt/developing_capabilities/troubleshooting"
+                "pt/developing-capabilities/loaders",
+                "pt/developing-capabilities/manage-block-access",
+                "pt/developing-capabilities/modifying-status",
+                {
+                    "group": "Section Properties",
+                    "pages": [
+                        "pt/developing-capabilities/section-properties/annotations",
+                        "pt/developing-capabilities/section-properties/standard-data-types",
+                        "pt/developing-capabilities/section-properties/using-secrets",
+                        "pt/developing-capabilities/section-properties/utility-types",
+                        "pt/developing-capabilities/section-properties/widgets"
+                    ],
+                    "version": "Português"
+                },
+                {
+                    "group": "Sections",
+                    "pages": [
+                        "pt/developing-capabilities/sections/accept-a-section",
+                        "pt/developing-capabilities/sections/error-fallback",
+                        "pt/developing-capabilities/sections/loading-fallback",
+                        "pt/developing-capabilities/sections/redirecting-users"
+                    ],
+                    "version": "Português"
+                },
+                "pt/developing-capabilities/troubleshooting"
             ],
             "version": "Português"
         },
@@ -203,7 +204,7 @@
                 "pt/performance/why",
                 "pt/performance/guide",
                 {
-                    "group": "medias",
+                    "group": "Medias",
                     "pages": [
                         "pt/performance/medias/css",
                         "pt/performance/medias/fonts",
@@ -220,7 +221,7 @@
             "version": "Português"
         },
         {
-            "group": "sdk",
+            "group": "SDK",
             "pages": [
                 "pt/sdk/ab-test",
                 "pt/sdk/feature-flags",
@@ -229,39 +230,39 @@
             "version": "Português"
         },
         {
-            "group": "api_reference",
+            "group": "API_reference",
             "pages": [
-                "pt/api_reference/invoke",
-                "pt/api_reference/use-script",
-                "pt/api_reference/use-section"
+                "pt/api-reference/invoke",
+                "pt/api-reference/use-script",
+                "pt/api-reference/use-section"
             ],
             "version": "Português"
         },
         {
-            "group": "self_host",
+            "group": "Self_host",
             "pages": [
-                "pt/self_host/architecture",
-                "pt/self_host/site",
-                "pt/self_host/envs"
+                "pt/self-host/architecture",
+                "pt/self-host/site",
+                "pt/self-host/envs"
             ],
             "version": "Português"
         },
         {
-            "group": "getting_started",
+            "group": "Getting_started",
             "pages": [
-                "en/getting_started/overview",
-                "en/getting_started/creating-a-site",
-                "en/getting_started/creating-a-new-page",
-                "en/getting_started/changes-and-publishing",
-                "en/getting_started/adding-an-app",
+                "en/getting-started/overview",
+                "en/getting-started/creating-a-site",
+                "en/getting-started/creating-a-new-page",
+                "en/getting-started/changes-and-publishing",
+                "en/getting-started/adding-an-app",
                 {
-                    "group": "custom-domains",
+                    "group": "Custom Domains",
                     "pages": [
-                        "en/getting_started/custom-domains/apex-domains"
+                        "en/getting-started/custom-domains/apex-domains"
                     ],
                     "version": "English"
                 },
-                "en/getting_started/gtm"
+                "en/getting-started/gtm"
             ],
             "version": "English"
         },
@@ -270,7 +271,7 @@
             "pages": [
                 "en/cms-capabilities/home",
                 {
-                    "group": "content",
+                    "group": "Content",
                     "pages": [
                         "en/cms-capabilities/content/assets",
                         "en/cms-capabilities/content/blog",
@@ -282,7 +283,7 @@
                     "version": "English"
                 },
                 {
-                    "group": "advanced",
+                    "group": "Advanced",
                     "pages": [
                         "en/cms-capabilities/advanced/actions",
                         "en/cms-capabilities/advanced/apps",
@@ -295,7 +296,7 @@
                     "version": "English"
                 },
                 {
-                    "group": "management",
+                    "group": "Management",
                     "pages": [
                         "en/cms-capabilities/management/apex-domains",
                         "en/cms-capabilities/management/custom-domains"
@@ -336,7 +337,7 @@
             "group": "Developing Capabilities",
             "pages": [
                 {
-                    "group": "apps",
+                    "group": "Apps",
                     "pages": [
                         "en/developing-capabilities/apps/ab-test",
                         "en/developing-capabilities/apps/creating-an-app",
@@ -345,21 +346,21 @@
                     "version": "English"
                 },
                 {
-                    "group": "blocks",
+                    "group": "Blocks",
                     "pages": [
                         "en/developing-capabilities/blocks/exporting-default-props"
                     ],
                     "version": "English"
                 },
                 {
-                    "group": "interactive-sections",
+                    "group": "Interactive Sections",
                     "pages": [
                         "en/developing-capabilities/interactive-sections/partial"
                     ],
                     "version": "English"
                 },
                 {
-                    "group": "islands",
+                    "group": "Islands",
                     "pages": [
                         "en/developing-capabilities/islands/actions",
                         "en/developing-capabilities/islands/fetching-data-client"
@@ -367,9 +368,10 @@
                     "version": "English"
                 },
                 "en/developing-capabilities/loaders",
+                "en/developing-capabilities/manage-block-access",
                 "en/developing-capabilities/modifying-status",
                 {
-                    "group": "section-properties",
+                    "group": "Section Properties",
                     "pages": [
                         "en/developing-capabilities/section-properties/annotations",
                         "en/developing-capabilities/section-properties/standard-data-types",
@@ -380,7 +382,7 @@
                     "version": "English"
                 },
                 {
-                    "group": "sections",
+                    "group": "Sections",
                     "pages": [
                         "en/developing-capabilities/sections/accept-a-section",
                         "en/developing-capabilities/sections/error-fallback",
@@ -406,7 +408,7 @@
                 "en/performance/why",
                 "en/performance/guide",
                 {
-                    "group": "medias",
+                    "group": "Medias",
                     "pages": [
                         "en/performance/medias/css",
                         "en/performance/medias/fonts",
@@ -432,7 +434,7 @@
             "version": "English"
         },
         {
-            "group": "api-reference",
+            "group": "API Reference",
             "pages": [
                 "en/api-reference/invoke",
                 "en/api-reference/use-script",
@@ -441,7 +443,7 @@
             "version": "English"
         },
         {
-            "group": "self-host",
+            "group": "Self Host",
             "pages": [
                 "en/self-host/architecture",
                 "en/self-host/site",
@@ -450,13 +452,13 @@
             "version": "English"
         },
         {
-            "group": "composable-apis",
+            "group": "Composable APIs",
             "pages": [
                 "en/composable-apis/gtm",
                 "en/composable-apis/nuvemshop",
                 "en/composable-apis/shopify",
                 {
-                    "group": "vtex",
+                    "group": "Vtex",
                     "pages": [
                         "en/composable-apis/vtex/installing-vtex-is"
                     ],
@@ -466,10 +468,10 @@
             "version": "English"
         },
         {
-            "group": "developing-capabilities",
+            "group": "Developing Capabilities",
             "pages": [
                 {
-                    "group": "apps",
+                    "group": "Apps",
                     "pages": [
                         "en/developing-capabilities/apps/ab-test",
                         "en/developing-capabilities/apps/creating-an-app",
@@ -478,21 +480,21 @@
                     "version": "English"
                 },
                 {
-                    "group": "blocks",
+                    "group": "Blocks",
                     "pages": [
                         "en/developing-capabilities/blocks/exporting-default-props"
                     ],
                     "version": "English"
                 },
                 {
-                    "group": "interactive-sections",
+                    "group": "Interactive Sections",
                     "pages": [
                         "en/developing-capabilities/interactive-sections/partial"
                     ],
                     "version": "English"
                 },
                 {
-                    "group": "islands",
+                    "group": "Islands",
                     "pages": [
                         "en/developing-capabilities/islands/actions",
                         "en/developing-capabilities/islands/fetching-data-client"
@@ -502,7 +504,7 @@
                 "en/developing-capabilities/loaders",
                 "en/developing-capabilities/modifying-status",
                 {
-                    "group": "section-properties",
+                    "group": "Section Properties",
                     "pages": [
                         "en/developing-capabilities/section-properties/annotations",
                         "en/developing-capabilities/section-properties/standard-data-types",
@@ -513,7 +515,7 @@
                     "version": "English"
                 },
                 {
-                    "group": "sections",
+                    "group": "Sections",
                     "pages": [
                         "en/developing-capabilities/sections/accept-a-section",
                         "en/developing-capabilities/sections/error-fallback",
@@ -526,7 +528,7 @@
             "version": "English"
         },
         {
-            "group": "developing-guide",
+            "group": "Developing Guide",
             "pages": [
                 "en/developing-guide/creating-loaders",
                 "en/developing-guide/editable-sections",
