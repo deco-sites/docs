@@ -39,6 +39,7 @@ async function gen(folder, lang) {
             .split('/').pop()
             .replace(/\d+_/g, '')
             .replace(/-/g, " ")
+            .replace(/_/g, " ")
             .replaceAll("api", "API")
             .replaceAll("cms", "CMS")
             .replaceAll("sdk", "SDK")
