@@ -27,20 +27,22 @@ const sortDir = (a, b) => {
     }
 };
 
+const translations = JSON.parse(await readFile('translations.json', 'utf8'));
+
 async function gen(folder, lang) {
     // Sort by 00_, 01_, 02_, etc.
-    console.log((await readdir(folder, { withFileTypes: true })));
     const files = (await readdir(folder, { withFileTypes: true })).sort(sortDir)
+    const groupBase = (lang === "Português") ? translations[folder] : undefined;
     const navigation = {
         // Get filename without 00_
-        group: folder.replaceAll('\\', '/')
+        group: (groupBase ?? folder).replaceAll('\\', '/')
             .split('/').pop()
             .replace(/\d+_/g, '')
             .replace(/-/g, " ")
             .replaceAll("api", "API")
             .replaceAll("cms", "CMS")
             .replaceAll("sdk", "SDK")
-            .replace(/\b\w/g, char => char.toUpperCase()),
+            .replace(/(^\w|\s\w(?!\w))/g, char => char.toUpperCase()),
         pages: [],
         version: lang,
     }
@@ -56,7 +58,7 @@ async function gen(folder, lang) {
         const slug = slugify(finalPath)
 
         if (file.isDirectory()) {
-            navigation.pages.push(await gen(path.replace('.mdx', ''), lang))
+            navigation.pages.push(await gen(path.replace('.mdx', ''), lang));
         } else {
             // Create slugged file in `{lang}` folder
             await mkdir(dirname(slug), { recursive: true })

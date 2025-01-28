@@ -41,14 +41,14 @@
     ],
     "navigation": [
         {
-            "group": "Getting_started",
+            "group": "Comece Agora",
             "pages": [
                 "pt/getting-started/overview",
                 "pt/getting-started/creating-a-site",
                 "pt/getting-started/creating-a-new-page",
                 "pt/getting-started/changes-and-publishing",
                 {
-                    "group": "Custom_domains",
+                    "group": "Domínios Personalizados",
                     "pages": [
                         "pt/getting-started/custom-domains/apex-domains"
                     ],
@@ -60,11 +60,11 @@
             "version": "Português"
         },
         {
-            "group": "CMS_capabilities",
+            "group": "Funcionalidades do CMS",
             "pages": [
                 "pt/cms-capabilities/home",
                 {
-                    "group": "Content",
+                    "group": "Conteúdo",
                     "pages": [
                         "pt/cms-capabilities/content/assets",
                         "pt/cms-capabilities/content/blog",
@@ -76,7 +76,7 @@
                     "version": "Português"
                 },
                 {
-                    "group": "Advanced",
+                    "group": "Avançado",
                     "pages": [
                         "pt/cms-capabilities/advanced/actions",
                         "pt/cms-capabilities/advanced/apps",
@@ -89,7 +89,7 @@
                     "version": "Português"
                 },
                 {
-                    "group": "Management",
+                    "group": "Gerenciamento",
                     "pages": [
                         "pt/cms-capabilities/management/apex-domains",
                         "pt/cms-capabilities/management/custom-domains"
@@ -100,7 +100,7 @@
             "version": "Português"
         },
         {
-            "group": "Developing_guide",
+            "group": "Guia de Desenvolvimento",
             "pages": [
                 "pt/developing-guide/setup",
                 "pt/developing-guide/editable-sections",
@@ -114,7 +114,7 @@
             "version": "Português"
         },
         {
-            "group": "Concepts",
+            "group": "Conceitos",
             "pages": [
                 "pt/concepts/action",
                 "pt/concepts/app",
@@ -127,7 +127,7 @@
             "version": "Português"
         },
         {
-            "group": "Developing_capabilities",
+            "group": "Capacidades de Desenvolvimento",
             "pages": [
                 "pt/developing-capabilities/analytics",
                 {
@@ -148,7 +148,7 @@
                 },
                 "pt/developing-capabilities/deco-records",
                 {
-                    "group": "Interactive Sections",
+                    "group": "Interactive sections",
                     "pages": [
                         "pt/developing-capabilities/interactive-sections/partial"
                     ],
@@ -166,7 +166,7 @@
                 "pt/developing-capabilities/manage-block-access",
                 "pt/developing-capabilities/modifying-status",
                 {
-                    "group": "Section Properties",
+                    "group": "Section properties",
                     "pages": [
                         "pt/developing-capabilities/section-properties/annotations",
                         "pt/developing-capabilities/section-properties/standard-data-types",
@@ -204,7 +204,7 @@
                 "pt/performance/why",
                 "pt/performance/guide",
                 {
-                    "group": "Medias",
+                    "group": "Mídias",
                     "pages": [
                         "pt/performance/medias/css",
                         "pt/performance/medias/fonts",
@@ -230,7 +230,7 @@
             "version": "Português"
         },
         {
-            "group": "API_reference",
+            "group": "Referência da API",
             "pages": [
                 "pt/api-reference/invoke",
                 "pt/api-reference/use-script",
@@ -256,7 +256,7 @@
                 "en/getting-started/changes-and-publishing",
                 "en/getting-started/adding-an-app",
                 {
-                    "group": "Custom Domains",
+                    "group": "Custom domains",
                     "pages": [
                         "en/getting-started/custom-domains/apex-domains"
                     ],
@@ -353,7 +353,7 @@
                     "version": "English"
                 },
                 {
-                    "group": "Interactive Sections",
+                    "group": "Interactive sections",
                     "pages": [
                         "en/developing-capabilities/interactive-sections/partial"
                     ],
@@ -371,7 +371,7 @@
                 "en/developing-capabilities/manage-block-access",
                 "en/developing-capabilities/modifying-status",
                 {
-                    "group": "Section Properties",
+                    "group": "Section properties",
                     "pages": [
                         "en/developing-capabilities/section-properties/annotations",
                         "en/developing-capabilities/section-properties/standard-data-types",
@@ -434,7 +434,7 @@
             "version": "English"
         },
         {
-            "group": "API Reference",
+            "group": "API reference",
             "pages": [
                 "en/api-reference/invoke",
                 "en/api-reference/use-script",
@@ -443,7 +443,7 @@
             "version": "English"
         },
         {
-            "group": "Self Host",
+            "group": "Self host",
             "pages": [
                 "en/self-host/architecture",
                 "en/self-host/site",
@@ -468,7 +468,7 @@
             "version": "English"
         },
         {
-            "group": "Developing Capabilities",
+            "group": "Developing capabilities",
             "pages": [
                 {
                     "group": "Apps",
@@ -487,7 +487,7 @@
                     "version": "English"
                 },
                 {
-                    "group": "Interactive Sections",
+                    "group": "Interactive sections",
                     "pages": [
                         "en/developing-capabilities/interactive-sections/partial"
                     ],
@@ -504,7 +504,7 @@
                 "en/developing-capabilities/loaders",
                 "en/developing-capabilities/modifying-status",
                 {
-                    "group": "Section Properties",
+                    "group": "Section properties",
                     "pages": [
                         "en/developing-capabilities/section-properties/annotations",
                         "en/developing-capabilities/section-properties/standard-data-types",
@@ -528,7 +528,7 @@
             "version": "English"
         },
         {
-            "group": "Developing Guide",
+            "group": "Developing guide",
             "pages": [
                 "en/developing-guide/creating-loaders",
                 "en/developing-guide/editable-sections",
