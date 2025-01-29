@@ -47,6 +47,7 @@
                 "pt/getting-started/creating-a-site",
                 "pt/getting-started/creating-a-new-page",
                 "pt/getting-started/changes-and-publishing",
+                "pt/getting-started/adding-an-app",
                 {
                     "group": "Domínios Personalizados",
                     "pages": [
@@ -54,7 +55,6 @@
                     ],
                     "version": "Português"
                 },
-                "pt/getting-started/adding-an-app",
                 "pt/getting-started/gtm"
             ],
             "version": "Português"
