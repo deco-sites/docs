@@ -47,7 +47,6 @@
                 "pt/getting-started/creating-a-site",
                 "pt/getting-started/creating-a-new-page",
                 "pt/getting-started/changes-and-publishing",
-                "pt/getting-started/adding-an-app",
                 {
                     "group": "Domínios Personalizados",
                     "pages": [
@@ -55,6 +54,7 @@
                     ],
                     "version": "Português"
                 },
+                "pt/getting-started/adding-an-app",
                 "pt/getting-started/gtm"
             ],
             "version": "Português"
@@ -239,7 +239,7 @@
             "version": "Português"
         },
         {
-            "group": "Self_host",
+            "group": "Self host",
             "pages": [
                 "pt/self-host/architecture",
                 "pt/self-host/site",
@@ -248,7 +248,7 @@
             "version": "Português"
         },
         {
-            "group": "Getting_started",
+            "group": "Getting started",
             "pages": [
                 "en/getting-started/overview",
                 "en/getting-started/creating-a-site",
