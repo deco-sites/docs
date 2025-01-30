@@ -1,0 +1,48 @@
+---
+title: "Product Updates"
+description: "New updates and improvements"
+mode: "center"
+---
+<Update label="January 2025">
+  ## Form select now keeps the correct type
+    <Frame>
+    <img src="/images/changelog/2025-jan-rjsf.png" alt="Form Selection" />
+    </Frame> 
+    Some types, such as the product listing page properties type selection, are now **correctly selected**.
+
+    This issue was caused by three main problems:
+    - RJSF was unable to distinguish between properties that have multiple types (e.g., `[string, number]`).
+    - There was an issue with schemas generated from apps before version 0.64.21, where a property type such as `[]` (empty array) was not allowed.
+    - RJSF didn't correctly cache a root schema with `$id`, as it also needed to cache the same root schema with `ROOT_SCHEMA_PREFIX` as the id.
+
+    If you are still experiencing issues with this bug, please **update to the latest version of the app**.
+
+  ## AI Input form fill
+    <Frame>
+    <img src="/images/changelog/2025-jan-aiinput.png" alt="AI Inputs" />
+    </Frame> 
+    We added a tool for select input that uses contextual information to generate text.
+
+    Under the hood, we use the Sonnet 3.5 model to generate information, expanding the prompt by extracting context from the page itself.
+
+    An additional prompt can be used to improve the result of the task. A diff between the current input and the proposed AI input is shown before confirmation.
+
+    We aim to expand this utility across all our products and allow your own AI apps to edit and create data for your site!
+
+  ## Webdrawm in admin
+    <Frame>
+    <img src="/images/changelog/2025-jan-webdraw.png" alt="Webdraw" />
+    </Frame> 
+    Introducing Webdraw! This new tool allows you to create AI-driven sections directly within our admin interface.
+
+    To create a section, use Webdraw and press `⌘ (CTRL) + P` to push your section to the admin and start using it.
+
+    You may need a tailored prompt to achieve the best results. For example, you can copy the code from an existing section as a reference.
+
+    We have made our default [deco prompt available here](https://gist.github.com/matheusgr/bbdcab6747cccb83e18254304d0970fc).
+
+    Please note that AI may sometimes generate invalid TSX code, so some manual adjustments might be necessary.
+
+    <Warning>Note: This feature is still experimental!</Warning>
+
+</Update>

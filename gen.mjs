@@ -77,8 +77,13 @@ if (existsSync('en')) await rm('en', { recursive: true, force: true })
 
 const navigationPT = await Promise.all((await readdir('docs/pt')).sort(sortDir).map(path => gen(`docs/pt/${path}`, 'Português')))
 const navigationEN = await Promise.all((await readdir('docs/en')).sort(sortDir).map(path => gen(`docs/en/${path}`, 'English')))
+const navigationChangelog = {
+    "group": "Overview",
+    "pages": ["changelog/overview"]
+}
 
-const mintJson = JSON.parse(await readFile('mint.json', 'utf8'))
-mintJson.navigation = [...navigationPT, ...navigationEN]
+const mintJson = JSON.parse(await readFile('base.json', 'utf8'))
+
+mintJson.navigation = [...navigationPT, ...navigationEN, navigationChangelog]
 
 await writeFile('mint.json', JSON.stringify(mintJson, null, 4))

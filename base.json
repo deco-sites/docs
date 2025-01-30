@@ -1,0 +1,59 @@
+{
+    "$schema": "https://mintlify.com/schema.json",
+    "name": "Deco.cx",
+    "logo": {
+        "dark": "/images/logo.svg",
+        "light": "/images/logo.svg"
+    },
+    "theme": "venus",
+    "favicon": "/favicon.svg",
+    "colors": {
+        "primary": "#0D9373",
+        "light": "#07C983",
+        "dark": "#0D9373",
+        "anchors": {
+            "from": "#0D9373",
+            "to": "#07C983"
+        }
+    },
+    "topbarLinks": [
+        {
+            "name": "Sign in",
+            "url": "https://admin.deco.cx/"
+        }
+    ],
+    "topbarCtaButton": {
+        "name": "Try now",
+        "url": "https://admin.deco.cx/spaces/new"
+    },
+    "primaryTab": {
+        "name": "Docs"
+    },
+    "tabs": [
+        {
+            "name": "Changelog",
+            "url": "changelog"
+        }
+    ],
+    "anchors": [
+        {
+            "name": "Community",
+            "icon": "discord",
+            "url": "https://deco.cx/discord"
+        },
+        {
+            "name": "Blog",
+            "icon": "newspaper",
+            "url": "https://deco.cx/en/blog"
+        }
+    ],
+    "footerSocials": {
+        "x": "https://x.com/deco_cx",
+        "github": "https://github.com/deco-cx",
+        "linkedin": "https://www.linkedin.com/company/deco-cx"
+    },
+    "versions": [
+        "Português",
+        "English"
+    ]
+}

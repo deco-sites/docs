@@ -26,7 +26,15 @@
         "name": "Try now",
         "url": "https://admin.deco.cx/spaces/new"
     },
-    "tabs": [],
+    "primaryTab": {
+        "name": "Docs"
+    },
+    "tabs": [
+        {
+            "name": "Changelog",
+            "url": "changelog"
+        }
+    ],
     "anchors": [
         {
             "name": "Community",
@@ -38,6 +46,15 @@
             "icon": "newspaper",
             "url": "https://deco.cx/en/blog"
         }
+    ],
+    "footerSocials": {
+        "x": "https://x.com/deco_cx",
+        "github": "https://github.com/deco-cx",
+        "linkedin": "https://www.linkedin.com/company/deco-cx"
+    },
+    "versions": [
+        "Português",
+        "English"
     ],
     "navigation": [
         {
@@ -450,15 +467,12 @@
                 "en/self-host/envs"
             ],
             "version": "English"
+        },
+        {
+            "group": "Overview",
+            "pages": [
+                "changelog/overview"
+            ]
         }
-    ],
-    "footerSocials": {
-        "x": "https://x.com/deco_cx",
-        "github": "https://github.com/deco-cx",
-        "linkedin": "https://www.linkedin.com/company/deco-cx"
-    },
-    "versions": [
-        "Português",
-        "English"
     ]
 }
