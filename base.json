@@ -7,6 +7,11 @@
     },
     "theme": "venus",
     "favicon": "/favicon.svg",
+    "feedback": {
+        "thumbsRating": true,
+        "raiseIssue": true,
+        "suggestEdit": true
+    },
     "colors": {
         "primary": "#0D9373",
         "light": "#07C983",
