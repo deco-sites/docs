@@ -1,9 +1,6 @@
+## Documentação em português
+Documentação em português para agentes que analizam sites deco.
 
-## Documentação em Português
-Documentação em português para agentes que analizam sites deco
-
-<!-- Ignore commented docs -->
-<!-- - [O guia deco para performance](../docs/pt/07_Performance/02_guide.mdx) -->
 - [Como editar conteudo no CMS deco](./pt/02_cms_capabilities/01_blocks-content.mdx)
 - [Otimizando tamanho de página com Async Render](./pt/07_Performance/01_async-render.mdx)
 - [Otimizando tamanho de Section com Async Render](./pt/07_Performance/02_optimize-section-with-async-render.mdx)
@@ -12,4 +9,11 @@ Documentação em português para agentes que analizam sites deco
 - [Otimizações de loaders](../docs/pt/07_Performance/04_loaders.mdx)
 
 ## English Documentation
-Documentation for Agents
+Documentation in English for Agents that analyze deco sites.
+
+- [How to edit content in deco CMS](./en/02_cms_capabilities/01_blocks-content.mdx)
+- [Optimizing page size with Async Render](./en/07_Performance/01_async-render.mdx)
+- [Optimizing Section size with Async Render](./en/07_Performance/02_optimize-section-with-async-render.mdx)
+- [Identifying async render performance](./en/07_Performance/03_analyze-async-render-performance.mdx)
+- [Optimization of fresh islands](../docs/en/07_Performance/06_islands.mdx)
+- [Loader optimizations](../docs/en/07_Performance/04_loaders.mdx)
