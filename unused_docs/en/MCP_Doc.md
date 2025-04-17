@@ -6,7 +6,7 @@ The main objective is to teach how to reduce the amount of resources sent from t
 
 - [What is deco framework and CMS?](./01_getting_started/01_what-is-deco.mdx)
 - [How to edit content in deco CMS](./02_cms_capabilities/01_blocks-content.mdx)
-- [Optimizing page applying Async Render on sections](./07_Performance/01_applying-async-render.md)
+- [Optimizing page applying Async Render on sections](./07_Performance/01_applying-async-render.mdx)
 - [Optimizing Section size with Async Render](./07_Performance/02_optimize-section-with-async-render.mdx)
 - [Identifying async render performance](./07_Performance/03_analyze-async-render-performance.mdx)
 - [Optimization of fresh islands](../../docs/en/07_Performance/06_islands.mdx)
