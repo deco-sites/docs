@@ -1,0 +1,172 @@
+## Async Render de Section via Código (`deco` + `htmx`)
+
+Você pode pedir para o servidor renderizar partes de um componente `useSection` (from jsr package "@deco/deco/hooks". Github link https://github.com/deco-cx/deco/blob/main/hooks/mod.ts) e `htmx`.
+
+### Quando utilizar?
+
+Utilize quando para carregar componentes que variam baseado no dispositivo (mobile ou desktop) ou quando parte dos elementos são renderizados visualmente após iteração do usuário. No lugar de utilizar classes tailwind como `hidden lg:block` para renderizar desktop ou `lg:hidden` para esconder no desktop e renderizar em outros dispositivos.
+
+### Passo a passo para implementar:
+
+1. Use `useSection()` para gerar a URL do `hx-get`.
+2. Adicione ou reutilize uma prop do componente que serve para identificar quais partes do componente deseja renderizar. Exemplo: `variant: "desktop" | "mobile"`
+
+#### Exemplo 1:
+Um componente de Header que possui uma drawer lateal com links para que é exibido para dispositivo mobile, para desktop exibe um menu com hover que exibe a os links em lista
+
+Antes da otimização:
+
+```tsx
+interface Props {/* declaração das props*/}
+
+function Header({ /*props aqui*/ links, images, }) {
+
+  return <header>
+	<nav class="hidden lg:block ...">
+		{/* Botao do menu mobile */}
+		<div class="lg:hidden">
+			<input name="open" type="checkbox" class="peer sr-only"/>
+			<div class="peer:checked:block hidden">
+				<Drawer .../>
+			</div>
+		</div>
+
+		<div data-search>
+		  <input .... />
+		  <div data-search-result-slot />
+		</div>
+
+		<ul class="hidden lg:block">
+		  {links.map(link => (
+		     // Links renderizados escondidos, podem ser otimizados.
+			<ul class="peer">{link.name}</div>
+			<div class="absolute hidden peer:hover:block">
+				{link.sublinks.map(/* ...  */)}
+			</div>
+		  ))}
+		</ul>
+	</nav>
+
+  </header>
+}
+```
+
+Sugestão de otimização do componente utilizando async render via HTMX + useSection:
+
+```tsx
+import {type AppContext} from "site/apps/site.ts"
+export const loader = (props: Props, _req: Request, ctx: AppContext) => {
+	return {
+		...props,
+		isMobile: ctx.device === "mobile"
+	}
+}
+
+interface Props {/* declaração das props*/
+  /** @ignore não é editada pelo CMS */
+  isMobile: boolean;
+
+  /** @ignore não é editada pelo CMS */
+  renderDrawer: boolean;
+}
+
+function Header({ /*props aqui*/ links, images, isMobile, renderDrawer }) {
+	if (renderDrawer) {
+	// não precisa de acionador de hx-get pois já possui a drawer
+	return (<div id="drawer-wrapper">
+		<input id="open" name="open" type="checkbox" class="peer sr-only" />
+		<label for="open"><Icon /></label>
+		<div class="peer:checked:block hidden">
+				<Drawer .../>
+			</div>
+		</div>)
+	}
+
+  return <header>
+	<nav class="hidden lg:block ...">
+		{/* Botao do menu mobile */}
+		{isMobile && (<div id="drawer-wrapper">
+			<input id="open" name="open" type="checkbox" class="peer sr-only" 
+				hx-get={useSection({
+				// as demais props são recuperadas no servidor
+					props: {
+						renderDrawer: true
+					}
+				})}
+				hx-trigger="change"
+				hx-swap="#drawer-wrapper"
+			/>
+			<label for="open"><Icon /></label>
+		</div>)}
+
+		<div data-search>
+		  <input .... />
+		  <div data-search-result-slot />
+		</div>
+
+
+		{/* Menu para desktop */}
+		{!isMobile && (<ul>
+		  {links.map(link => (
+			<ul class="peer">{link.name}</div>
+			<div class="absolute hidden peer:hover:block">
+				{link.sublinks.map(/* ...  */)}
+			</div>
+		  ))}
+		</ul>)}
+	</nav>
+
+  </header>
+}
+```
+
+
+#### Exemplo 2:
+Componente tem um botão que exibe uma tabela que possui muitos dados.
+
+Antes da otimização:
+
+```tsx
+interface Props {
+  data: Data[]
+}
+
+function TogglableTable({data}) {
+	return <div>
+		<input type="checkbox" class="sr-only peer" id="opener-table" />
+		<label for="opener-table" class="... classes to be like a button"><Icon /></label>
+		{/* Tabela que é visivel quando o usuário clica no botão */}
+		<DataTable data={data} class="peer:checked:block hidden" />
+	</div>
+}
+```
+
+
+Sugestão de otimização do componente utilizando async render via HTMX + useSection:
+
+```tsx
+interface Props {
+  data: Data[];
+  variant: "render-table"
+}
+
+function TogglableTable({data, variant}) {
+	if (variant === "render-table") {
+		return (<div>
+		<input type="checkbox" class="sr-only peer" id="opener-table" />
+		<label for="opener-table" class="... classes to be like a button"><Icon /></label>
+		{/* Tabela que é visivel quando o usuário clica no botão */}
+		<DataTable data={data} class="peer:checked:block hidden" />
+	</div>)
+	}
+	
+
+	return (<div>
+		<input type="checkbox" class="sr-only peer" id="opener-table" />
+		<label for="opener-table" class="... classes to be like a button"><Icon /></label>
+		{/* Tabela que é visivel quando o usuário clica no botão */}
+		<DataTable data={data} class="peer:checked:block hidden" />
+	</div>)
+}
+```
+
