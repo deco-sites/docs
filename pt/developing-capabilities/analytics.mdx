@@ -9,16 +9,12 @@ O `dataLayer` é a camada de dados utilizada pelo Google Tag Manager ou Google
 Tag (utilizado pelo Google Analytics) para gerenciar os eventos dos pixels que
 estão configurados na tag.
 
-Em um projeto deco.cx existe uma
-[sdk/analytics.ts](https://github.com/deco-sites/fashion/blob/main/sdk/analytics.tsx)
-que contem a função **sendEvents**, que recebe um objeto do tipo
+No template da deco.cx, existe o hook
+[useSendEvent](https://github.com/deco-sites/storefront/blob/main/sdk/useSendEvent.ts)
+que aceita como parâmetro o objeto da interface Options, que nele possui a propriedade
 [AnalyticsEvent](https://github.com/deco-cx/apps/blob/3e337b6b2996d7ecd72db34174896638c92f8811/commerce/types.ts#L754)
-e adiciona o dado no dataLayer. Neste mesmo arquivo, também contem 2
-componentes, que recebe uma propriedade `event` do tipo AnalyticsEvent e envia o
-evento para o dataLayer. O **SendEventOnLoad** dispara o evento quando ocorrer o
-evento de `load` do navegador, ele é útil para enviar os eventos, cujo nome tem
-padrão `view_*`. Já o **SendEventOnClick** dispara o evento quando o elemento
-for clicado.
+e retorna os atributos necessários para disparar o evento no dataLayer.
+Esse hook facilita o envio de eventos de view, click e change diretamente nos elementos, sem precisar criar componentes específicos.
 
 Exemplos:
 
@@ -27,7 +23,7 @@ Exemplos:
    uma Island.
 
 ```tsx
-import { sendEvent } from "$store/sdk/analytics.tsx";
+import { useSendEvent } from "$store/sdk/analytics.tsx";
 
 interface Props {
   name: string;
@@ -39,35 +35,44 @@ interface Props {
 }
 
 function AddToCart({ name, sku, id, price, discount, currency }: Props) {
-  const handleClick = () => {
-    addSkuToCart({ sku, quantity: 1 }); // function that call api to add sku
-    sendEvent({
+  const addToCartEvent = useSendEvent({
+    on: "click",
+    event: {
       name: "add_to_cart",
       params: {
         currency,
         value: price,
-        items: [{
-          item_id: id,
-          quantity: 1,
-          price: price + (discount ?? 0),
-          discout,
-          name,
-        }],
+        items: [
+          {
+            item_id: id,
+            quantity: 1,
+            price: price + (discount ?? 0),
+            discount,
+            name,
+          },
+        ],
       },
-    });
+    },
+  });
+
+  const handleClick = () => {
+    addSkuToCart({ sku, quantity: 1 });
   };
 
-  return <button onClick={handleClick}>Add to cart</button>;
+  return (
+    <button {...addToCartEvent} onClick={handleClick}>
+      Add to cart
+    </button>
+  );
 }
 ```
 
-2. Enviando evento de `view_item` na página de produto ao carregar a página,
-   utilizando SendEventOnLoad.
+2. Enviando evento de `view_item` na página de produto ao carregar a página
 
 ```tsx
 import type { Product } from "apps/commerce/types.ts";
 import { mapProductToAnalyticsItem } from "apps/commerce/utils/productToAnalyticsItem.ts";
-import { SendEventOnLoad } from "$store/sdk/analytics.tsx";
+import { useSendEvent } from "$store/sdk/analytics.tsx";
 import { useOffer } from "$store/sdk/useOffer.ts";
 
 interface Props {
@@ -77,33 +82,34 @@ interface Props {
 
 function ProductDetails({ product, currency }: Props) {
   const { price, listPrice } = useOffer(product.offers);
+  const item = mapProductToAnalyticsItem({ product, price, listPrice });
+
+  const viewItemEvent = useSendEvent({
+    on: "view",
+    event: {
+      name: "view_item",
+      params: {
+        currency,
+        value: price,
+        items: [item],
+      },
+    },
+  });
 
   return (
-    <>
+    <div {...viewItemEvent}>
       <ProductInfo product={product} />
-      <SendEventOnLoad
-        event={{
-          name: "view_item",
-          params: {
-            currency,
-            value: price,
-            items: [mapProductToAnalyticsItem({ product, price, listPrice })],
-          },
-        }}
-      />
-    </>
+    </div>
   );
 }
 ```
 
-3. Enviando evento de `select_item` ao clicar num link de produto, utilizando
-   SendEventOnClick. Utilizar o SendEventOnClick é útil quando o componente é
-   renderizado no servidor.
+3. Enviando evento de `select_item` ao clicar num link de produto.
 
 ```tsx
 import type { Product } from "apps/commerce/types.ts";
 import { mapProductToAnalyticsItem } from "apps/commerce/utils/productToAnalyticsItem.ts";
-import { SendEventOnClick } from "$store/sdk/analytics.tsx";
+import { useSendEvent } from "$store/sdk/analytics.tsx";
 import { useOffer } from "$store/sdk/useOffer.ts";
 
 interface Props {
@@ -114,49 +120,54 @@ interface Props {
 
 function ProductCard({ product, itemListName, itemListId }: Props) {
   const { price, listPrice } = useOffer(product.offers);
+  const item = mapProductToAnalyticsItem({ product, price, listPrice });
+
+  const selectItemEvent = useSendEvent({
+    on: "click",
+    event: {
+      name: "select_item",
+      params: {
+        item_list_name: itemListName,
+        item_list_id: itemListId,
+        items: [item],
+      },
+    },
+  });
 
   return (
-    <>
-      <a id={product.productID} href={product.url}>
-        <Frame><img src={product.images[0]} /></Frame>
-        <span>{product.name}</span>
-      </a>
-      <SendEventOnClick
-        id={product.productID}
-        event={{
-          name: "select_item",
-          params: {
-            name: "select_item",
-            params: {
-              item_list_name: itemListName,
-              item_list_id: itemListId,
-              items: [
-                mapProductToAnalyticsItem({
-                  product,
-                  price,
-                  listPrice,
-                }),
-              ],
-            },
-          },
-        }}
-      />
-    </>
+    <a id={product.productID} href={product.url} {...selectItemEvent}>
+      <img src={product.images[0]} alt={product.name} />
+      <span>{product.name}</span>
+    </a>
   );
 }
 ```
 
 ## Customizando função de sendEvents
 
-É possível extender a função `sendEvents` para disparar eventos para outras
+É possível a criação de uma nova função `sendEventCustom` para disparar eventos para outras
 camadas de dados diferente do `dataLayer`. No arquivo `sdk/analytics.tsx` do seu
-projeto deco, você pode customizar a função `sendEvent` adicionando novos
+projeto deco, você pode customizar uma nova função adicionando novas
 integrações.
 
 Exemplo:
 
 ```diff
-export const sendEvent = <E extends AnalyticsEvent>(event: E) => {
+import { AnalyticsEvent } from "apps/commerce/types.ts";
+
+export interface Options<E extends AnalyticsEvent> {
+  event: E;
+  on: "click" | "view" | "change";
+}
+
+export const useSendEvent = <E extends AnalyticsEvent>(
+  { event, on }: Options<E>,
+) => ({
+  "data-event": encodeURIComponent(JSON.stringify(event)),
+  "data-event-trigger": on,
+});
+
+export const sendEventCustom = <E extends AnalyticsEvent>(event: E) => {
   if (typeof window.DECO_SITES_STD?.sendAnalyticsEvent !== "function") {
     console.info(
       "Cannot find Analytics section in your page. Press `.` to add Analytics and supress this warning",
@@ -164,15 +175,15 @@ export const sendEvent = <E extends AnalyticsEvent>(event: E) => {
 
     return;
   }
-+
-+ if (!window.gtag) {
-+   window.gtag = function () {
-+   window.dataLayer.push(arguments);
-+ };
-+ }
-+
+
+  if (!window.gtag) {
+   window.gtag = function () {
+   window.dataLayer.push(arguments);
+   };
+  }
+
   window.DECO_SITES_STD.sendAnalyticsEvent(event);
-+ window.gtag("event", event.name, event.params)
+  window.gtag("event", event.name, event.params)
 };
 ```
 
