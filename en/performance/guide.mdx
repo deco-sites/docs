@@ -216,9 +216,12 @@ some cases.
 - The size of props in islands is large
 
 **Guide**: [Optimizing loaders](https://deco.cx/docs/performance/loaders)
+  
+**Guide**: [Caching data loaders](https://deco.cx/docs/en/performance/caching-data-loaders)
 
 > **Tips**:
 >
+> - Always cache your loaders and provide a stable `cacheKey`
 > - Use `inline loaders` to transform data to be sent to a section and/or island
 > - Consider deferring the display (`Deferred`) of sections with expensive
 >   loaders

@@ -1,0 +1,128 @@
+---
+description: Cache your data loaders with keys and TTL to massively reduce latency and API load.
+since: 1.0.0
+---
+
+## Why cache loaders?
+
+Loaders fetch data that powers your pages and sections. Caching them:
+
+- Reduces API latency and backend load
+- Improves consistency and resilience under spikes
+- Makes async rendering faster by serving warm data
+
+> Strong recommendation: enable caching for all read‑mostly and public data loaders. Opt out only for user‑specific or highly volatile data.
+
+## How loader caching works
+
+In a loader module you can export two optional fields:
+
+```ts
+// Cache policy
+export const cache =
+  // "no-store" | "no-cache" | "stale-while-revalidate" | { maxAge: number }
+
+// Cache key generator
+export const cacheKey = (props, req, ctx) => string | null
+```
+
+### Cache modes
+
+- "no-store" (default):
+  - Disables cache for this loader and prevents dependent sections from being cached.
+  - Use for user‑specific or sensitive data (e.g., carts, sessions).
+
+- "no-cache":
+  - Skips cache for this loader run, but does not block dependent caches.
+  - Use when the loader must always run but the section may still be cached separately.
+
+- "stale-while-revalidate":
+  - Serve cached data immediately when available and revalidate in the background when stale.
+  - Best default for public/read‑mostly loaders.
+
+- { maxAge: number }:
+  - Same as "stale-while-revalidate" with a custom TTL (in seconds) for the loader response.
+
+### Time‑to‑live (TTL)
+
+- Default TTL when using strings (e.g., "stale-while-revalidate") is 60 seconds.
+- Override default with environment variable `CACHE_MAX_AGE_S`.
+- Or set per‑loader TTL via `export const cache = { maxAge: 300 }`.
+
+### Cache key
+
+The `cacheKey(props, req, ctx)` must uniquely represent the inputs that change the response. It can return:
+
+- `string`: use as the cache key
+- `null`: disable caching for this invocation (e.g., for authenticated users)
+
+Good key inputs to include:
+
+- Props that affect data (filters, slugs, pagination)
+- Request‑scoped traits that change content (segment, locale, device)
+- Essential query params that affect the result (but avoid noise)
+
+Examples:
+
+```ts
+// 1) Public, SWR with stable key
+export const cache = "stale-while-revalidate";
+export const cacheKey = (props: { slug: string }, req: Request) => {
+  const url = new URL(req.url);
+  url.search = new URLSearchParams([["slug", props.slug]]).toString();
+  return url.href;
+};
+
+// 2) Segment-aware key; bypass for logged-in users
+export const cache = "stale-while-revalidate";
+export const cacheKey = (_props: unknown, _req: Request, ctx: AppContext) => {
+  if (!ctx.isAnonymous) return null; // don't cache personalized data
+  return ctx.segment?.token ?? "anonymous";
+};
+
+// 3) Custom TTL (5 minutes)
+export const cache = { maxAge: 300 };
+export const cacheKey = (props: { category: string }, req: Request) => {
+  const url = new URL(req.url);
+  url.search = new URLSearchParams([["category", props.category]]).toString();
+  return url.href;
+};
+
+// 4) Explicitly opt-out (user-specific cart/session)
+export const cache = "no-store";
+```
+
+## Best practices
+
+- Prefer "stale-while-revalidate" for public/read‑mostly loaders.
+- Always implement `cacheKey`; include props/params that affect data, and segmentation (locale/currency/segment) when relevant.
+- Return `null` from `cacheKey` for authenticated or highly personalized responses.
+- Set a custom TTL via `{ maxAge }` for data that tolerates longer staleness.
+- Avoid including volatile or irrelevant parameters (timestamps, tracking params) in the key.
+- If a loader must always execute but you still want the section cached, use `"no-cache"` instead of `"no-store"`.
+
+## Interaction with async rendering and CDN caches
+
+- Async rendering has a "Stale Edge Cache" that caches rendered sections at the CDN. This accelerates page delivery.
+- Loader caching reduces server latency and upstream API calls before the section render happens.
+- Use both: cache loaders for faster server responses, and keep async render defaults to leverage CDN caching of sections.
+
+## Environment and engines
+
+- `ENABLE_LOADER_CACHE` (default: true). Set to `"false"` to disable loader cache globally (not recommended).
+- `CACHE_MAX_AGE_S` (default: 60). Default TTL for string cache modes.
+- Advanced: `WEB_CACHE_ENGINE` can select cache backends (e.g., `CACHE_API`, `REDIS`, `FILE_SYSTEM`) or tiered configuration.
+
+## Real-world patterns
+
+- Build keys with only the inputs that matter (e.g., hash large arrays / objects).
+- Consider segment/locale in the key for internationalized or segmented catalogs.
+- For inventory/pricing that changes frequently, pick a lower TTL and rely on SWR to keep data fresh under load.
+
+## See also
+
+- [Optimizing loaders](https://deco.cx/docs/performance/loaders)
+- [Async render and Stale Edge Cache](https://deco.cx/docs/performance/edge-async-render)
+- [Loader concept](https://deco.cx/docs/en/concepts/loader)
+
+

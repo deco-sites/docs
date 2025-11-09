@@ -24,6 +24,11 @@ Loaders configurable in this way, it becomes easier to manage the data flowing
 into Sections and ensure that the Site is displaying the right information to
 visitors.
 
+Loaders can also define caching behavior to improve performance and resilience:
+export a cache policy and a `cacheKey` to enable serving cached data and
+revalidation. See
+[Caching data loaders](https://deco.cx/docs/en/performance/caching-data-loaders).
+
 One other great benefit of Loaders in _deco.cx_ is that **multiple loaders can
 return the same data type**. This allows [Sections](https://deco.cx/docs/en/concepts/section)
 that receive, for example, an array of canonical Product to get data from

@@ -440,6 +440,7 @@
                     "version": "English"
                 },
                 "en/performance/loaders",
+                "en/performance/caching-data-loaders",
                 "en/performance/lazy-3rd-party-scripts",
                 "en/performance/islands",
                 "en/performance/edge-async-render"
