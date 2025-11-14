@@ -32,6 +32,10 @@ Subsequent requests are answered with this cached response, drastically reducing
 the total response time to just the latency between the browser and the CDN,
 plus the download time.
 
+> Note: CDN caching complements loader caching. To reduce server latency and
+> upstream API calls, cache your loaders and define a stable `cacheKey`. See
+> [Caching data loaders](https://deco.cx/docs/en/performance/caching-data-loaders).
+
 ![Stale Edge Cache](https://deco.cx/docs/performance/stale-edge-cache.png)
 
 This functionality is enabled by default for all sections but can be disabled if
