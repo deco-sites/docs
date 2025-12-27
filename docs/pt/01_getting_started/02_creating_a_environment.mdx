@@ -1,0 +1,64 @@
+---
+title: Criando um ambiente
+description: |
+  Passo a passo de como criar um ambiente no seu site na Deco.cx.
+---
+
+Esta documentação vai te guiar pelo processo de criação e configuração do seu
+primeiro ambiente no seu site usando o Deco.cx.
+os ambientes são basicamente versões diferentes da sua loja/site que convivem em paralelo, cada uma
+com um propósito específico no fluxo de desenvolvimento e publicação.
+
+A partir daqui, você tem duas opções:
+
+1. Rodar seu site localmente usando seu ambiente de desenvolvimento local.
+   - Isso te dá o poder de modificar seu site alterando seu código, bem como
+     usando o Deco Admin.
+2. Criar um novo ambiente para editar seu site apenas através do Deco Admin.
+   - Aqui você pode fazer alterações no seu site sem precisar ter acesso ao
+     código do site.
+
+### Opção 1: Rodar Seu Site Localmente
+
+Para rodar seu site localmente, você precisa:
+
+1. Instalar o Deno na sua máquina. Você pode seguir as instruções no
+   [site do Deno](https://deno.land/).
+2. Clonar o repositório do site:
+   ```bash
+   git clone git@github.com:deco-sites/docs-deco.git
+   ```
+3. Entrar na pasta do repositório e iniciar o servidor:
+   ```bash
+   cd docs-deco
+   DECO_ENV_NAME=localhost deno task start
+   ```
+
+Agora, você pode modificar o código e ver as mudanças no Admin e vice-versa.
+
+### Opção 2: Criar um Novo Ambiente
+
+Ambientes são espaços de trabalho isolados onde você pode fazer alterações no
+seu site sem afetar o site ao vivo. Para criar um novo ambiente:
+
+1. Clique no botão "New" no dropdown de ambientes no Admin.
+   ![Botão Novo Ambiente](https://deco.cx/docs/getting-started/creating-site/new-env-btn.png)
+2. Escolha um nome e um host para o seu ambiente. Como não vamos rodar o site
+   localmente, selecione a opção Web para o host.
+   ![Formulário Novo Ambiente](https://deco.cx/docs/getting-started/creating-site/new-env-form.png)
+
+Agora você tem seu próprio ambiente e espaço de trabalho isolado para fazer
+alterações no seu site sem precisar rodar seu código.
+
+## Vídeo auxiliar
+
+<iframe
+  width="100%"
+  height="396"
+  src="{SRC AQUI}"
+  title="YouTube video player"
+  frameborder="0"
+  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+  referrerpolicy="strict-origin-when-cross-origin"
+  allowfullscreen
+></iframe>
