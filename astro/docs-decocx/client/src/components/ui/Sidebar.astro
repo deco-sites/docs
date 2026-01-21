@@ -1,0 +1,232 @@
+---
+import { getCollection } from "astro:content";
+import { ui } from "../../i18n/ui";
+import SidebarComponent from "./Sidebar.tsx";
+
+const locale = Astro.params.locale;
+
+const allDocs = await getCollection("docs");
+const docs = allDocs.filter((doc) => doc.id.split("/")[0] === locale);
+
+interface TreeNode {
+  name: string;
+  type: "file" | "folder";
+  children: TreeNode[];
+  doc?: any;
+  path: string[];
+  id: string;
+}
+
+function buildTree(docs: any[]): TreeNode[] {
+  const root: TreeNode[] = [];
+
+  docs.forEach((doc) => {
+    const pathParts = doc.id.split("/").slice(1);
+    let currentLevel = root;
+
+    pathParts.forEach((part: string, index: number) => {
+      const isFile = index === pathParts.length - 1;
+      const existing = currentLevel.find((node) => node.name === part);
+
+      if (existing) {
+        if (isFile) {
+          existing.doc = doc;
+        }
+        currentLevel = existing.children;
+      } else {
+        const newNode: TreeNode = {
+          name: part,
+          type: isFile ? "file" : "folder",
+          children: [],
+          path: pathParts.slice(0, index + 1),
+          id: pathParts.slice(0, index + 1).join("/"),
+          ...(isFile && { doc }),
+        };
+        currentLevel.push(newNode);
+        currentLevel = newNode.children;
+      }
+    });
+  });
+
+  return root;
+}
+
+// Define section order matching the original Mintlify structure
+const sectionOrder = [
+  "changelog", // Changelog at the top
+  "getting-started",
+  "cms-capabilities",
+  "developing-guide",
+  "concepts",
+  "developing-capabilities",
+  "decopilot",
+  "performance",
+  "sdk",
+  "api-reference",
+  "self-host",
+  "archive", // Keep archive at the end
+];
+
+// Define file order within each section
+const fileOrderBySection: Record<string, string[]> = {
+  "getting-started": [
+    "overview",
+    "creating-a-site",
+    "creating-a-new-page",
+    "changes-and-publishing",
+    "adding-an-app",
+    "gtm",
+  ],
+  "cms-capabilities": ["home"],
+  "developing-guide": [
+    "setup",
+    "hello-world",
+    "editable-sections",
+    "fetching-data",
+    "creating-loaders",
+    "htmx",
+    "go-live-ab-testing",
+    "examples",
+  ],
+  "concepts": [
+    "block",
+    "section",
+    "loader",
+    "action",
+    "matcher",
+    "segment",
+    "app",
+  ],
+  "developing-capabilities": [
+    "loaders",
+    "analytics",
+    "deco-records",
+    "manage-block-access",
+    "modifying-status",
+    "troubleshooting",
+  ],
+  "decopilot": ["how-to-access", "assistant"],
+  "performance": [
+    "why",
+    "guide",
+    "islands",
+    "loaders",
+    "caching-data-loaders",
+    "edge-async-render",
+    "lazy-3rd-party-scripts",
+  ],
+  "sdk": ["headless-cms", "ab-test", "feature-flags"],
+  "api-reference": ["invoke", "use-script", "use-section"],
+  "self-host": ["architecture", "envs", "site"],
+  "changelog": ["overview"],
+};
+
+// Subsection order within sections
+const subsectionOrder: Record<string, string[]> = {
+  "cms-capabilities": ["content", "advanced", "management"],
+  "developing-capabilities": [
+    "section-properties",
+    "sections",
+    "blocks",
+    "interactive-sections",
+    "islands",
+    "apps",
+  ],
+  "performance": ["medias"],
+  "getting-started": ["custom-domains"],
+};
+
+function sortTree(nodes: TreeNode[], parentPath?: string): TreeNode[] {
+  const sorted = nodes.sort((a, b) => {
+    // Sort files before folders at root level only
+    if (!parentPath && a.type !== b.type) {
+      return a.type === "file" ? -1 : 1;
+    }
+
+    // For root-level folders, use sectionOrder
+    if (!parentPath && a.type === "folder" && b.type === "folder") {
+      const aIndex = sectionOrder.indexOf(a.name);
+      const bIndex = sectionOrder.indexOf(b.name);
+      if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex;
+      if (aIndex !== -1) return -1;
+      if (bIndex !== -1) return 1;
+    }
+
+    // For subsections within a section
+    if (parentPath && a.type === "folder" && b.type === "folder") {
+      const order = subsectionOrder[parentPath];
+      if (order) {
+        const aIndex = order.indexOf(a.name);
+        const bIndex = order.indexOf(b.name);
+        if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex;
+        if (aIndex !== -1) return -1;
+        if (bIndex !== -1) return 1;
+      }
+    }
+
+    // For files within a section
+    if (a.type === "file" && b.type === "file") {
+      const sectionName = parentPath || a.path[0];
+      const order = fileOrderBySection[sectionName];
+      if (order) {
+        const aIndex = order.indexOf(a.name);
+        const bIndex = order.indexOf(b.name);
+        if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex;
+        if (aIndex !== -1) return -1;
+        if (bIndex !== -1) return 1;
+      }
+    }
+
+    // Default alphabetical
+    return a.name.localeCompare(b.name);
+  });
+
+  return sorted.map((node) => ({
+    ...node,
+    children: sortTree(node.children, node.name),
+  }));
+}
+
+const tree = sortTree(buildTree(docs));
+
+interface FlatNode {
+  name: string;
+  type: "file" | "folder";
+  doc?: any;
+  path: string[];
+  depth: number;
+  id: string;
+  hasChildren: boolean;
+}
+
+function flattenTree(nodes: TreeNode[], depth = 0): FlatNode[] {
+  const result: FlatNode[] = [];
+
+  nodes.forEach((node) => {
+    result.push({
+      name: node.name,
+      type: node.type,
+      doc: node.doc,
+      path: node.path,
+      depth,
+      id: node.id,
+      hasChildren: node.children.length > 0,
+    });
+
+    if (node.children.length > 0) {
+      result.push(...flattenTree(node.children, depth + 1));
+    }
+  });
+
+  return result;
+}
+
+const flatTree = flattenTree(tree);
+---
+
+<SidebarComponent
+  client:load
+  tree={flatTree}
+  locale={locale || "en"}
+  translations={ui[locale as keyof typeof ui] || ui.en}
+/>

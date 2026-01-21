@@ -1,0 +1,18 @@
+---
+title: "01_blocks Content"
+description: ""
+---
+
+## CMS Content
+
+The deco CMS manages the content of deco blocks (framework). These blocks are saved as JSONs inside the `/.deco/blocks/` folder of the site project. The JSON file name is the block identifier, which has this format `/.deco/blocks/{block-id}.json` where this id is written by a user.
+
+## Identifying the block id of a deco page
+
+Given that I have access to a deco site page, simply navigate to the page in the browser, and then access the `window` variable like this: `window.LIVE.page.id`. With the page block id, you can access the file `/.deco/blocks/{page-id}.json`
+
+## Identifying which sections are used on a deco page
+
+Simply access the deco page through the browser, the HTML `section` tags that are children of the body and have the `data-manifest-key` property.
+
+Some sections are special, such as the `website/sections/Rendering/Lazy.tsx` section that encapsulates another section. In this case, observe the data-manifest-key of the immediate child HTML section tag.

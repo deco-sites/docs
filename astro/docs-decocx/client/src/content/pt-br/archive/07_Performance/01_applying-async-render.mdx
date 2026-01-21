@@ -1,0 +1,51 @@
+---
+title: "01_applying Async Render"
+description: ""
+---
+
+## 🧩 Async Rendering de uma Section inteira via CMS
+
+O Async Render é uma maneira de fazer o carregamento tardio de uma section. A section de Lazy (website/sections/Rendering/Lazy.tsx) é responsável por implementar o mecanismo
+de não renderizar a section no servidor e fazer um request para o servidor pedindo a section. Caso a section exporte um componente chamado `LoadingFallback`, ele será renderizado
+pelo Lazy no servidor, serve para colocar spinners ou pequenas partes de section.
+
+### Quando utilizar?
+
+Ideal para sections que estão **abaixo da dobra (below the fold)**.
+
+> NOTA: Se possuir acesso a ferramenta (tool) para navegar por páginas, NAVEGE e identifique quais sections estão abaixo da dobra (below the fold).
+
+### Passo a Passo
+
+Edite o conteudo da página do CMS, compondo a section Lazy com a section que já existe na página.
+
+#### Antes (sem async render):
+
+```json
+// page json with CMS Content
+{
+  "sections": [
+    { "__resolveType": "...", // component props }
+  ]
+}
+```
+
+#### Depois (com async render):
+
+```json
+{
+// page json with CMS Content
+  "sections": [
+    {
+      "__resolveType": "website/sections/Rendering/Lazy.tsx",
+      "section": {
+        "__resolveType": "...",
+        // component props
+      }
+    }
+  ]
+}
+```
+
+> NOTA: É Possível criar exportar um component LoadingFallback na section, que será rendrizado enquanto carrega o componente de section (default function).
+

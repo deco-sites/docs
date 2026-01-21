@@ -1,0 +1,18 @@
+---
+title: "03_analyze Async Render Performance"
+description: ""
+---
+
+## Checking if Async Render is properly cached
+
+Every section rendered through Async Render or useSection makes a request in the browser to `/deco/render?<query parameters>`. For a good UX, the server response needs to contain the cache-control header with a time greater than `0`, to enable CDN and browser caching, ensuring that the section rendering response is fast and provides a good user experience.
+
+The cache-control request header: `cache-control: max-age=60 (or any value different from zero) ...other values`.
+
+## Blocking querystrings in async render to improve cache hit rate
+
+The async render request has some values that influence the cache key, which are the `props` and the `href`. The `href` is the address of the page that made the request. One of the problems is query strings from third-party services and analytics that don't influence the site's state. To improve the cache hit rate of sections, remove unnecessary querystrings that go in the href.
+
+- List the query strings that are affecting the async render;
+- Add the list in an array in the /blockedQs.ts file and export the array;
+- Import the querystrings from the /blockedQs.ts file, in the /apps/site.ts file, and pass it as an argument to the unstable_blockUseSectionHrefQueryStrings function that is imported from the "@deco/deco/hooks" package
