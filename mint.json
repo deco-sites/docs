@@ -157,7 +157,8 @@
                     "pages": [
                         "pt/developing-capabilities/apps/ab-test",
                         "pt/developing-capabilities/apps/creating-an-app",
-                        "pt/developing-capabilities/apps/making-an-app-installable"
+                        "pt/developing-capabilities/apps/making-an-app-installable",
+                        "pt/developing-capabilities/apps/private-app"
                     ],
                     "version": "Português"
                 },
@@ -363,7 +364,8 @@
                     "pages": [
                         "en/developing-capabilities/apps/ab-test",
                         "en/developing-capabilities/apps/creating-an-app",
-                        "en/developing-capabilities/apps/making-an-app-installable"
+                        "en/developing-capabilities/apps/making-an-app-installable",
+                        "en/developing-capabilities/apps/private-app"
                     ],
                     "version": "English"
                 },

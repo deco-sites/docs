@@ -1,0 +1,67 @@
+---
+description: |
+   Guide on integrating private apps in Deco.cx.
+---
+
+# Private Apps in Deco.cx
+
+This guide will walk you through the process of creating and integrating a private app in your Deco.cx project.
+
+## Prerequisites
+
+Before you begin, make sure you have:
+- Created your app
+- Uploaded it to GitHub
+- Made the repository private
+- Invited the deco-bot to your repository
+- Notified Deco about the private app invitation
+
+## Integration Steps
+
+### 1. Add the App as a Submodule
+
+Add your private app repository as a Git submodule:
+
+```bash
+git submodule add https://github.com/github-user-or-organization/your-private-app.git $APP_NAME
+```
+
+### 2. Configure Import Path
+
+Create an entry in your `deno.json` file in the imports section:
+
+```json
+{
+  "imports": {
+    "$APP_NAME": "$APP_NAME"
+  }
+}
+```
+
+
+### 3. Create App Entry Point
+
+Create a file at `/apps/$APP_NAME.ts` with the following content:
+
+```ts
+export { default } from "$APP_NAME/mod.ts";
+export * from "$APP_NAME/mod.ts";
+```
+
+### 4. Create App Block
+
+create a file at `.deco/blocks/$APP_NAME.json` with the following content:
+
+```json
+{
+  "__resolveType": "site/apps/$APP_NAME.ts"
+}
+```
+
+
+## Completion
+
+Once you've completed these steps, your private app will be available for use in your Deco.cx project.
+
+
+For more information about apps in Deco.cx, you can refer to the [Apps documentation](https://deco.cx/docs/en/developing-capabilities/apps/creating-an-app).
