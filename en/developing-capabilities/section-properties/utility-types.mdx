@@ -4,11 +4,11 @@ description: Sections can be coded by devs and configured by business users in t
 
 ## Suggested Reading
 
-- [Core Concepts: Section](https://deco.cx/docs/en/concepts/section)
-- [Coding a new Section](https://deco.cx/docs/en/developing-guide/hello-world)
+- [Core Concepts: Section](https://docs.deco.cx/en/concepts/section)
+- [Coding a new Section](https://docs.deco.cx/en/developing-guide/hello-world)
 
 You already know that it's easy to create a configurable
-[Section](https://deco.cx/docs/en/concepts/section) on _deco.cx_. In this post we'll outline
+[Section](https://docs.deco.cx/en/concepts/section) on _deco.cx_. In this post we'll outline
 all the possible ways that you can declare the `props` types and how that
 impacts the form we render on _deco.cx_'s Admin.
 
@@ -47,7 +47,7 @@ export default function LatestPosts({ title }: Props) {
 
 - Preview of section editing in Admin
 
-<Frame><img width="640" alt="Section Form" src="https://deco.cx/docs/dev-capabilities/utility-types/section-form.png"/></Frame>
+<Frame><img width="640" alt="Section Form" src="/images/dev-capabilities/utility-types/section-form.png"/></Frame>
 
 ## Types accepted
 
@@ -153,7 +153,7 @@ export interface props {
 
 - Editor:
 
-<Frame><img width="640" alt="Section form with customized label and description" src="https://deco.cx/docs/dev-capabilities/utility-types/label-and-description.png"/></Frame>
+<Frame><img width="640" alt="Section form with customized label and description" src="/images/dev-capabilities/utility-types/label-and-description.png"/></Frame>
 
 The available tags are fields compatible with
 [JSON Schema](https://json-schema.org/), i.e. `@title`, `@description`,
@@ -168,4 +168,4 @@ export interface props {
 
 Other types of valid formats are: `uri`, `color`. You can read more about it in
 the
-[annotations doc](https://deco.cx/docs/en/developing-capabilities/section-properties/annotations).
+[annotations doc](https://docs.deco.cx/en/developing-capabilities/section-properties/annotations).

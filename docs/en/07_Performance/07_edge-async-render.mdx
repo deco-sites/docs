@@ -20,7 +20,7 @@ Once this limit is reached, loaders that have finished their tasks will render
 their content in the final HTML as usual. Loaders relying on slow APIs will
 throw an exception, and a loading state will be rendered for those sections.
 This loading state will use our
-[Partials](https://deco.cx/docs/en/developing-capabilities/interactive-sections/partial)
+[Partials](https://docs.deco.cx/en/developing-capabilities/interactive-sections/partial)
 feature to hydrate and lazily replace the missing section.
 
 ### Stale Edge Cache
@@ -32,7 +32,7 @@ Subsequent requests are answered with this cached response, drastically reducing
 the total response time to just the latency between the browser and the CDN,
 plus the download time.
 
-![Stale Edge Cache](https://deco.cx/docs/performance/stale-edge-cache.png)
+![Stale Edge Cache](/images/performance/stale-edge-cache.png)
 
 This functionality is enabled by default for all sections but can be disabled if
 necessary.
@@ -60,7 +60,7 @@ To ensure a smooth user experience, it is recommended to implement the
 custom loading state during async rendering, minimizing potential layout shifts.
 
 You can find more information about the
-[`LoadingFallback` component in our documentation](https://deco.cx/docs/en/developing-capabilities/sections/loading-fallback).
+[`LoadingFallback` component in our documentation](https://docs.deco.cx/en/developing-capabilities/sections/loading-fallback).
 
 ## Conclusion
 
