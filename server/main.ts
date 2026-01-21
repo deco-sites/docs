@@ -1,5 +1,7 @@
 import { withRuntime } from "@decocms/runtime";
 import { createAssetHandler } from "@decocms/runtime/asset-server";
+import { searchDocsTool } from "./tools/search-docs";
+import { assistantTool } from "./tools/assistant";
 
 const rootRedirects: Record<string, string> = {
   "/": "/en/getting-started/overview",
@@ -8,6 +10,7 @@ const rootRedirects: Record<string, string> = {
 };
 
 const runtime = withRuntime({
+  tools: [() => searchDocsTool, () => assistantTool],
   fetch: async (req, env) => {
     const url = new URL(req.url);
     if (rootRedirects[url.pathname]) {
