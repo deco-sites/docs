@@ -1,8 +1,8 @@
 import { createClient } from "@supabase/supabase-js";
 import { Glob } from "bun";
-import { OpenAIEmbeddings } from "@langchain/openai";
+import { embedMany } from "ai";
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
-import { Document } from "@langchain/core/documents";
+import { embeddingModel } from "../server/lib/mesh-provider";
 
 // Configuration
 const CHUNK_SIZE = 1000;
@@ -15,11 +15,6 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_KEY!
 );
 
-const embeddings = new OpenAIEmbeddings({
-  model: "text-embedding-3-small",
-  apiKey: process.env.OPENAI_API_KEY!,
-});
-
 // Markdown-aware text splitter
 const splitter = RecursiveCharacterTextSplitter.fromLanguage("markdown", {
   chunkSize: CHUNK_SIZE,
@@ -29,6 +24,17 @@ const splitter = RecursiveCharacterTextSplitter.fromLanguage("markdown", {
 interface Frontmatter {
   title?: string;
   description?: string;
+}
+
+interface DocChunk {
+  content: string;
+  metadata: {
+    source: string;
+    title: string;
+    description?: string;
+    language: string;
+    section: string;
+  };
 }
 
 function parseFrontmatter(content: string): { frontmatter: Frontmatter; body: string } {
@@ -65,7 +71,7 @@ function extractSection(path: string): string {
   return parts.length >= 2 ? parts.slice(1, -1).join("/") : "";
 }
 
-async function processFile(filePath: string): Promise<Document[]> {
+async function processFile(filePath: string): Promise<DocChunk[]> {
   const content = await Bun.file(filePath).text();
   const { frontmatter, body } = parseFrontmatter(content);
 
@@ -73,18 +79,18 @@ async function processFile(filePath: string): Promise<Document[]> {
   const section = extractSection(filePath);
   const title = frontmatter.title || filePath.split("/").pop()?.replace(".mdx", "") || "Untitled";
 
-  const docs = await splitter.createDocuments(
-    [body],
-    [{
+  const chunks = await splitter.splitText(body);
+
+  return chunks.map((chunk) => ({
+    content: chunk,
+    metadata: {
       source: filePath,
       title,
       description: frontmatter.description,
       language,
       section,
-    }]
-  );
-
-  return docs;
+    },
+  }));
 }
 
 async function deleteExistingChunks(source: string): Promise<void> {
@@ -94,10 +100,10 @@ async function deleteExistingChunks(source: string): Promise<void> {
     .eq("metadata->>source", source);
 }
 
-async function insertChunks(docs: Document[], vectors: number[][]): Promise<void> {
-  const rows = docs.map((doc, i) => ({
-    content: doc.pageContent,
-    metadata: doc.metadata,
+async function insertChunks(chunks: DocChunk[], vectors: number[][]): Promise<void> {
+  const rows = chunks.map((chunk, i) => ({
+    content: chunk.content,
+    metadata: chunk.metadata,
     embedding: vectors[i],
   }));
 
@@ -123,23 +129,28 @@ async function indexDocs(): Promise<void> {
       console.log(`Processing: ${file}`);
 
       await deleteExistingChunks(file);
-      const docs = await processFile(file);
+      const chunks = await processFile(file);
 
-      if (docs.length === 0) {
+      if (chunks.length === 0) {
         console.log(`  Skipped\n`);
         continue;
       }
 
       // Process in batches
-      for (let i = 0; i < docs.length; i += BATCH_SIZE) {
-        const batch = docs.slice(i, i + BATCH_SIZE);
-        const texts = batch.map((d) => d.pageContent);
-        const vectors = await embeddings.embedDocuments(texts);
-        await insertChunks(batch, vectors);
+      for (let i = 0; i < chunks.length; i += BATCH_SIZE) {
+        const batch = chunks.slice(i, i + BATCH_SIZE);
+        const texts = batch.map((c) => c.content);
+
+        const { embeddings } = await embedMany({
+          model: embeddingModel(),
+          values: texts,
+        });
+
+        await insertChunks(batch, embeddings);
       }
 
-      totalChunks += docs.length;
-      console.log(`  ${docs.length} chunks\n`);
+      totalChunks += chunks.length;
+      console.log(`  ${chunks.length} chunks\n`);
 
     } catch (err) {
       console.error(`  Error: ${err}\n`);

@@ -1,16 +1,13 @@
 import { createTool } from "@decocms/runtime/tools";
 import { createClient } from "@supabase/supabase-js";
-import OpenAI from "openai";
+import { embed } from "ai";
 import { z } from "zod";
+import { embeddingModel } from "../lib/mesh-provider";
 
 const supabase = createClient(
   process.env.SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_KEY!
 );
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY!,
-});
 
 export const searchDocsTool = createTool({
   id: "SEARCH_DOCS",
@@ -32,16 +29,15 @@ export const searchDocsTool = createTool({
   execute: async ({ context }) => {
     const { query, language, limit = 5 } = context;
 
-    const embeddingResponse = await openai.embeddings.create({
-      model: "text-embedding-3-small",
-      input: query,
+    const { embedding } = await embed({
+      model: embeddingModel(),
+      value: query,
     });
-    const queryEmbedding = embeddingResponse.data[0].embedding;
 
     const filter = language ? { language } : {};
 
     const { data, error } = await supabase.rpc("match_documents", {
-      query_embedding: queryEmbedding,
+      query_embedding: embedding,
       match_threshold: 0.5,
       match_count: limit,
       filter_metadata: filter,

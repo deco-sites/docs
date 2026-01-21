@@ -1,16 +1,13 @@
 import { createTool } from "@decocms/runtime/tools";
 import { createClient } from "@supabase/supabase-js";
-import OpenAI from "openai";
+import { embed, generateText } from "ai";
 import { z } from "zod";
+import { chatModel, embeddingModel } from "../lib/mesh-provider";
 
 const supabase = createClient(
   process.env.SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_KEY!
 );
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY!,
-});
 
 const SYSTEM_PROMPT = `You are a helpful assistant for deco.cx documentation.
 Answer questions based on the provided documentation context.
@@ -34,15 +31,14 @@ export const assistantTool = createTool({
   execute: async ({ context }) => {
     const { question, language } = context;
 
-    const embeddingResponse = await openai.embeddings.create({
-      model: "text-embedding-3-small",
-      input: question,
+    const { embedding } = await embed({
+      model: embeddingModel(),
+      value: question,
     });
-    const queryEmbedding = embeddingResponse.data[0].embedding;
 
     const filter = language ? { language } : {};
     const { data: docs, error } = await supabase.rpc("match_documents", {
-      query_embedding: queryEmbedding,
+      query_embedding: embedding,
       match_threshold: 0.5,
       match_count: 5,
       filter_metadata: filter,
@@ -56,20 +52,15 @@ export const assistantTool = createTool({
       .map((doc: any, i: number) => `[${i + 1}] ${doc.metadata?.title || "Doc"}\n${doc.content}`)
       .join("\n\n---\n\n");
 
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        {
-          role: "user",
-          content: `Context from documentation:\n\n${docsContext}\n\n---\n\nQuestion: ${question}`
-        },
-      ],
+    const { text } = await generateText({
+      model: chatModel(),
+      system: SYSTEM_PROMPT,
+      prompt: `Context from documentation:\n\n${docsContext}\n\n---\n\nQuestion: ${question}`,
       temperature: 0.3,
-      max_tokens: 1000,
+      maxTokens: 1000,
     });
 
-    const answer = completion.choices[0]?.message?.content || "Sorry, I couldn't generate an answer.";
+    const answer = text || "Sorry, I couldn't generate an answer.";
 
     const sources = (docs || []).map((doc: any) => ({
       title: doc.metadata?.title || "Untitled",
