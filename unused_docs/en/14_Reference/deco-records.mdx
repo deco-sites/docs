@@ -20,7 +20,7 @@ Follow the steps below to install it on your site or watch the video.
    and edited on your site (deno.json, .gitignore, manifest.gen.ts,
    apps/deco/records.ts, drizzle.config.ts, db/schema.ts,
    .deco/blocks/deco-records.json).
-   ![setup deco records](https://deco.cx/docs/reference/deco-records/setup.webp)
+   ![setup deco records](/images/reference/deco-records/setup.webp)
 4. After the installation, click on `Show diff and publish` to publish the app
    installation and database creation.
 5. Review the changed files, edit the description, and finally, click on
@@ -28,7 +28,7 @@ Follow the steps below to install it on your site or watch the video.
 
 After the publishing process is complete, you will see your database when
 accessing the "Records" menu.
-![Database view in admin panel](https://deco.cx/docs/reference/deco-records/records-view.webp)
+![Database view in admin panel](/images/reference/deco-records/records-view.webp)
 
 ## Creating Tables
 
@@ -65,7 +65,7 @@ the Database credentials section, click `Generate now`. Finally, click the icon
 to copy the credentials.
 <span>3.</span> Add the credentials to your computer's operating system
 environment variables.
-![Visualization of the generate credentials button](https://deco.cx/docs/reference/deco-records/generate-credentials.webp)
+![Visualization of the generate credentials button](/images/reference/deco-records/generate-credentials.webp)
 <span>4.</span> Run the deno task `db:setup:deps` in your terminal to install
 the necessary dependencies to perform the schema migration. You need Deno
 version 1.43.0 or higher and use the environment variable `DENO_FUTURE=1` to
@@ -83,7 +83,7 @@ deno task db:setup:deps
 see the `profiles` and `__drizzle__migrations` tables. The `drizzle__migrations`
 table is auto-generated and used by drizzle-kit to manage schema migrations.
 
-![Visualization of deco records tables](https://deco.cx/docs/reference/deco-records/records-view-tables.webp)
+![Visualization of deco records tables](/images/reference/deco-records/records-view-tables.webp)
 
 > Add the auto-generated files to a git commit and push them to the remote git
 > repository.
@@ -91,7 +91,7 @@ table is auto-generated and used by drizzle-kit to manage schema migrations.
 ## Reading and Writing Data
 
 With the `profiles` table created, we can now create a
-[section](https://deco.cx/docs/pt/concepts/section) to manage profiles, where we
+[section](https://docs.deco.cx/pt/concepts/section) to manage profiles, where we
 can list, remove, and create a profile. Create a section that will be the
 profile manager.
 

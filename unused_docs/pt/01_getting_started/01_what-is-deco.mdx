@@ -38,7 +38,7 @@ export default function HelloWorld(props: Props) {
 
 ### Como utilizar o bloco
 
-Para utilizar o bloco basta escrever um arquivo JSON com identificador único na pasta /.deco/blocks/<id-do-bloco>.json.
+Para utilizar o bloco basta escrever um arquivo JSON com identificador único na pasta `/.deco/blocks/<id-do-bloco>.json`.
 O conteudo do JSON deve conter a propriedade `__resolveType` que identifica unicamente o arquivo.
 
 ```json
@@ -66,7 +66,7 @@ export function GetAnySection({ loadingSection }: Props): Promise<string> {
 }
 ```
 
-Para referenciar este bloco hello salvo, pode ser feito através do <id-do-bloco>. Exemplo:
+Para referenciar este bloco hello salvo, pode ser feito através do `<id-do-bloco>`. Exemplo:
 ```json
 { // qualquer outro block que aceite uma Section.
   "loadingSection": { "__resolveType": "hello" } // hello, nome do arquivo, é o ID do bloco.

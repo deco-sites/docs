@@ -21,7 +21,7 @@ export interface Props {
 
 - Editor:
 
-<Frame><img src="https://deco.cx/docs/annotations/example.png" alt="Example" width="400"/></Frame>
+<Frame><img src="/images/annotations/example.png" alt="Example" width="400"/></Frame>
 
 List with all supported annotations:
 
@@ -29,7 +29,7 @@ List with all supported annotations:
 | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------- |
 | `@title`            | Receives text that will be used as the title of the label for that input in the form.                                                                                                                                                                                                                                          | `@title Number of products`                                          |
 | `@description`      | Receives text that will be used as the description in the label for that input in the form.                                                                                                                                                                                                                                    | `@description Total number of products to display in the storefront` |
-| `@format`           | Configures a field to be formatted differently. This can cause its [Widget](https://deco.cx/docs/en/developing-capabilities/section-properties/widgets) to change.                                                                                                                                                                            | `@format [Format value](#possible-values-for-format)`                |
+| `@format`           | Configures a field to be formatted differently. This can cause its [Widget](https://docs.deco.cx/en/developing-capabilities/section-properties/widgets) to change.                                                                                                                                                                            | `@format [Format value](#possible-values-for-format)`                |
 | `@hide`             | Hides this property in the Admin form. The value still remains in the JSON of the Section.                                                                                                                                                                                                                                     | `@hide true`                                                              |
 | `@ignore`           | The value and the property are completely ignored.                                                                                                                                                                                                                                                                             | `@ignore`                                                            |
 | `@maximum`          | Configures a maximum value for that field. Works on properties of type `number`. (value \<= X)                                                                                                                                                                                                                                  | `@maximum 10`                                                        |
@@ -44,26 +44,26 @@ List with all supported annotations:
 | `@minItems`         | Ensures that fields of type `array` cannot have fewer than X values.                                                                                                                                                                                                                                                           | `@minItems 2`                                                        |
 | `@default`          | Configures a default value for that field.                                                                                                                                                                                                                                                                                     | `@default Testing`                                                   |
 | `@deprecated`       | Marks a field as deprecated.                                                                                                                                                                                                                                                                                                   | `@deprecated We will remove this field in the next update`           |
-| `@options`          | Required for the operation of the [dynamic options](https://deco.cx/docs/pt/developing-capabilities/section-properties/widgets#dynamic-options), [button group](https://deco.cx/docs/pt/developing-capabilities/section-properties/widgets#button-group) and [icon select](https://deco.cx/docs/pt/developing-capabilities/section-properties/widgets#icon-select) widgets. | `@options deco-sites/mystore/loaders/products.ts`                    |
+| `@options`          | Required for the operation of the [dynamic options](https://docs.deco.cx/pt/developing-capabilities/section-properties/widgets#dynamic-options), [button group](https://docs.deco.cx/pt/developing-capabilities/section-properties/widgets#button-group) and [icon select](https://docs.deco.cx/pt/developing-capabilities/section-properties/widgets#icon-select) widgets. | `@options deco-sites/mystore/loaders/products.ts`                    |
 | `@language`         | Required for the Widget `@format code`, used to define the language on editor.                                                                                                                                                                                                                                                 | `@language javascript`                                               |
 
 ## Possible Values for `@format`
 
 - `@format color`: Renders a color input instead of a text input.
 
-<Frame><img src="https://deco.cx/docs/annotations/color2.png" alt="@format color example" width="300"/></Frame>
+<Frame><img src="/images/annotations/color2.png" alt="@format color example" width="300"/></Frame>
 
 - `@format date`: Renders a date input instead of a text input.
 
-<Frame><img src="https://deco.cx/docs/annotations/date.png" alt="@format date example" width="300"/></Frame>
+<Frame><img src="/images/annotations/date.png" alt="@format date example" width="300"/></Frame>
 
 - `@format html`: Renders an input that opens a WYSIWYG editor for advanced HTML
   text editing.
 
-<Frame><img src="https://deco.cx/docs/widgets/html-open.png" alt="@format html example" width="300"/></Frame>
+<Frame><img src="/images/widgets/html-open.png" alt="@format html example" width="300"/></Frame>
 
 - `@format dynamic-options`:
-  [Read about it here](https://deco.cx/docs/en/developing-capabilities/section-properties/widgets#dynamic-options).
+  [Read about it here](https://docs.deco.cx/en/developing-capabilities/section-properties/widgets#dynamic-options).
 
 # Templates in Annotations with Mustache
 
@@ -87,4 +87,4 @@ export interface Props {
 
 Deco Admin result:
 
-<Frame><img src="https://deco.cx/docs/annotations/mustache.png" alt="mustache example" width="300"/></Frame>
+<Frame><img src="/images/annotations/mustache.png" alt="mustache example" width="300"/></Frame>

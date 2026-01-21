@@ -17,8 +17,8 @@ since: 1.0.0
 
 ## Reducing the size of the props JSON sent to islands
 
-When loading data from external APIs using [Loaders](https://deco.cx/docs/en/concepts/loader)
-and sending them to the [Section](https://deco.cx/docs/en/concepts/section), it is possible
+When loading data from external APIs using [Loaders](https://docs.deco.cx/en/concepts/loader)
+and sending them to the [Section](https://docs.deco.cx/en/concepts/section), it is possible
 that the size of the payload negatively impacts the performance of the site. The
 impact occurs both in the initial loading time and in the
 [hydration](https://blog.saeloun.com/2021/12/16/hydration/), where the page is
@@ -26,7 +26,7 @@ impact occurs both in the initial loading time and in the
 `useSignal`, etc...). You can view the size of the final JSON through the
 **Performance** tab of one of your site pages in the Deco CMS.
 
-<Frame><img width="640" alt="Performance information of a page" src="https://deco.cx/docs/performance/performance-tab.png"/></Frame>
+<Frame><img width="640" alt="Performance information of a page" src="/images/performance/performance-tab.png"/></Frame>
 
 When the JSON size exceeds ~500kb, it is likely that the UI does not need the
 complete data, but rather some part of it (or a computation based on other

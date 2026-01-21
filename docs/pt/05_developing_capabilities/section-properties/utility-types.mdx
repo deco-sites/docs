@@ -4,10 +4,10 @@ description: Sections podem ser codificadas por desenvolvedores e configuradas p
 
 ## Leitura sugerida
 
-- [Conceitos: Section](https://deco.cx/docs/pt/concepts/section)
-- [Codificando uma nova Section](https://deco.cx/docs/pt/developing-guide/hello-world)
+- [Conceitos: Section](https://docs.deco.cx/pt/concepts/section)
+- [Codificando uma nova Section](https://docs.deco.cx/pt/developing-guide/hello-world)
 
-Você já sabe que é fácil criar uma [Section](https://deco.cx/docs/pt/concepts/section)
+Você já sabe que é fácil criar uma [Section](https://docs.deco.cx/pt/concepts/section)
 configurável na _deco.cx_. Neste post vamos detalhar todas as formas possíveis
 de declarar os types das `props` e como isso afeta o formulário que renderizamos
 no Admin da _deco.cx_.
@@ -47,7 +47,7 @@ export default function LatestPosts({ title }: Props) {
 
 - Como fica o editor no Admin:
 
-<Frame><img width="640" alt="Formulário da Section no Admin" src="https://deco.cx/docs/dev-capabilities/utility-types/section-form.png"/></Frame>
+<Frame><img width="640" alt="Formulário da Section no Admin" src="/images/dev-capabilities/utility-types/section-form.png"/></Frame>
 
 ## Tipos suportados
 
@@ -155,7 +155,7 @@ export interface props {
 
 - Editor:
 
-<Frame><img width="640" alt="Formulário da Section com label e descrição costumizadas" src="https://deco.cx/docs/dev-capabilities/utility-types/label-and-description.png"/></Frame>
+<Frame><img width="640" alt="Formulário da Section com label e descrição costumizadas" src="/images/dev-capabilities/utility-types/label-and-description.png"/></Frame>
 
 As tags disponíveis são os campos compatíveis com
 [JSON Schema](https://json-schema.org/), ou seja, `@title`, `@description`,
@@ -170,4 +170,4 @@ export interface props {
 
 Outros tipos de formatos válidos são: `uri`, `color`. Você pode ler mais sobre
 isso
-[na documentação de Annotations](https://deco.cx/docs/pt/developing-capabilities/section-properties/annotations).
+[na documentação de Annotations](https://docs.deco.cx/pt/developing-capabilities/section-properties/annotations).

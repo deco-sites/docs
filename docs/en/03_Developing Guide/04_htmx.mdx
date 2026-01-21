@@ -18,7 +18,7 @@ easier to build interactive web applications with less JavaScript.
 First, you need to include the HTMX library in your project. You can do this by
 installing the app HTMX to your site in the deco Admin.
 
-![HTMX installation in the deco Admin](https://deco.cx/docs/developing-guide/htmx/htmx-installation.png)
+![HTMX installation in the deco Admin](/images/developing-guide/htmx/htmx-installation.png)
 
 ## Step 2: Making the Preact version of the Counter
 
@@ -60,7 +60,7 @@ In the HTMX version, we will no longer use the `useState` hook or the `onClick`
 event. When using HTMX, we need to have one route for each UI state of the site,
 so we will make a request to the server to update the counter state.
 
-That's when the [`useSection` hook](https://deco.cx/docs/en/api-reference/use-section) comes in
+That's when the [`useSection` hook](https://docs.deco.cx/en/api-reference/use-section) comes in
 handy. This hook automatically creates routes for rendering your UI states
 without requiring developers to handle routing manually.
 
@@ -109,9 +109,9 @@ tools.
 While the Preact version updates the counter state locally, the HTMX version
 makes a request to the server to update the counter state.
 
-![HTMX request in the network tab](https://deco.cx/docs/developing-guide/htmx/htmx-network.gif)
+![HTMX request in the network tab](/images/developing-guide/htmx/htmx-network.gif)
 
-![Preact request in the network tab](https://deco.cx/docs/developing-guide/htmx/preact-network.gif)
+![Preact request in the network tab](/images/developing-guide/htmx/preact-network.gif)
 
 ## Conclusion
 
@@ -121,4 +121,4 @@ you need to write and maintain, making your codebase cleaner and more
 manageable.
 
 For more information, check out the [HTMX documentation](https://htmx.org/docs/)
-and [deco.cx documentation](https://deco.cx/docs/).
+and [deco.cx documentation](/images/).
