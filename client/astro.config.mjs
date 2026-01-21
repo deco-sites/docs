@@ -37,13 +37,11 @@ function patchCsrRedirect() {
 
 // https://astro.build/config
 export default defineConfig({
-  root: "client",
   server: {
     port: 4000,
   },
   redirects: {},
-  outDir: "dist/client/",
-  srcDir: "client/src",
+  outDir: "../dist/client",
   i18n: {
     locales: ["en", "pt-br"],
     defaultLocale: "en",
