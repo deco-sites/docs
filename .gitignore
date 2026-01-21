@@ -1,7 +1,8 @@
-!docs/*
-
-/node_modules
-
-.cursorindexingignore
-.specstory/
-docs/.DS_Store
+node_modules/
+dist/
+.astro/
+.DS_Store
+*.log
+.env
+.env.*
+backup/

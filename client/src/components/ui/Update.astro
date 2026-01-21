@@ -1,0 +1,18 @@
+---
+interface Props {
+  label?: string;
+}
+
+const { label } = Astro.props;
+---
+
+<div class="update-section my-8 border-l-4 border-[var(--border-color)] pl-6">
+  {label && (
+    <div class="text-sm font-semibold text-[var(--text-secondary)] mb-4 uppercase tracking-wider">
+      {label}
+    </div>
+  )}
+  <div class="update-content prose prose-slate dark:prose-invert max-w-none">
+    <slot />
+  </div>
+</div>
