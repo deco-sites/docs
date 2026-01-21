@@ -44,3 +44,4 @@ The documentation is organized in the following sections:
 
 - [Deco Platform](https://deco.cx)
 - [GitHub](https://github.com/deco-cx)
+
