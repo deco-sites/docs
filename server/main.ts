@@ -1,19 +1,13 @@
 import { withRuntime } from "@decocms/runtime";
 import { createAssetHandler } from "@decocms/runtime/asset-server";
 
-interface Env {
-  ASSETS?: {
-    fetch: (req: Request) => Promise<Response>;
-  };
-}
-
 const rootRedirects: Record<string, string> = {
-  "/": "/en/introduction",
-  "/en": "/en/introduction",
-  "/pt-br": "/pt-br/introduction",
+  "/": "/en/getting-started/overview",
+  "/en": "/en/getting-started/overview",
+  "/pt-br": "/pt-br/getting-started/overview",
 };
 
-const runtime = withRuntime<Env>({
+const runtime = withRuntime({
   fetch: async (req, env) => {
     const url = new URL(req.url);
     if (rootRedirects[url.pathname]) {
@@ -23,15 +17,11 @@ const runtime = withRuntime<Env>({
       );
     }
 
-    const assetsHandler =
-      env.ASSETS?.fetch ??
-      createAssetHandler({
-        env: "development",
-      });
+    const assetsHandler = createAssetHandler({ 
+      env: process.env.NODE_ENV as "development" | "production" | "test",
+    });
 
-    return (
-      (await assetsHandler(req)) ?? new Response("Not found", { status: 404 })
-    );
+    return (await assetsHandler(req)) ?? new Response("Not found", { status: 404 });
   },
 });
 
