@@ -1,7 +1,7 @@
 {
-  "name": "@decocms/docs",
+  "name": "@decocx/docs",
   "version": "1.0.0",
-  "description": "DecoCMS documentation",
+  "description": "Deco Cx documentation",
   "scripts": {
     "dev": "concurrently \"bun run dev:client\" \"NODE_ENV=development bun --hot run server/main.ts\"",
     "dev:client": "cd client && astro dev",
