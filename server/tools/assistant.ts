@@ -37,10 +37,12 @@ export const assistantTool = createTool({
     });
 
     const filter = language ? { language } : {};
-    const { data: docs, error } = await supabase.rpc("match_documents", {
+    const { data: docs, error } = await supabase.rpc("hybrid_search", {
+      query_text: question,
       query_embedding: embedding,
-      match_threshold: 0.5,
       match_count: 5,
+      rrf_k: 60,
+      semantic_weight: 0.5,
       filter_metadata: filter,
     });
 

@@ -25,7 +25,8 @@ async function main() {
 
   console.log("Results:");
   for (const r of searchResult.results) {
-    console.log(`\n- ${r.title} (similarity: ${r.similarity.toFixed(2)})`);
+    console.log(`\n- ${r.title}`);
+    console.log(`  Similarity: ${r.similarity?.toFixed(3)} | FTS: ${r.ftsRank?.toFixed(3)} | Hybrid: ${r.hybridScore?.toFixed(4)}`);
     console.log(`  Source: ${r.source}`);
     console.log(`  ${r.content.slice(0, 100)}...`);
   }
