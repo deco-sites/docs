@@ -1,0 +1,33 @@
+name: Index Documentation
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'client/src/content/**/*.mdx'
+
+  workflow_dispatch:
+
+jobs:
+  index-docs:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Index documentation
+        run: bun run index-docs
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
