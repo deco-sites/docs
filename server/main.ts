@@ -1,7 +1,12 @@
-import { withRuntime } from "@decocms/runtime";
+import { withRuntime, type DefaultEnv } from "@decocms/runtime";
 import { createAssetHandler } from "@decocms/runtime/asset-server";
+import { z } from "zod";
 import { searchDocsTool } from "./tools/search-docs";
 import { assistantTool } from "./tools/assistant";
+
+const StateSchema = z.object({});
+
+type Env = DefaultEnv<typeof StateSchema>;
 
 const rootRedirects: Record<string, string> = {
   "/": "/en/getting-started/overview",
