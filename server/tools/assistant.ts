@@ -57,7 +57,7 @@ export const assistantTool = createTool({
       system: SYSTEM_PROMPT,
       prompt: `Context from documentation:\n\n${docsContext}\n\n---\n\nQuestion: ${question}`,
       temperature: 0.3,
-      maxTokens: 1000,
+      maxOutputTokens: 1000,
     });
 
     const answer = text || "Sorry, I couldn't generate an answer.";
