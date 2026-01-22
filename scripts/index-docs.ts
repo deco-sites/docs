@@ -37,6 +37,18 @@ interface DocChunk {
   };
 }
 
+// Contextual Chunking: adds document context to chunk for better embeddings
+function createContextualText(chunk: DocChunk): string {
+  const { title, section, description } = chunk.metadata;
+
+  const parts = [`Documento: ${title}`];
+  if (section) parts.push(`Categoria: ${section}`);
+  if (description) parts.push(`Descrição: ${description}`);
+
+  const context = parts.join(" | ");
+  return `${context}\n\n${chunk.content}`;
+}
+
 function parseFrontmatter(content: string): { frontmatter: Frontmatter; body: string } {
   const match = content.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
   if (!match) return { frontmatter: {}, body: content };
@@ -139,11 +151,13 @@ async function indexDocs(): Promise<void> {
       // Process in batches
       for (let i = 0; i < chunks.length; i += BATCH_SIZE) {
         const batch = chunks.slice(i, i + BATCH_SIZE);
-        const texts = batch.map((c) => c.content);
+
+        // Contextual Chunking: embed with context, store without
+        const textsWithContext = batch.map(createContextualText);
 
         const { embeddings } = await embedMany({
           model: embeddingModel(),
-          values: texts,
+          values: textsWithContext,
         });
 
         await insertChunks(batch, embeddings);

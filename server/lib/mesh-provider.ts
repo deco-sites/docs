@@ -20,5 +20,5 @@ export const chatModel = (modelId: string = "openai/gpt-4o-mini") =>
   mesh.chatModel(`${CONNECTION_ID}:${modelId}`);
 
 
-export const embeddingModel = (modelId: string = "text-embedding-3-small") =>
+export const embeddingModel = (modelId: string = "text-embedding-3-large") =>
   openai.textEmbeddingModel(modelId);
