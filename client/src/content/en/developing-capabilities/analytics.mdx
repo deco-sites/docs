@@ -1,31 +1,27 @@
 ---
 title: "Analytics"
-description: Enviando eventos para o dataLayer
+description: Sending events to the dataLayer
 since: 1.0.0
 ---
 
-## Enviando eventos para o dataLayer
+## Sending events to the dataLayer
 
-O `dataLayer` é a camada de dados utilizada pelo Google Tag Manager ou Google
-Tag (utilizado pelo Google Analytics) para gerenciar os eventos dos pixels que
-estão configurados na tag.
+The `dataLayer` is the data layer used by Google Tag Manager or Google Tag (used by Google Analytics) to manage the events of the pixels configured in the tag.
 
-Em um projeto deco.cx existe uma
+In a deco.cx project there is a
 [sdk/analytics.ts](https://github.com/deco-sites/fashion/blob/main/sdk/analytics.tsx)
-que contem a função **sendEvents**, que recebe um objeto do tipo
+that contains the **sendEvents** function, which receives an object of type
 [AnalyticsEvent](https://github.com/deco-cx/apps/blob/3e337b6b2996d7ecd72db34174896638c92f8811/commerce/types.ts#L754)
-e adiciona o dado no dataLayer. Neste mesmo arquivo, também contem 2
-componentes, que recebe uma propriedade `event` do tipo AnalyticsEvent e envia o
-evento para o dataLayer. O **SendEventOnLoad** dispara o evento quando ocorrer o
-evento de `load` do navegador, ele é útil para enviar os eventos, cujo nome tem
-padrão `view_*`. Já o **SendEventOnClick** dispara o evento quando o elemento
-for clicado.
+and adds the data to the dataLayer. This same file also contains 2 components,
+which receive an `event` property of type AnalyticsEvent and send the event to
+the dataLayer. **SendEventOnLoad** triggers the event when the browser's `load`
+event occurs, it is useful for sending events whose name has the pattern
+`view_*`. **SendEventOnClick** triggers the event when the element is clicked.
 
-Exemplos:
+Examples:
 
-1. Enviando evento de `add_to_cart` quando o usuário clicar no botão de
-   adicionar produto ao Carrinho. Este componente deve ser utilizado dentro de
-   uma Island.
+1. Sending an `add_to_cart` event when the user clicks the add product to cart
+   button. This component must be used inside an Island.
 
 ```tsx
 import { sendEvent } from "$store/sdk/analytics.tsx";
@@ -62,8 +58,8 @@ function AddToCart({ name, sku, id, price, discount, currency }: Props) {
 }
 ```
 
-2. Enviando evento de `view_item` na página de produto ao carregar a página,
-   utilizando SendEventOnLoad.
+2. Sending a `view_item` event on the product page when the page loads, using
+   SendEventOnLoad.
 
 ```tsx
 import type { Product } from "apps/commerce/types.ts";
@@ -97,9 +93,9 @@ function ProductDetails({ product, currency }: Props) {
 }
 ```
 
-3. Enviando evento de `select_item` ao clicar num link de produto, utilizando
-   SendEventOnClick. Utilizar o SendEventOnClick é útil quando o componente é
-   renderizado no servidor.
+3. Sending a `select_item` event when clicking on a product link, using
+   SendEventOnClick. Using SendEventOnClick is useful when the component is
+   rendered on the server.
 
 ```tsx
 import type { Product } from "apps/commerce/types.ts";
@@ -147,14 +143,13 @@ function ProductCard({ product, itemListName, itemListId }: Props) {
 }
 ```
 
-## Customizando função de sendEvents
+## Customizing the sendEvents function
 
-É possível extender a função `sendEvents` para disparar eventos para outras
-camadas de dados diferente do `dataLayer`. No arquivo `sdk/analytics.tsx` do seu
-projeto deco, você pode customizar a função `sendEvent` adicionando novos
-integrações.
+You can extend the `sendEvents` function to trigger events to other data layers
+besides `dataLayer`. In your deco project's `sdk/analytics.tsx` file, you can
+customize the `sendEvent` function by adding new integrations.
 
-Exemplo:
+Example:
 
 ```diff
 export const sendEvent = <E extends AnalyticsEvent>(event: E) => {
@@ -177,8 +172,8 @@ export const sendEvent = <E extends AnalyticsEvent>(event: E) => {
 };
 ```
 
-## Integrando dado do carrinho com o tipo AnalyticsItem
+## Integrating cart data with the AnalyticsItem type
 
-Para integrar um novo modelo de dados de carrinho, adicione um mapeador de dados
-no hook de `useCart.ts` da plataforma que está implementando. Exemplo do
+To integrate a new cart data model, add a data mapper in the `useCart.ts` hook
+of the platform you are implementing. Example of
 [VTEX useCart](https://github.com/deco-cx/apps/blob/3e337b6b2996d7ecd72db34174896638c92f8811/vtex/hooks/useCart.ts#L1).

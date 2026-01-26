@@ -1,0 +1,263 @@
+---
+title: "Deco Records"
+description: Deco records is a production-ready sqlite database, easy to install, located close to the user.
+since: 1.0.0
+---
+
+## Installing deco records on your site
+
+> To start the installation process, create a new environment in your site's
+> deco admin, or reset the environment you are using, because a publish will be
+> done at the end of this step.
+
+Follow the step-by-step below to install on your site.
+
+1. Enter your site's admin on deco
+2. In the sidebar click on the records menu
+3. Then click on `Setup Deco Records`, wait for the app installation process and
+   database creation. In this step, some files on your site will be created and
+   edited (deno.json, .gitignore, manifest.gen.ts, apps/deco/records.ts,
+   drizzle.config.ts, db/schema.ts, .deco/blocks/deco-records.json)
+   ![setup deco records](/images/reference/deco-records/setup.webp)
+4. After installation, click on `Show diff and publish` to publish your app
+   installation and database creation.
+5. Review the changed files, edit the description and finally click on
+   `Publish now`.
+
+After the publishing process is complete, when accessing the records menu, you
+will see your database visualization.
+![Database visualization in admin](/images/reference/deco-records/records-view.webp)
+
+## Creating tables
+
+> You will need to have the files that were created during the deco records
+> installation on your computer. If necessary, do a git pull from your remote
+> project.
+
+Follow the step-by-step below to create new tables in your database. In this
+process, [drizzle-orm](https://orm.drizzle.team/) and
+[drizzle-kit](https://orm.drizzle.team/) will be used to create tables and
+manage them in your database through
+[schema migrations](https://medium.com/@joelrodrigues/o-que-s%C3%A3o-database-migrations-f817448870a2).
+In the following example, a table named profiles will be created with columns:
+`id`, `name` and `email`.
+
+{/* Use span due to a bug in markdown parser deno-gfm */}
+
+<span>1.</span> Edit the `db/schema.ts` file to create tables.
+
+```ts
+import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+
+export const profiles = sqliteTable("profiles", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull(),
+  email: text("email"),
+});
+```
+
+<span>2.</span> Enter your site's admin, click on the `Settings` menu, then in
+the Database credentials section, click on `Generate now`. Finally, click on the
+icon to copy the credentials.
+
+<span>3.</span> Add the credentials to the environment variables of your
+computer's operating system.
+![View of the generate credentials button](/images/reference/deco-records/generate-credentials.webp)
+
+<span>4.</span> Run the deno task `db:setup:deps` in your terminal to install the
+dependencies needed to perform the schema migration. Deno version 1.43.0 or
+higher is required and you need to use the environment variable `DENO_FUTURE=1`
+to enable npm module installation.
+
+<span>5.</span> Run the deno task `db:schema:update` to create the sql files
+responsible for schema migration and apply them to the database. Run this
+command whenever you make changes to your tables to generate new schema
+migrations.
+
+```sh
+deno task db:setup:deps
+```
+
+<span>6.</span> In the records menu of your site, in the deco admin, you will
+have the `profiles` and `__drizzle__migrations` tables. The drizzle__migrations
+table is auto-generated and used by drizzle-kit to manage schema migrations.
+![View of deco records tables](/images/reference/deco-records/records-view-tables.webp)
+
+> Add the auto-generated files in a git commit and push to the remote git.
+
+## Reading and writing data
+
+With the profiles table created, we can now create a
+[section](https://docs.deco.cx/en/concepts/section) to manage profiles, which
+lists, removes and creates a profile.
+
+Create a section that will be the profile manager.
+
+```ts
+import { eq } from "drizzle-orm";
+import { SectionProps } from "deco/types.ts";
+import type { AppContext } from "site/apps/deco/records.ts";
+import { profiles } from "site/db/schema.ts";
+import { useSection } from "deco/hooks/useSection.ts";
+import Icon from "site/components/ui/Icon.tsx";
+
+type ProfileInsert = typeof profiles.$inferInsert;
+type ProfilesKeys = keyof ProfileInsert;
+type ProfileValue<K extends keyof ProfileInsert> = ProfileInsert[K];
+
+/**
+ * Checks if `key` is a valid key of the profile type.
+ */
+const isProfilePropKey = (
+  key: string,
+): key is ProfilesKeys => key in profiles.$inferInsert;
+
+/**
+ * Checks if `value` is of the same type as profiles[key]
+ */
+const isProfilePropType = (
+  key: ProfilesKeys,
+  value: unknown,
+): value is ProfileValue<typeof key> =>
+  typeof value === typeof profiles.$inferInsert[key];
+
+interface Props {
+  mode?: "create" | "delete";
+  email?: string;
+}
+
+export async function loader(
+  { mode, email }: Props,
+  req: Request,
+  { invoke }: AppContext,
+) {
+  // Drizzle ORM client
+  const drizzle = await invoke.records.loaders.drizzle();
+
+  // If mode is create and the request has a body, then create a new profile
+  if (mode === "create" && req.body) {
+    const newProfile: Partial<typeof profiles.$inferInsert> = {};
+    const formData = await req.formData();
+    formData.forEach((value, key) =>
+      isProfilePropKey(key) &&
+      isProfilePropType(key, value) &&
+      (newProfile[key] = value as any)
+    );
+
+    // Insert newProfile into the database.
+    await drizzle.insert(profiles).values(
+      newProfile as typeof profiles.$inferInsert,
+    );
+  } // If mode is delete and email is defined and not empty, then remove all profiles with this email.
+  else if (mode === "delete" && email) {
+    await drizzle.delete(profiles).where(eq(profiles.email, email));
+  }
+
+  // Select all profiles from the database, bringing only email and name.
+  const profilesData = await drizzle.select({
+    email: profiles.email,
+    name: profiles.name,
+  }).from(profiles);
+  return { profiles: profilesData };
+}
+
+export default function ManageProfiles(
+  { profiles = [] }: SectionProps<typeof loader>,
+) {
+  // Section url with mode = create property, will be used for form submit and new profile creation.
+  const createUrl = useSection<Props>({
+    props: { mode: "create" },
+  });
+  return (
+    <>
+      <div>
+        <form
+          hx-post={createUrl}
+          hx-trigger="click"
+          hx-target="closest section"
+          hx-swap="outerHTML"
+          class="p-2 flex flex-col gap-2"
+        >
+          <div class="flex gap-2">
+            <label for="name">Name</label>
+            <input
+              // name property of profiles
+              name="name"
+              id="name"
+              required
+              class="border border-gray-300 rounded"
+            />
+          </div>
+
+          <div class="flex gap-2">
+            <label for="description">email</label>
+            <input
+              // email property of profiles
+              name="email"
+              id="email"
+              required
+              class="border border-gray-300 rounded"
+            />
+          </div>
+
+          <div>
+            <button type="submit">Create</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="divide-y divide-gray-300 p-2 w-fit">
+        <h3>Members List</h3>
+        {profiles.map((profile) => {
+          // Section url with mode = delete property and email of the profile to be removed, will be used for form submit and profile removal.
+          const profileDeleteUrl = useSection<Props>({
+            props: { mode: "delete", email: profile.email ?? "" },
+          });
+          return (
+            <div class="flex gap-2 items-center">
+              <span>{profile.name}</span>
+              <span>{profile.email}</span>
+              <form
+                hx-post={profileDeleteUrl}
+                hx-trigger="click"
+                hx-target="closest section"
+                hx-swap="outerHTML"
+                class="w-4 h-4"
+              >
+                <button type="submit" class="w-4 h-4">
+                  <Icon id="Trash" size={16} />
+                </button>
+              </form>
+            </div>
+          );
+        })}
+      </div>
+    </>
+  );
+}
+```
+
+In the previous example, the inline loader uses the `drizzle` client, which is
+provided by the records app, and queries the database, inserts and removes
+profiles.
+
+## Developing locally
+
+To develop locally you need to have the database access credentials, which can
+be created in your site's admin on deco. After adding the environment variables
+provided by the admin, run the deno task `db:pull:prod` to dump your database
+and then insert it into the local database in the `sqlite.db` file.
+
+```sh
+deno task db:pull:prod
+```
+
+To access the deco records database during development, you need to have the
+credentials in the environment variables, which can be created in the deco
+admin. In addition to the credentials, you need a new environment variable
+called `USE_PRODUCTION_DB` with value `1`.
+
+### Reference links
+
+- [drizzle-orm docs](https://orm.drizzle.team/docs/overview)
+- [schema migrations](https://medium.com/@joelrodrigues/o-que-s%C3%A3o-database-migrations-f817448870a2)
