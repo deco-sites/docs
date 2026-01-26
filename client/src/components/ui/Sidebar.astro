@@ -80,27 +80,27 @@ const fileOrderBySection: Record<string, string[]> = {
   "cms-capabilities": ["home"],
   "developing-guide": [
     "setup",
-    "hello-world",
     "editable-sections",
+    "hello-world",
+    "htmx",
     "fetching-data",
     "creating-loaders",
-    "htmx",
-    "go-live-ab-testing",
     "examples",
+    "go-live-ab-testing",
   ],
   "concepts": [
-    "block",
-    "section",
-    "loader",
     "action",
-    "matcher",
-    "segment",
     "app",
+    "block",
+    "loader",
+    "matcher",
+    "section",
+    "segment",
   ],
   "developing-capabilities": [
-    "loaders",
     "analytics",
     "deco-records",
+    "loaders",
     "manage-block-access",
     "modifying-status",
     "troubleshooting",
@@ -109,37 +109,66 @@ const fileOrderBySection: Record<string, string[]> = {
   "performance": [
     "why",
     "guide",
-    "islands",
     "loaders",
-    "caching-data-loaders",
-    "edge-async-render",
     "lazy-3rd-party-scripts",
+    "islands",
+    "edge-async-render",
   ],
   "sdk": ["headless-cms", "ab-test", "feature-flags"],
   "api-reference": ["invoke", "use-script", "use-section"],
   "self-host": ["architecture", "envs", "site"],
   "changelog": ["overview"],
+  // developing-capabilities subfolders
+  "apps": ["ab-test", "creating-an-app", "making-an-app-installable"],
+  "blocks": ["exporting-default-props"],
+  "interactive-sections": ["partial"],
+  "islands": ["actions", "fetching-data-client"],
+  "section-properties": ["annotations", "standard-data-types", "using-secrets", "utility-types", "widgets"],
+  "sections": ["accept-a-section", "error-fallback", "loading-fallback", "redirecting-users"],
 };
 
 // Subsection order within sections
 const subsectionOrder: Record<string, string[]> = {
   "cms-capabilities": ["content", "advanced", "management"],
   "developing-capabilities": [
-    "section-properties",
-    "sections",
+    "apps",
     "blocks",
     "interactive-sections",
     "islands",
-    "apps",
+    "section-properties",
+    "sections",
   ],
   "performance": ["medias"],
   "getting-started": ["custom-domains"],
 };
 
+// Combined order for sections where files and folders are interleaved
+const combinedOrder: Record<string, string[]> = {
+  "getting-started": ["overview", "creating-a-site", "creating-a-new-page", "changes-and-publishing", "adding-an-app", "custom-domains", "gtm"],
+  "performance": ["why", "guide", "medias", "loaders", "lazy-3rd-party-scripts", "islands", "edge-async-render"],
+};
+
+// Sections where files and folders should be mixed (not files-first)
+const mixedAlphabeticalSections = ["developing-capabilities", "performance"];
+
 function sortTree(nodes: TreeNode[], parentPath?: string): TreeNode[] {
   const sorted = nodes.sort((a, b) => {
-    // Sort files before folders at root level only
-    if (!parentPath && a.type !== b.type) {
+    // Check for combined order first (handles interleaved files and folders)
+    if (parentPath && combinedOrder[parentPath]) {
+      const order = combinedOrder[parentPath];
+      const aIndex = order.indexOf(a.name);
+      const bIndex = order.indexOf(b.name);
+      if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex;
+      if (aIndex !== -1) return -1;
+      if (bIndex !== -1) return 1;
+      return a.name.localeCompare(b.name);
+    }
+
+    // In some sections, files and folders are mixed alphabetically
+    const shouldMixAlphabetically = parentPath && mixedAlphabeticalSections.includes(parentPath);
+
+    // Sort files before folders (except in mixed alphabetical sections)
+    if (!shouldMixAlphabetically && a.type !== b.type) {
       return a.type === "file" ? -1 : 1;
     }
 
