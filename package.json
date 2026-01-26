@@ -6,7 +6,7 @@
     "dev": "concurrently \"bun run dev:client\" \"NODE_ENV=development bun --hot run server/main.ts\"",
     "dev:client": "cd client && astro dev",
     "dev:tunnel": "deco link -p 3000 -- bun run dev",
-    "build": "bun run build:client && bun run build:server:wrangler",
+    "build": "bun run build:client && bun run build:server:bun",
     "build:client": "cd client && astro build",
     "check": "cd client && astro sync > /dev/null 2>&1 && tsc --noEmit",
     "build:server:bun": "NODE_ENV=production bun build server/main.ts --target=bun --outfile=dist/server/main.js",
