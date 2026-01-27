@@ -1,5 +1,5 @@
 import { withRuntime, type DefaultEnv } from "@decocms/runtime";
-import { createAssetHandler } from "@decocms/runtime/asset-server";
+import { createAssetHandler, resolveClientDir } from "@decocms/runtime/asset-server";
 import { z } from "zod";
 import { searchDocsTool } from "./tools/search-docs";
 import { assistantTool } from "./tools/assistant";
@@ -25,8 +25,9 @@ const runtime = withRuntime({
       );
     }
 
-    const assetsHandler = createAssetHandler({ 
+    const assetsHandler = createAssetHandler({
       env: process.env.NODE_ENV as "development" | "production" | "test",
+      clientDir: resolveClientDir(import.meta.url, "../client"),
     });
 
     return (await assetsHandler(req)) ?? new Response("Not found", { status: 404 });
