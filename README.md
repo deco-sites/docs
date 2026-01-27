@@ -4,6 +4,8 @@ Official documentation for the [Deco](https://deco.cx) platform.
 
 ## Development
 
+
+
 ```bash
 # Install dependencies
 bun install
