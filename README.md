@@ -1,5 +1,5 @@
 # Deco Docs
-
+ 
 Official documentation for the [Deco](https://deco.cx) platform.
 
 ## Development
