@@ -19,7 +19,7 @@ export const assistantTool = createTool({
   description: "Ask questions about deco.cx and get AI-generated answers based on the documentation.",
   inputSchema: z.object({
     question: z.string().describe("The question to ask about deco.cx"),
-    language: z.enum(["en", "pt-br"]).optional().describe("Preferred language for docs (optional)"),
+    language: z.enum(["en", "pt"]).optional().describe("Preferred language for docs (optional)"),
   }),
   outputSchema: z.object({
     answer: z.string(),

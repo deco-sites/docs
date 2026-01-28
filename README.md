@@ -19,7 +19,7 @@ The server will start at `http://localhost:3000`.
 ```
 ├── client/src/content/
 │   ├── en/          # English documentation
-│   └── pt-br/       # Portuguese documentation
+│   └── pt/          # Portuguese documentation
 ├── server/          # Hono server
 └── shared/          # Shared code
 ```

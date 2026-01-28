@@ -1,6 +1,6 @@
 export const languages = {
   en: "English",
-  "pt-br": "Português (BR)",
+  pt: "Português (BR)",
 };
 
 export const defaultLang = "en";
@@ -40,7 +40,7 @@ export const ui = {
     "hero.features.agents": "Unlimited Agents",
     "hero.features.tools": "Powerful Tools",
   },
-  "pt-br": {
+  pt: {
     "head.title": "Deco - Documentação",
     "sidebar.section.getting-started": "Comece Agora",
     "sidebar.section.cms-capabilities": "Funcionalidades do CMS",
