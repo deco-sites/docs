@@ -19,7 +19,7 @@ async function main() {
 
   const searchResult = await callTool("SEARCH_DOCS", {
     query: "como criar section",
-    language: "pt-br",
+    language: "pt",
     limit: 3,
   });
 
@@ -35,7 +35,7 @@ async function main() {
 
   const assistantResult = await callTool("DOCS_ASSISTANT", {
     question: "O que é uma section no deco.cx?",
-    language: "pt-br",
+    language: "pt",
   });
 
   console.log("Answer:", assistantResult.answer);

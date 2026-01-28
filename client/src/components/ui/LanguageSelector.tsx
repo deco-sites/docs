@@ -9,7 +9,7 @@ interface LanguageSelectorProps {
 export function LanguageSelector({ locale, className }: LanguageSelectorProps) {
   const languageOptions = [
     { value: "en", label: "English" },
-    { value: "pt-br", label: "Português" },
+    { value: "pt", label: "Português" },
   ];
 
   const handleChange = (event: React.ChangeEvent<HTMLSelectElement>) => {

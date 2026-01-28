@@ -20,7 +20,7 @@ function patchCsrRedirect() {
         const filesToDelete = [
           "index.html",
           "en/index.html",
-          "pt-br/index.html",
+          "pt/index.html",
         ];
         for (const file of filesToDelete) {
           try {
@@ -43,7 +43,7 @@ export default defineConfig({
   redirects: {},
   outDir: "../dist/client",
   i18n: {
-    locales: ["en", "pt-br"],
+    locales: ["en", "pt"],
     defaultLocale: "en",
     routing: {
       prefixDefaultLocale: true,

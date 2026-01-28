@@ -11,7 +11,7 @@ type Env = DefaultEnv<typeof StateSchema>;
 const rootRedirects: Record<string, string> = {
   "/": "/en/getting-started/overview",
   "/en": "/en/getting-started/overview",
-  "/pt-br": "/pt-br/getting-started/overview",
+  "/pt": "/pt/getting-started/overview",
 };
 
 const clientDir = resolveClientDir(import.meta.url, "../client");
@@ -20,10 +20,17 @@ const runtime = withRuntime({
   tools: [() => searchDocsTool, () => assistantTool],
   fetch: async (req, env) => {
     const url = new URL(req.url);
+
+    // Redirect old pt-br URLs to pt (301 permanent)
+    if (url.pathname.startsWith("/pt-br")) {
+      const newPath = url.pathname.replace("/pt-br", "/pt");
+      return Response.redirect(new URL(newPath + url.search, req.url), 301);
+    }
+
     if (rootRedirects[url.pathname]) {
       return Response.redirect(
         new URL(rootRedirects[url.pathname], req.url),
-        302,
+        301,
       );
     }
 

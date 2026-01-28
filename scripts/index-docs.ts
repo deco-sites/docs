@@ -73,7 +73,7 @@ function parseFrontmatter(content: string): { frontmatter: Frontmatter; body: st
 }
 
 function extractLanguage(path: string): string {
-  if (path.includes("/pt-br/")) return "pt-br";
+  if (path.includes("/pt/")) return "pt";
   if (path.includes("/en/")) return "en";
   return "unknown";
 }
