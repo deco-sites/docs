@@ -39,6 +39,8 @@ export const ui = {
     "hero.features.integrations": "100+ Integrations",
     "hero.features.agents": "Unlimited Agents",
     "hero.features.tools": "Powerful Tools",
+    "search.placeholder": "Search docs...",
+    "search.noResults": "No results found.",
   },
   pt: {
     "head.title": "Deco - Documentação",
@@ -73,5 +75,7 @@ export const ui = {
     "hero.features.integrations": "100+ Integrações",
     "hero.features.agents": "Agentes Ilimitados",
     "hero.features.tools": "Ferramentas Poderosas",
+    "search.placeholder": "Pesquisar docs...",
+    "search.noResults": "Nenhum resultado encontrado.",
   },
 } as const;

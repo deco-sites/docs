@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Logo } from "../../components/atoms/Logo.tsx";
 import { Icon } from "../../components/atoms/Icon.tsx";
 import { LanguageSelector } from "./LanguageSelector.tsx";
+import { SearchModal } from "./SearchModal.tsx";
 import { ThemeToggle } from "./ThemeToggle.tsx";
 
 interface DocData {
@@ -315,6 +316,11 @@ export default function Sidebar({ tree, locale, translations }: SidebarProps) {
       {/* Language Select - hidden on mobile */}
       <div className="hidden lg:block px-4 lg:px-8 py-4 shrink-0">
         <LanguageSelector locale={locale} />
+      </div>
+
+      {/* Search - hidden on mobile */}
+      <div className="hidden lg:block px-4 lg:px-8 pb-2 shrink-0">
+        <SearchModal locale={locale} translations={translations} variant="sidebar" />
       </div>
 
       {/* Content */}

@@ -1,8 +1,10 @@
 // @ts-check
 import { defineConfig } from "astro/config";
 import tailwindcss from "@tailwindcss/vite";
-import { unlink } from "node:fs/promises";
+import { unlink, readFile } from "node:fs/promises";
 import { join } from "node:path";
+import { existsSync } from "node:fs";
+import { execSync } from "node:child_process";
 
 import mdx from "@astrojs/mdx";
 
@@ -35,6 +37,53 @@ function patchCsrRedirect() {
   };
 }
 
+/**
+ * Runs Pagefind after build and serves the index during dev.
+ * @returns {import("astro").AstroIntegration}
+ */
+function pagefindIntegration() {
+  const pagefindDir = join(import.meta.dirname, "..", "dist", "client", "pagefind");
+
+  return {
+    name: "pagefind-index",
+    hooks: {
+      "astro:config:setup": ({ updateConfig }) => {
+        updateConfig({
+          vite: {
+            plugins: [{
+              name: "vite-plugin-pagefind-dev",
+              configureServer(server) {
+                const mimeTypes = /** @type {Record<string, string>} */ ({
+                  js: "application/javascript",
+                  json: "application/json",
+                  css: "text/css",
+                  wasm: "application/wasm",
+                });
+
+                server.middlewares.use(async (req, res, next) => {
+                  const urlPath = req.url?.split("?")[0];
+                  if (!urlPath?.startsWith("/pagefind/")) return next();
+
+                  const filePath = join(pagefindDir, urlPath.replace("/pagefind/", ""));
+                  if (!existsSync(filePath)) return next();
+
+                  const ext = filePath.split(".").pop() || "";
+                  res.setHeader("Content-Type", mimeTypes[ext] || "application/octet-stream");
+                  res.end(await readFile(filePath));
+                });
+              },
+            }],
+          },
+        });
+      },
+      "astro:build:done": async ({ dir }) => {
+        execSync(`npx pagefind --site "${dir.pathname}"`, { stdio: "inherit" });
+        console.log("[Pagefind] Search index generated");
+      },
+    },
+  };
+}
+
 // https://astro.build/config
 export default defineConfig({
   server: {
@@ -49,7 +98,7 @@ export default defineConfig({
       prefixDefaultLocale: true,
     },
   },
-  integrations: [mdx(), react(), patchCsrRedirect()],
+  integrations: [mdx(), react(), patchCsrRedirect(), pagefindIntegration()],
   vite: {
     plugins: [
       // @ts-ignore: tailwindcss plugin type issue
