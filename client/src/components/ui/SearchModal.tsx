@@ -123,8 +123,10 @@ export function SearchModal({ locale, translations, variant = "sidebar" }: Searc
     setSearched(false);
   }, []);
 
-  // Global keyboard shortcuts (Cmd+K toggle, Escape close)
+  // Global keyboard shortcuts (only sidebar variant registers Cmd+K to avoid duplicate modals)
   useEffect(() => {
+    if (variant === "mobile") return;
+
     function handleKeyDown(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
@@ -141,7 +143,20 @@ export function SearchModal({ locale, translations, variant = "sidebar" }: Searc
     }
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [open, openModal, closeModal]);
+  }, [variant, open, openModal, closeModal]);
+
+  // Escape closes modal for all variants
+  useEffect(() => {
+    if (!open || variant !== "mobile") return;
+    function handleEscape(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        closeModal();
+      }
+    }
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+  }, [open, variant, closeModal]);
 
   // Native click listener on trigger button (Astro hydration fallback)
   useEffect(() => {
