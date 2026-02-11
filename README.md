@@ -8,6 +8,8 @@ Official documentation for the [Deco](https://deco.cx) platform.
 # Install dependencies
 bun install
 
+
+
 # Run in development
 bun run dev
 ```
