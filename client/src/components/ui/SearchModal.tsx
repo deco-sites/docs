@@ -105,6 +105,7 @@ export function SearchModal({ locale, translations, variant = "sidebar" }: Searc
   const [searched, setSearched] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const placeholder = translations["search.placeholder"] ?? "Search docs...";
@@ -122,7 +123,7 @@ export function SearchModal({ locale, translations, variant = "sidebar" }: Searc
     setSearched(false);
   }, []);
 
-  // Global Cmd+K / Ctrl+K shortcut
+  // Global keyboard shortcuts (Cmd+K toggle, Escape close)
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
@@ -133,10 +134,23 @@ export function SearchModal({ locale, translations, variant = "sidebar" }: Searc
           openModal();
         }
       }
+      if (e.key === "Escape" && open) {
+        e.preventDefault();
+        closeModal();
+      }
     }
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [open, openModal, closeModal]);
+
+  // Native click listener on trigger button (Astro hydration fallback)
+  useEffect(() => {
+    const btn = triggerRef.current;
+    if (!btn) return;
+    const handler = () => setOpen(true);
+    btn.addEventListener("click", handler);
+    return () => btn.removeEventListener("click", handler);
+  }, []);
 
   // Focus input when modal opens
   useEffect(() => {
@@ -272,6 +286,7 @@ export function SearchModal({ locale, translations, variant = "sidebar" }: Searc
   const trigger =
     variant === "mobile" ? (
       <button
+        ref={triggerRef}
         type="button"
         onClick={openModal}
         className="p-2 hover:bg-muted rounded-lg transition-colors"
@@ -281,6 +296,7 @@ export function SearchModal({ locale, translations, variant = "sidebar" }: Searc
       </button>
     ) : (
       <button
+        ref={triggerRef}
         type="button"
         onClick={openModal}
         className="flex items-center gap-2 w-full px-3 py-2 rounded-lg border border-border bg-muted/50 text-sm text-muted-foreground hover:bg-muted transition-colors cursor-pointer"
