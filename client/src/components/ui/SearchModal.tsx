@@ -6,6 +6,7 @@ interface SearchResult {
   url: string;
   title: string;
   excerpt: string;
+  breadcrumb?: string;
   subResult?: boolean;
 }
 
@@ -42,13 +43,55 @@ async function loadPagefind() {
     const url = URL.createObjectURL(blob);
     const pf = await import(/* @vite-ignore */ url);
     URL.revokeObjectURL(url);
-    await pf.options({ basePath: "/pagefind/" });
+    await pf.options({
+      basePath: "/pagefind/",
+      ranking: {
+        pageLength: 0.5,        // Less penalty for longer pages
+        termFrequency: 1.2,     // Moderate boost for repeated terms
+        termSaturation: 1.8,    // Diminish returns faster for repeated common words
+        termSimilarity: 9.0,    // Strong boost for exact term matches
+      },
+    });
     pagefindInstance = pf;
     return pagefindInstance;
   } catch (e) {
     console.error("[SearchModal] Failed to load pagefind:", e);
     return null;
   }
+}
+
+/** Words too common to be useful for ranking */
+const STOP_WORDS = new Set([
+  "a", "an", "the", "and", "or", "but", "in", "on", "at", "to", "for",
+  "of", "is", "it", "be", "as", "do", "by", "no", "so", "if", "up",
+  "de", "e", "o", "um", "uma", "do", "da", "em", "no", "na", "para",
+  "com", "por", "se", "que", "os", "as", "dos", "das",
+]);
+
+/** Score how well a title matches the query (higher = better match) */
+function titleMatchScore(title: string, query: string): number {
+  const normalizedTitle = title.toLowerCase();
+  const normalizedQuery = query.toLowerCase();
+
+  // Exact match or containment gets highest score
+  if (normalizedTitle === normalizedQuery) return 100;
+  if (normalizedTitle.includes(normalizedQuery)) return 80;
+
+  // Score by how many meaningful query terms appear in the title
+  const queryTerms = normalizedQuery.split(/\s+/).filter((t) => !STOP_WORDS.has(t));
+  if (queryTerms.length === 0) return 0;
+
+  const matchedTerms = queryTerms.filter((term) => normalizedTitle.includes(term));
+  return (matchedTerms.length / queryTerms.length) * 60;
+}
+
+/** Extract a readable breadcrumb from a docs URL, e.g. "/en/developing-guide/hello-world" → "Developing Guide" */
+function breadcrumbFromUrl(url: string): string {
+  // Remove locale prefix and trailing slash, take middle segments
+  const segments = url.replace(/\/$/, "").split("/").filter(Boolean).slice(1, -1);
+  return segments
+    .map((s) => s.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()))
+    .join(" > ");
 }
 
 const DEBOUNCE_MS = 150;
@@ -138,26 +181,28 @@ export function SearchModal({ locale, translations, variant = "sidebar" }: Searc
         filters: {},
       });
 
-      const items: SearchResult[] = [];
       const dataResults = await Promise.all(
-        search.results.slice(0, 12).map((r) => r.data()),
+        search.results.slice(0, 15).map((r) => r.data()),
       );
 
+      // Build result groups (parent page + its sub-results)
+      const groups: { parent: SearchResult; children: SearchResult[] }[] = [];
+
       for (const data of dataResults) {
-        // Filter by locale: only include pages matching the current locale
         if (!data.url.startsWith(`/${locale}/`)) continue;
 
-        items.push({
+        const parent: SearchResult = {
           url: data.url,
           title: data.meta?.title ?? data.url,
           excerpt: data.excerpt ?? "",
-        });
+          breadcrumb: breadcrumbFromUrl(data.url),
+        };
 
-        // Include up to 2 sub-results for richer results
+        const children: SearchResult[] = [];
         if (data.sub_results) {
           for (const sub of data.sub_results.slice(0, 2)) {
             if (sub.title === data.meta?.title) continue;
-            items.push({
+            children.push({
               url: sub.url,
               title: sub.title,
               excerpt: sub.excerpt ?? "",
@@ -165,6 +210,20 @@ export function SearchModal({ locale, translations, variant = "sidebar" }: Searc
             });
           }
         }
+
+        groups.push({ parent, children });
+      }
+
+      // Sort groups by title relevance to the query
+      groups.sort((a, b) =>
+        titleMatchScore(b.parent.title, query) - titleMatchScore(a.parent.title, query)
+      );
+
+      // Flatten back: parent followed by its sub-results
+      const items: SearchResult[] = [];
+      for (const group of groups) {
+        items.push(group.parent);
+        items.push(...group.children);
       }
 
       setResults(items);
@@ -309,6 +368,11 @@ export function SearchModal({ locale, translations, variant = "sidebar" }: Searc
                           className={`shrink-0 mt-0.5 ${i === activeIndex ? "text-primary" : ""}`}
                         />
                         <div className="flex-1 min-w-0">
+                          {result.breadcrumb && (
+                            <div className="text-[11px] text-muted-foreground/70 truncate mb-0.5">
+                              {result.breadcrumb}
+                            </div>
+                          )}
                           <div className={`text-sm font-medium truncate ${i === activeIndex ? "text-foreground" : ""}`}>
                             {result.title}
                           </div>
