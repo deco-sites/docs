@@ -77,7 +77,7 @@ function pagefindIntegration() {
         });
       },
       "astro:build:done": async ({ dir }) => {
-        execSync(`npx pagefind --site "${dir.pathname}"`, { stdio: "inherit" });
+        execSync(`./node_modules/.bin/pagefind --site "${dir.pathname}"`, { stdio: "inherit", cwd: join(import.meta.dirname, "..") });
         console.log("[Pagefind] Search index generated");
       },
     },
