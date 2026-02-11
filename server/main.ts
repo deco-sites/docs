@@ -44,9 +44,12 @@ const runtime = withRuntime({
     if (response) return response;
 
     // Workaround: try appending /index.html for directory-style URLs (Astro static build)
-    if (!url.pathname.includes(".") && !url.pathname.endsWith("/")) {
+    if (!url.pathname.includes(".")) {
+      const basePath = url.pathname.endsWith("/")
+        ? url.pathname
+        : `${url.pathname}/`;
       const indexUrl = new URL(req.url);
-      indexUrl.pathname = `${url.pathname}/index.html`;
+      indexUrl.pathname = `${basePath}index.html`;
       const indexReq = new Request(indexUrl.toString(), req);
       const indexResponse = await assetsHandler(indexReq);
       if (indexResponse) return indexResponse;

@@ -36,7 +36,8 @@
   },
   "devDependencies": {
     "@tailwindcss/typography": "^0.5.16",
-    "concurrently": "^9.2.1"
+    "concurrently": "^9.2.1",
+    "pagefind": "^1.4.0"
   },
   "engines": {
     "node": ">=22.0.0"

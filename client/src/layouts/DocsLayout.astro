@@ -245,6 +245,7 @@ const editUrl = doc
       <div
         id="sidebar"
         class="fixed lg:relative lg:block hidden z-50 lg:z-auto h-full"
+        data-pagefind-ignore
       >
         <Sidebar />
       </div>
@@ -305,13 +306,13 @@ const editUrl = doc
         <div
           class="flex min-h-full py-8 lg:py-16 px-4 lg:px-8 gap-x-8 lg:pt-16"
         >
-          <article class="flex-1 max-w-none min-w-0">
+          <article class="flex-1 max-w-none min-w-0" data-pagefind-body>
             <slot />
 
             {/* Edit button */}
             {
               editUrl && (
-                <div class="mt-12 pt-8 border-t border-border">
+                <div class="mt-12 pt-8 border-t border-border" data-pagefind-ignore>
                   <div class="flex items-center justify-between">
                     <p class="text-sm text-muted-foreground">
                       Found an error or want to improve this page?
@@ -330,7 +331,7 @@ const editUrl = doc
               )
             }
           </article>
-          <div class="hidden xl:block w-80 shrink-0">
+          <div class="hidden xl:block w-80 shrink-0" data-pagefind-ignore>
             <div class="sticky top-1">
               <TableOfContents />
             </div>
@@ -342,20 +343,28 @@ const editUrl = doc
     <script>
       import React from "react";
       import { LanguageSelector } from "../components/ui/LanguageSelector";
+      import { SearchModal } from "../components/ui/SearchModal";
       import { ThemeToggle } from "../components/ui/ThemeToggle";
+      import { ui } from "../i18n/ui";
       import { createRoot } from "react-dom/client";
 
-      // Mount language selector and theme toggle in mobile header
+      // Mount language selector, search, and theme toggle in mobile header
       const mobileControlsContainer =
         document.getElementById("mobile-controls");
       if (mobileControlsContainer) {
+        const mobileLocale =
+          document.querySelector("nav")?.getAttribute("data-locale") || "en";
+        const mobileTranslations = ui[mobileLocale as keyof typeof ui] || ui.en;
         const root = createRoot(mobileControlsContainer);
         root.render(
           React.createElement("div", { className: "flex items-center gap-2" }, [
+            React.createElement(SearchModal, {
+              locale: mobileLocale,
+              translations: mobileTranslations as unknown as Record<string, string>,
+              variant: "mobile",
+            }),
             React.createElement(LanguageSelector, {
-              locale:
-                document.querySelector("nav")?.getAttribute("data-locale") ||
-                "en",
+              locale: mobileLocale,
               className: "w-32",
             }),
             React.createElement(ThemeToggle),
