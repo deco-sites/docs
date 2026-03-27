@@ -11,7 +11,7 @@ executadas antes da renderização de cada página e seu principal objetivo é
 **fornecê-los às Seções do site que precisam.** Os Loaders podem ser usados para
 buscar dados de APIs, bancos de dados ou qualquer outra fonte externa. As
 implementações locais de Loaders vivem na pasta `/loaders` do seu projeto, porém
-é possível [Instalar novas apps](https://docs.deco.cx/pt/getting-started/installing-an-app) que
+é possível [Instalar novas apps](https://docs.deco.cx/pt/getting-started/adding-an-app) que
 contém outros loaders.
 
 Além de buscar dados, os Loaders na _deco.cx_ **também podem exportar um tipo de
@@ -27,7 +27,7 @@ Outro benefício dos Loaders na _deco.cx_ é que **vários loaders podem retorna
 mesmo tipo de dados**. Isso permite que as [Sections](https://docs.deco.cx/pt/concepts/section)
 que recebem, por exemplo, um _array_ de Produtos canônico obtenham dados de
 diferentes Loaders, dependendo da configuração do usuário. Isso significa que as
-UIs podem ser reutilizadas em [Sites](https://docs.deco.cx/pt/concepts/site) ou entre times,
+UIs podem ser reutilizadas em [Sites](https://docs.deco.cx/pt/getting-started/creating-a-site) ou entre times,
 facilitando o gerenciamento e a escala do seu projeto.
 
 > Todas as Sections para lojas de _ecommerce_ criadas por _deco.cx_ na
@@ -98,5 +98,5 @@ export default loader;
 
 ## Leitura recomendada
 
-- [Buscando dados de API](https://docs.deco.cx/pt/develping/fetching-data)
+- [Buscando dados de API](https://docs.deco.cx/pt/developing-guide/fetching-data)
 - [Invocando um loader através da API](https://docs.deco.cx/pt/developing-capabilities/islands/fetching-data-client)
