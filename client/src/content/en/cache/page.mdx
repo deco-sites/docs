@@ -71,7 +71,7 @@ HTML page caching works alongside other caching mechanisms in deco:
 - **Loader cache**: Caches data fetched by loaders at the server level. When an HTML page cache hit occurs, the origin is not reached at all — loaders do not run.
 - **Stale Edge Cache (async sections)**: Caches individual lazy-loaded sections at the CDN. HTML page caching operates at the full assembled page level, one layer above.
 
-A CDN-level HTML cache hit is the fastest possible delivery path: zero origin requests, zero loader executions, zero rendering.
+A CDN-level HTML cache hit means the page is served entirely from the edge, with no server involvement.
 
 ## Configuration
 

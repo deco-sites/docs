@@ -55,8 +55,7 @@ The `cacheKey(props, req, ctx)` function must return a string that uniquely iden
 
 The final cache key is composed of:
 1. The loader's resolver name
-2. A **deployment identifier** — so each new deploy automatically invalidates all cached entries
-3. The value returned by your `cacheKey` function
+2. The value returned by your `cacheKey` function
 
 Good inputs to include in the key:
 
@@ -99,10 +98,6 @@ export const cache = "no-store";
 Loader caches are automatically invalidated on every new deployment — no manual action needed. Within a deployment, entries expire according to their TTL.
 
 There is currently no way to manually invalidate a specific loader cache entry before the TTL expires.
-
-## Concurrent request deduplication
-
-If multiple requests arrive simultaneously for the same uncached loader, deco executes the loader only once and fans out the result to all waiting requests (single-flight). This prevents thundering-herd spikes on cold cache.
 
 ## Interaction with async rendering and CDN caches
 

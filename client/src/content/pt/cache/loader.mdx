@@ -55,8 +55,7 @@ A função `cacheKey(props, req, ctx)` deve retornar uma string que identifique 
 
 A chave final de cache é composta por:
 1. O nome do resolver do loader
-2. Um **identificador do deploy** — cada novo deploy invalida automaticamente todas as entradas cacheadas
-3. O valor retornado pela sua função `cacheKey`
+2. O valor retornado pela sua função `cacheKey`
 
 Boas entradas para incluir na chave:
 
@@ -99,10 +98,6 @@ export const cache = "no-store";
 Os caches de loaders são automaticamente invalidados a cada novo deploy — nenhuma ação manual necessária. Dentro de um deploy, as entradas expiram de acordo com o TTL configurado.
 
 Atualmente não há como invalidar manualmente uma entrada específica do cache de loader antes do TTL expirar.
-
-## Deduplicação de requests simultâneos
-
-Se múltiplos requests chegam ao mesmo tempo para o mesmo loader sem cache, a deco executa o loader apenas uma vez e distribui o resultado para todos os requests aguardando (single-flight). Isso evita picos de thundering-herd no cold cache.
 
 ## Interação com renderização assíncrona e caches CDN
 

@@ -10,7 +10,7 @@ Async rendering loads page sections progressively. Each section is bound to a ti
 - Sections whose loaders finish within the budget are rendered directly into the initial HTML.
 - Sections whose loaders exceed the budget render a loading skeleton first. Once the page reaches the browser, the client fetches and patches the real content.
 
-The client uses an `IntersectionObserver` to trigger the fetch when a section is within 200px of the viewport — so off-screen sections don't load until the user scrolls near them.
+Off-screen sections don't load until the user scrolls near them.
 
 ## Stale Edge Cache
 
@@ -30,8 +30,8 @@ The long stale window means users almost always get an instant response from cac
 
 A section's cacheability depends entirely on its loaders:
 
-- If any loader uses `cache = "no-store"` or returns `null` from `cacheKey`, the section response is **not cached** at the CDN.
-- If all loaders define a stable `cacheKey` and use `"stale-while-revalidate"` (or `{ maxAge }`), the section **is cached**.
+- If any loader is not configured for caching, the section response is **not cached** at the CDN.
+- If all loaders are configured for caching, the section **is cached**.
 
 See [Caching data loaders](/en/cache/loader) for how to configure loader cache.
 

@@ -71,7 +71,7 @@ O cache de HTML de página funciona junto com os outros mecanismos de cache da d
 - **Cache de loaders**: Cacheia dados buscados pelos loaders no nível do servidor. Quando ocorre um cache hit de HTML, a origem não é acessada — os loaders não executam.
 - **Stale Edge Cache (seções assíncronas)**: Cacheia seções lazy-loaded individualmente na CDN. O cache de HTML de página opera no nível da página completa montada, uma camada acima.
 
-Um cache hit de HTML no nível da CDN é o caminho de entrega mais rápido possível: zero requisições à origem, zero execuções de loaders, zero renderizações.
+Um cache hit de HTML no nível da CDN significa que a página é servida inteiramente do edge, sem envolver o servidor de origem.
 
 ## Configuração
 

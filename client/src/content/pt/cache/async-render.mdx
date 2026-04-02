@@ -10,7 +10,7 @@ A renderização assíncrona carrega seções da página de forma progressiva. C
 - Seções cujos loaders terminam dentro do orçamento são renderizadas diretamente no HTML inicial.
 - Seções cujos loaders excedem o orçamento renderizam um skeleton primeiro. Quando a página chega ao navegador, o cliente busca e substitui o conteúdo real.
 
-O cliente usa um `IntersectionObserver` para disparar a busca quando uma seção está dentro de 200px da viewport — seções fora da tela não carregam até o usuário rolar a página.
+Seções fora da tela não carregam até o usuário rolar a página.
 
 ## Stale Edge Cache
 
@@ -30,8 +30,8 @@ A janela de stale longa significa que os usuários quase sempre recebem uma resp
 
 A cacheabilidade de uma seção depende inteiramente dos seus loaders:
 
-- Se qualquer loader usa `cache = "no-store"` ou retorna `null` do `cacheKey`, a resposta da seção **não é cacheada** na CDN.
-- Se todos os loaders definem um `cacheKey` estável e usam `"stale-while-revalidate"` (ou `{ maxAge }`), a seção **é cacheada**.
+- Se qualquer loader não está configurado para cache, a resposta da seção **não é cacheada** na CDN.
+- Se todos os loaders estão configurados para cache, a seção **é cacheada**.
 
 Veja [Cache de data loaders](/pt/cache/loader) para configurar o cache de loaders.
 
