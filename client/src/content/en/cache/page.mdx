@@ -12,13 +12,13 @@ import Callout from "../../../components/ui/Callout.astro";
 
 ## What is HTML page caching?
 
-For select sites, deco serves cached HTML responses directly from the CDN edge. Instead of every request traveling to the origin server, the edge node returns a previously cached full-page HTML response.
+For select sites, deco caches the full HTML response at the CDN edge. Instead of every request traveling to the origin server, the edge node returns a previously cached page response.
 
 This feature is active on select sites.
 
 ## What gets cached
 
-Currently, only public, anonymous page requests are eligible for HTML caching. This scope may expand as the feature evolves.
+Currently, only public, anonymous page requests are eligible. This scope may expand as the feature evolves.
 
 - Anonymous visitors (no active session)
 - Standard page navigation requests
@@ -32,6 +32,8 @@ The following always bypass the HTML cache and are served fresh from the origin:
 |----------|--------|
 | Logged-in users | Auth session detected — response is personalized |
 | Responses that set cookies | `Set-Cookie` present — response contains per-user state |
+| Pages with active non-cacheable A/B flags | Variant requires per-user targeting |
+| VTEX: users with active campaigns, price tables, or region-specific pricing | Segment is personalized — response would differ per user |
 
 ## Cache lifetime
 
@@ -66,7 +68,7 @@ cache-control: no-store, no-cache, must-revalidate
 
 HTML page caching works alongside other caching mechanisms in deco:
 
-- **Loader cache**: Caches data fetched by loaders at the server level. When HTML page cache is active and a cache hit occurs, the origin is not reached at all — loader caches are not consulted.
+- **Loader cache**: Caches data fetched by loaders at the server level. When an HTML page cache hit occurs, the origin is not reached at all — loaders do not run.
 - **Stale Edge Cache (async sections)**: Caches individual lazy-loaded sections at the CDN. HTML page caching operates at the full assembled page level, one layer above.
 
 A CDN-level HTML cache hit is the fastest possible delivery path: zero origin requests, zero loader executions, zero rendering.

@@ -12,13 +12,13 @@ import Callout from "../../../components/ui/Callout.astro";
 
 ## O que é o cache de HTML de página?
 
-Em sites selecionados, a deco serve respostas HTML cacheadas diretamente do edge da CDN. Em vez de toda requisição percorrer o caminho até o servidor de origem, o nó de edge retorna uma resposta HTML de página completa previamente cacheada.
+Em sites selecionados, a deco cacheia o HTML completo da página no edge da CDN. Em vez de toda requisição percorrer o caminho até o servidor de origem, o nó de edge retorna uma resposta de página previamente cacheada.
 
 Essa funcionalidade está ativa em sites selecionados.
 
 ## O que é cacheado
 
-No momento, apenas requisições de página públicas e anônimas são elegíveis para o cache de HTML. Esse escopo pode se expandir conforme a funcionalidade evolui.
+No momento, apenas requisições de página públicas e anônimas são elegíveis. Esse escopo pode se expandir conforme a funcionalidade evolui.
 
 - Visitantes anônimos (sem sessão ativa)
 - Requisições de navegação de página comuns
@@ -32,6 +32,8 @@ Os casos a seguir sempre ignoram o cache de HTML e são servidos diretamente da 
 |---------|--------|
 | Usuários logados | Sessão de autenticação detectada — resposta é personalizada |
 | Respostas que definem cookies | `Set-Cookie` presente — resposta contém estado por usuário |
+| Páginas com flags de A/B não-cacheáveis ativas | Variante requer segmentação por usuário |
+| VTEX: usuários com campanhas ativas, tabelas de preço ou pricing por região | Segmento é personalizado — resposta diferiria por usuário |
 
 ## Tempo de vida do cache
 
@@ -66,7 +68,7 @@ cache-control: no-store, no-cache, must-revalidate
 
 O cache de HTML de página funciona junto com os outros mecanismos de cache da deco:
 
-- **Cache de loaders**: Cacheia dados buscados pelos loaders no nível do servidor. Quando o cache de HTML está ativo e ocorre um cache hit, a origem não é acessada — os caches de loaders não são consultados.
+- **Cache de loaders**: Cacheia dados buscados pelos loaders no nível do servidor. Quando ocorre um cache hit de HTML, a origem não é acessada — os loaders não executam.
 - **Stale Edge Cache (seções assíncronas)**: Cacheia seções lazy-loaded individualmente na CDN. O cache de HTML de página opera no nível da página completa montada, uma camada acima.
 
 Um cache hit de HTML no nível da CDN é o caminho de entrega mais rápido possível: zero requisições à origem, zero execuções de loaders, zero renderizações.

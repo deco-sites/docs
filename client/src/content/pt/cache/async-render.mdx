@@ -1,80 +1,55 @@
 ---
 title: "Edge Async Render"
-
-description: Documentation on async rendering in Deco.cx.
-
+description: Como a deco renderiza seções de forma assíncrona e as cacheia no edge da CDN.
 ---
-
-## Introdução
-
-A renderização assíncrona é uma técnica essencial para melhorar a performance e
-a experiência do usuário em aplicações web modernas. Este recurso na deco.cx
-utiliza o paradigma de carregamento progressivo para carregar seções de uma
-página de forma assíncrona: renderizando o conteúdo das requisições rápidas e
-recorrendo a esqueletos e estados de carregamento para o conteúdo de requisições
-lentas, oferecendo aos usuários uma experiência visual imediata.
 
 ## Como funciona
 
-A renderização assíncrona na deco.cx é baseada em loaders, que são componentes
-responsáveis por carregar os dados necessários para alguma seção. Os loaders
-estão vinculados a um orçamento de tempo. Uma vez atingido esse limite, os
-loaders que concluíram seu trabalho terão seu conteúdo renderizado no HTML final
-como de costume. Os loaders que consomem APIs lentas levantarão uma exceção e um
-estado de carregamento será renderizado nas seções que consomem este carregador.
-Este estado de carregamento usará nosso recurso
-[Partials](https://docs.deco.cx/pt/developing-capabilities/interactive-sections/partial) para
-hidratar e substituir a seção ausente preguiçosamente.
+A renderização assíncrona carrega seções da página de forma progressiva. Cada seção está vinculada a um orçamento de tempo:
 
-### Stale Edge Cache
+- Seções cujos loaders terminam dentro do orçamento são renderizadas diretamente no HTML inicial.
+- Seções cujos loaders excedem o orçamento renderizam um skeleton primeiro. Quando a página chega ao navegador, o cliente busca e substitui o conteúdo real.
 
-O async render na deco.cx também conta com o recurso de "Stale Edge Cache", uma
-abordagem que permite caching de seções lazy-loaded, reduzindo
-significativamente os tempos de resposta e melhorando o tempo de carregamento.
-Com o Stale Edge Cache, a primeira resposta do servidor da seção é armazenada em
-cache no CDN. As requisições subsequentes são respondidas com essa resposta em
-cache, reduzindo drasticamente o tempo total de resposta para apenas a latência
-entre o navegador e o CDN, mais o tempo de download do conteúdo.
+O cliente usa um `IntersectionObserver` para disparar a busca quando uma seção está dentro de 200px da viewport — seções fora da tela não carregam até o usuário rolar a página.
 
-![Stale Edge Cache](https://ozksgdmyrqcxcwhnbepg.supabase.co/storage/v1/object/public/assets/530/3d9ee3b7-cce2-47f3-a320-2a72b2e63e2a)
+## Stale Edge Cache
 
-Essa funcionalidade está ativada por padrão para todas as seções, mas pode ser
-desativada se necessário.
+Quando uma seção é buscada de forma assíncrona, o HTML renderizado é cacheado no edge da CDN. Requisições subsequentes para a mesma seção são servidas diretamente da CDN, sem acessar a origem.
 
-### Como ativar a renderização assíncrona
+**TTL padrão:**
 
-Esse recurso é ativado por padrão nas sections dos sites na deco. Para
-desativar, basta desabilitar a opção `Otimization` nas propriedades da section
-no Admin.
+| Diretiva | Valor | Significado |
+|----------|-------|-------------|
+| `s-maxage` | 60s | CDN cacheia a seção por 60 segundos |
+| `stale-while-revalidate` | 3600s | Serve conteúdo expirado por até 1 hora enquanto revalida em segundo plano |
+| `stale-if-error` | 86400s | Serve conteúdo expirado por até 24 horas se a origem retornar erro |
+
+A janela de stale longa significa que os usuários quase sempre recebem uma resposta instantânea do cache, mesmo quando a entrada da CDN tecnicamente expirou.
+
+## O que determina se uma seção pode ser cacheada
+
+A cacheabilidade de uma seção depende inteiramente dos seus loaders:
+
+- Se qualquer loader usa `cache = "no-store"` ou retorna `null` do `cacheKey`, a resposta da seção **não é cacheada** na CDN.
+- Se todos os loaders definem um `cacheKey` estável e usam `"stale-while-revalidate"` (ou `{ maxAge }`), a seção **é cacheada**.
+
+Veja [Cache de data loaders](/pt/cache/loader) para configurar o cache de loaders.
+
+## Habilitando e desabilitando
+
+A renderização assíncrona está habilitada por padrão para todas as seções. Para desabilitar em uma seção específica, desative a opção `Optimization` nas propriedades da seção no Admin.
 
 ![Desativar renderização assíncrona](/images/performance/disable-async-render.png)
 
-### Benefícios
+## Benefícios
 
-- **Melhoria de Performance**: Carrega apenas os componentes necessários no
-  momento, reduzindo o tempo de carregamento inicial da página.
-- **Redução de Latência**: Com o cache das respostas, os tempos de resposta são
-  significativamente reduzidos.
-- **Melhor UX**: Evita o bloqueio da interface e minimiza mudanças de layout
-  durante o carregamento.
+- **Resposta inicial mais rápida**: Seções pesadas não bloqueiam o primeiro byte do HTML.
+- **Cache de seções na CDN**: Seções populares são servidas do edge com latência mínima.
+- **Resiliência**: Conteúdo expirado é servido se a origem estiver lenta ou indisponível (até 24h).
+- **Menos layout shifts**: Implemente `LoadingFallback` nas seções para exibir um skeleton durante o carregamento assíncrono. Veja a [documentação do `LoadingFallback`](https://docs.deco.cx/pt/developing-capabilities/sections/loading-fallback).
 
-### Minimização de Content Layout Shifts (CLS)
+## Veja também
 
-Para garantir uma experiência de usuário suave, recomenda-se a implementação do
-componente `LoadingFallback` em todas as seções do site. Esse componente fornece
-um estado de carregamento personalizado durante o processo de renderização
-assíncrona, minimizando possíveis mudanças de layout.
-
-Você pode encontrar mais informações sobre o componente
-[`LoadingFallback` em nossa documentação](https://docs.deco.cx/pt/developing-capabilities/sections/loading-fallback).
-
-## Conclusão
-
-A renderização assíncrona é uma técnica poderosa para melhorar a performance e a
-experiência do usuário em aplicações web. Com a implementação e evolução da
-renderização assíncrona na plataforma deco.cx, ficou ainda mais fácil e
-eficiente adotar essa técnica em seus projetos.
-
-Para mais informações, consulte os blogposts
-[Renderização Assíncrona](https://deco.cx/en/blog/async-rendering) e
-[Mais sobre Renderização Assíncrona](https://deco.cx/en/blog/async-render-default).
+- [Cache de data loaders](/pt/cache/loader)
+- [Cache de HTML de Página](/pt/cache/page)
+- [Blog post sobre Async Rendering](https://deco.cx/en/blog/async-rendering)
