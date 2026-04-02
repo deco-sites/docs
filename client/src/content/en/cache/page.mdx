@@ -42,13 +42,12 @@ The default value is `public, max-age=90, s-maxage=90, stale-while-revalidate=30
 - Cached responses are served for **90 seconds**. After that, the next request fetches a fresh response from the origin.
 - A **30-second stale-while-revalidate window** is applied: stale responses are served immediately while a fresh response is fetched in the background.
 
-
 ## How to verify
 
 Inspect the `Cache-Control` response header to check whether a page is eligible for HTML caching:
 
 ```bash
-curl -sI https://www.yoursite.com.br/ | grep -i cache-control
+curl -sI https://www.yoursite.com/ | grep -i cache-control
 ```
 
 Expected output for an anonymous (cacheable) request:
@@ -62,7 +61,6 @@ Expected output for a non-cacheable request (e.g., a logged-in user):
 ```
 cache-control: no-store, no-cache, must-revalidate
 ```
-
 
 ## Interaction with other caching layers
 
@@ -88,5 +86,5 @@ The caching logic lives in the deco runtime, open source at [github.com/deco-cx/
 
 ## See also
 
-- [Caching data loaders](/en/performance/caching-data-loaders)
-- [Edge Async Render](/en/performance/edge-async-render)
+- [Caching data loaders](/en/cache/loader)
+- [Edge Async Render](/en/cache/async-render)

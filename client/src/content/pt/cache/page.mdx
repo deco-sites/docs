@@ -42,7 +42,6 @@ O valor padrão é `public, max-age=90, s-maxage=90, stale-while-revalidate=30`,
 - Respostas cacheadas são servidas por **90 segundos**. Após esse período, a próxima requisição busca uma resposta atualizada da origem.
 - Uma **janela de stale-while-revalidate de 30 segundos** é aplicada: respostas expiradas são servidas imediatamente enquanto uma resposta atualizada é buscada em segundo plano.
 
-
 ## Como verificar
 
 Inspecione o header `Cache-Control` da resposta para verificar se uma página é elegível para o cache de HTML:
@@ -62,7 +61,6 @@ Saída esperada para uma requisição não cacheável (ex: usuário logado):
 ```
 cache-control: no-store, no-cache, must-revalidate
 ```
-
 
 ## Interação com outras camadas de cache
 
@@ -88,5 +86,5 @@ A lógica de cache está no runtime da deco, open source em [github.com/deco-cx/
 
 ## Veja também
 
-- [Cache de data loaders](/pt/performance/caching-data-loaders)
-- [Edge Async Render](/pt/performance/edge-async-render)
+- [Cache de data loaders](/pt/cache/loader)
+- [Edge Async Render](/pt/cache/async-render)
