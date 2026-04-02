@@ -1,6 +1,6 @@
 ---
 title: "Cache de HTML de Página"
-description: Cache de HTML completo no edge da CDN para menor TTFB em páginas públicas.
+description: Cache de HTML completo no edge da CDN para páginas públicas.
 since: 1.0.0
 ---
 
@@ -12,9 +12,9 @@ import Callout from "../../../components/ui/Callout.astro";
 
 ## O que é o cache de HTML de página?
 
-Em sites selecionados, a deco serve respostas HTML cacheadas diretamente do edge da CDN. Em vez de toda requisição percorrer o caminho até o servidor de origem, o nó de edge retorna uma resposta HTML de página completa previamente cacheada, reduzindo drasticamente o Time to First Byte (TTFB).
+Em sites selecionados, a deco serve respostas HTML cacheadas diretamente do edge da CDN. Em vez de toda requisição percorrer o caminho até o servidor de origem, o nó de edge retorna uma resposta HTML de página completa previamente cacheada.
 
-Essa funcionalidade está ativa em sites selecionados. Se quiser habilitar no seu site, entre em contato com a equipe deco.
+Essa funcionalidade está ativa em sites selecionados.
 
 ## O que é cacheado
 
@@ -35,13 +35,13 @@ Os casos a seguir sempre ignoram o cache de HTML e são servidos diretamente da 
 
 ## Tempo de vida do cache
 
-Respostas HTML cacheadas são servidas por **90 segundos** após serem armazenadas. Após esse período, a próxima requisição busca uma resposta atualizada da origem, e as requisições seguintes voltam a ser servidas do cache.
+O tempo de vida do cache depende do valor de `Cache-Control` em vigor — definido pelo código da sua aplicação ou configurado pela equipe deco para o seu site.
 
-Uma **janela de stale-while-revalidate de 30 segundos** também é aplicada: durante esse período, respostas expiradas são servidas imediatamente enquanto uma resposta atualizada é buscada em segundo plano — mantendo a latência baixa mesmo durante a revalidação.
+O valor padrão é `public, max-age=90, s-maxage=90, stale-while-revalidate=30`, o que significa:
 
-### Cache-Control customizado
+- Respostas cacheadas são servidas por **90 segundos**. Após esse período, a próxima requisição busca uma resposta atualizada da origem.
+- Uma **janela de stale-while-revalidate de 30 segundos** é aplicada: respostas expiradas são servidas imediatamente enquanto uma resposta atualizada é buscada em segundo plano.
 
-Se o seu site já define um header `Cache-Control` na resposta, a deco o respeita e não o sobrescreve. O TTL padrão acima só se aplica quando nenhum `Cache-Control` é definido pela aplicação.
 
 ## Como verificar
 
@@ -63,17 +63,6 @@ Saída esperada para uma requisição não cacheável (ex: usuário logado):
 cache-control: no-store, no-cache, must-revalidate
 ```
 
-Você também pode inspecionar o header de status de cache da CDN para confirmar se a resposta foi servida do cache:
-
-```bash
-curl -sI https://www.seusite.com.br/ | grep -i cf-cache-status
-```
-
-| Valor | Significado |
-|-------|-------------|
-| `HIT` | Servido do cache da CDN |
-| `MISS` | Buscado da origem (primeira requisição ou cache expirado) |
-| `STALE` | Servido do cache expirado enquanto revalida em segundo plano |
 
 ## Interação com outras camadas de cache
 
@@ -83,6 +72,15 @@ O cache de HTML de página funciona junto com os outros mecanismos de cache da d
 - **Stale Edge Cache (seções assíncronas)**: Cacheia seções lazy-loaded individualmente na CDN. O cache de HTML de página opera no nível da página completa montada, uma camada acima.
 
 Um cache hit de HTML no nível da CDN é o caminho de entrega mais rápido possível: zero requisições à origem, zero execuções de loaders, zero renderizações.
+
+## Configuração
+
+> **Nota:** Se a sua aplicação já define um header `Cache-Control` na resposta, esse valor é usado como está e o padrão da plataforma é ignorado.
+
+## Limitações
+
+- **Ainda não disponível para todos**: o cache de HTML de página é habilitado caso a caso no momento. Entre em contato com a equipe deco se quiser habilitar no seu site.
+- **Sem purge manual**: atualmente não há como invalidar manualmente respostas HTML cacheadas. As páginas expiram naturalmente após o TTL.
 
 ## Implementação
 

@@ -1,6 +1,6 @@
 ---
 title: "HTML Page Cache"
-description: Full-page HTML caching at the CDN edge for faster TTFB on public pages.
+description: Full-page HTML caching at the CDN edge for public pages.
 since: 1.0.0
 ---
 
@@ -12,9 +12,9 @@ import Callout from "../../../components/ui/Callout.astro";
 
 ## What is HTML page caching?
 
-For select sites, deco serves cached HTML responses directly from the CDN edge. Instead of every request traveling to the origin server, the edge node returns a previously cached full-page HTML response, dramatically reducing Time to First Byte (TTFB).
+For select sites, deco serves cached HTML responses directly from the CDN edge. Instead of every request traveling to the origin server, the edge node returns a previously cached full-page HTML response.
 
-This feature is active on select sites. If you'd like to enable it for your site, reach out to the deco team.
+This feature is active on select sites.
 
 ## What gets cached
 
@@ -35,13 +35,13 @@ The following always bypass the HTML cache and are served fresh from the origin:
 
 ## Cache lifetime
 
-Cached HTML responses are served for **90 seconds** after they are stored. After that, the next request fetches a fresh response from the origin, and subsequent requests are served from cache again.
+Cache lifetime depends on the `Cache-Control` value in effect — either set by your application code or configured by the deco team for your site.
 
-A **30-second stale-while-revalidate window** is also applied: during this period, stale responses are served immediately while a fresh response is fetched in the background — keeping latency low even during revalidation.
+The default value is `public, max-age=90, s-maxage=90, stale-while-revalidate=30`, meaning:
 
-### Custom Cache-Control
+- Cached responses are served for **90 seconds**. After that, the next request fetches a fresh response from the origin.
+- A **30-second stale-while-revalidate window** is applied: stale responses are served immediately while a fresh response is fetched in the background.
 
-If your site already sets a `Cache-Control` header on a response, deco respects it and does not override it. The default TTL above only applies when no `Cache-Control` is set by the application.
 
 ## How to verify
 
@@ -63,17 +63,6 @@ Expected output for a non-cacheable request (e.g., a logged-in user):
 cache-control: no-store, no-cache, must-revalidate
 ```
 
-You can also inspect the CDN cache status header to confirm whether the response was served from cache:
-
-```bash
-curl -sI https://www.yoursite.com.br/ | grep -i cf-cache-status
-```
-
-| Value | Meaning |
-|-------|---------|
-| `HIT` | Served from CDN cache |
-| `MISS` | Fetched from origin (first request or expired cache) |
-| `STALE` | Served from expired cache while revalidating in the background |
 
 ## Interaction with other caching layers
 
@@ -83,6 +72,15 @@ HTML page caching works alongside other caching mechanisms in deco:
 - **Stale Edge Cache (async sections)**: Caches individual lazy-loaded sections at the CDN. HTML page caching operates at the full assembled page level, one layer above.
 
 A CDN-level HTML cache hit is the fastest possible delivery path: zero origin requests, zero loader executions, zero rendering.
+
+## Configuration
+
+> **Note:** If your application already sets a `Cache-Control` header on a response, that value is used as-is and the platform default is ignored.
+
+## Limitations
+
+- **Not yet generally available**: HTML page caching is currently enabled on a case-by-case basis. Contact the deco team if you'd like it enabled for your site.
+- **No manual cache purge**: There is currently no way to manually invalidate cached HTML responses. Cached pages expire naturally after the TTL window.
 
 ## Implementation
 
