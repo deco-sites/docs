@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Logo } from "../../components/atoms/Logo.tsx";
 import { Icon } from "../../components/atoms/Icon.tsx";
 import { LanguageSelector } from "./LanguageSelector.tsx";
@@ -243,8 +243,12 @@ function TreeList({
   );
 }
 
+const SIDEBAR_SCROLL_KEY = "sidebar-scroll-pos";
+
 export default function Sidebar({ tree, locale, translations }: SidebarProps) {
   const [treeState, setTreeState] = useState<Map<string, boolean>>(new Map());
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const hasRestoredScroll = useRef(false);
 
   useEffect(() => {
     // Load saved state from localStorage
@@ -282,6 +286,7 @@ export default function Sidebar({ tree, locale, translations }: SidebarProps) {
     });
 
     setTreeState(initialState);
+
   }, [tree]);
 
   const updateFolderVisibility = (folderId: string, isExpanded: boolean) => {
@@ -299,6 +304,19 @@ export default function Sidebar({ tree, locale, translations }: SidebarProps) {
     stateToSave[folderId] = isExpanded;
     localStorage.setItem("sidebar-tree-state", JSON.stringify(stateToSave));
   };
+
+  // Restore scroll only after treeState is fully applied and tree is rendered
+  useEffect(() => {
+    if (hasRestoredScroll.current || treeState.size === 0) return;
+    const savedScroll = sessionStorage.getItem(SIDEBAR_SCROLL_KEY);
+    if (!savedScroll) return;
+    requestAnimationFrame(() => {
+      if (scrollRef.current) {
+        scrollRef.current.scrollTop = parseInt(savedScroll, 10);
+        hasRestoredScroll.current = true;
+      }
+    });
+  }, [treeState]);
 
   const handleFolderToggle = (folderId: string) => {
     const currentState = treeState.get(folderId) || false;
@@ -324,7 +342,13 @@ export default function Sidebar({ tree, locale, translations }: SidebarProps) {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto px-4 lg:px-8 py-4 min-h-0">
+      <div
+        ref={scrollRef}
+        className="flex-1 overflow-y-auto px-4 lg:px-8 py-4 min-h-0"
+        onScroll={(e) => {
+          sessionStorage.setItem(SIDEBAR_SCROLL_KEY, String((e.target as HTMLDivElement).scrollTop));
+        }}
+      >
         <TreeList
           tree={tree}
           treeState={treeState}
