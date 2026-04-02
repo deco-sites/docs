@@ -1,0 +1,94 @@
+---
+title: "Cache de HTML de Página"
+description: Cache de HTML completo no edge da CDN para menor TTFB em páginas públicas.
+since: 1.0.0
+---
+
+import Callout from "../../../components/ui/Callout.astro";
+
+<Callout type="warning">
+  Essa funcionalidade está em desenvolvimento ativo e disponível para sites selecionados em acesso antecipado.
+</Callout>
+
+## O que é o cache de HTML de página?
+
+Em sites selecionados, a deco serve respostas HTML cacheadas diretamente do edge da CDN. Em vez de toda requisição percorrer o caminho até o servidor de origem, o nó de edge retorna uma resposta HTML de página completa previamente cacheada, reduzindo drasticamente o Time to First Byte (TTFB).
+
+Essa funcionalidade está ativa em sites selecionados. Se quiser habilitar no seu site, entre em contato com a equipe deco.
+
+## O que é cacheado
+
+No momento, apenas requisições de página públicas e anônimas são elegíveis para o cache de HTML. Esse escopo pode se expandir conforme a funcionalidade evolui.
+
+- Visitantes anônimos (sem sessão ativa)
+- Requisições de navegação de página comuns
+- Páginas sem estado dinâmico por usuário
+
+## O que nunca é cacheado
+
+Os casos a seguir sempre ignoram o cache de HTML e são servidos diretamente da origem:
+
+| Cenário | Motivo |
+|---------|--------|
+| Usuários logados | Sessão de autenticação detectada — resposta é personalizada |
+| Respostas que definem cookies | `Set-Cookie` presente — resposta contém estado por usuário |
+
+## Tempo de vida do cache
+
+Respostas HTML cacheadas são servidas por **90 segundos** após serem armazenadas. Após esse período, a próxima requisição busca uma resposta atualizada da origem, e as requisições seguintes voltam a ser servidas do cache.
+
+Uma **janela de stale-while-revalidate de 30 segundos** também é aplicada: durante esse período, respostas expiradas são servidas imediatamente enquanto uma resposta atualizada é buscada em segundo plano — mantendo a latência baixa mesmo durante a revalidação.
+
+### Cache-Control customizado
+
+Se o seu site já define um header `Cache-Control` na resposta, a deco o respeita e não o sobrescreve. O TTL padrão acima só se aplica quando nenhum `Cache-Control` é definido pela aplicação.
+
+## Como verificar
+
+Inspecione o header `Cache-Control` da resposta para verificar se uma página é elegível para o cache de HTML:
+
+```bash
+curl -sI https://www.seusite.com.br/ | grep -i cache-control
+```
+
+Saída esperada para uma requisição anônima (cacheável):
+
+```
+cache-control: public, max-age=90, s-maxage=90, stale-while-revalidate=30
+```
+
+Saída esperada para uma requisição não cacheável (ex: usuário logado):
+
+```
+cache-control: no-store, no-cache, must-revalidate
+```
+
+Você também pode inspecionar o header de status de cache da CDN para confirmar se a resposta foi servida do cache:
+
+```bash
+curl -sI https://www.seusite.com.br/ | grep -i cf-cache-status
+```
+
+| Valor | Significado |
+|-------|-------------|
+| `HIT` | Servido do cache da CDN |
+| `MISS` | Buscado da origem (primeira requisição ou cache expirado) |
+| `STALE` | Servido do cache expirado enquanto revalida em segundo plano |
+
+## Interação com outras camadas de cache
+
+O cache de HTML de página funciona junto com os outros mecanismos de cache da deco:
+
+- **Cache de loaders**: Cacheia dados buscados pelos loaders no nível do servidor. Quando o cache de HTML está ativo e ocorre um cache hit, a origem não é acessada — os caches de loaders não são consultados.
+- **Stale Edge Cache (seções assíncronas)**: Cacheia seções lazy-loaded individualmente na CDN. O cache de HTML de página opera no nível da página completa montada, uma camada acima.
+
+Um cache hit de HTML no nível da CDN é o caminho de entrega mais rápido possível: zero requisições à origem, zero execuções de loaders, zero renderizações.
+
+## Implementação
+
+A lógica de cache está no runtime da deco, open source em [github.com/deco-cx/deco](https://github.com/deco-cx/deco).
+
+## Veja também
+
+- [Cache de data loaders](/pt/performance/caching-data-loaders)
+- [Edge Async Render](/pt/performance/edge-async-render)

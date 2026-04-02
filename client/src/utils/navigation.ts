@@ -96,6 +96,7 @@ export async function getNavigationLinks(
     "performance/loaders",
     "performance/caching-data-loaders",
     "performance/edge-async-render",
+    "performance/page-html-cache",
     "performance/lazy-3rd-party-scripts",
     "performance/medias/images",
     "performance/medias/fonts",
