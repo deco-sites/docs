@@ -55,7 +55,7 @@ The `cacheKey(props, req, ctx)` function must return a string that uniquely iden
 
 The final cache key is composed of:
 1. The loader's resolver name
-2. The current **deployment revision** — so each new deploy automatically invalidates all cached entries
+2. A **deployment identifier** — so each new deploy automatically invalidates all cached entries
 3. The value returned by your `cacheKey` function
 
 Good inputs to include in the key:

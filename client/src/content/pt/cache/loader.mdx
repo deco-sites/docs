@@ -55,7 +55,7 @@ A função `cacheKey(props, req, ctx)` deve retornar uma string que identifique 
 
 A chave final de cache é composta por:
 1. O nome do resolver do loader
-2. A **revisão do deploy atual** — cada novo deploy invalida automaticamente todas as entradas cacheadas
+2. Um **identificador do deploy** — cada novo deploy invalida automaticamente todas as entradas cacheadas
 3. O valor retornado pela sua função `cacheKey`
 
 Boas entradas para incluir na chave:
