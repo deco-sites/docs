@@ -94,13 +94,16 @@ export async function getNavigationLinks(
     "performance/guide",
     "performance/islands",
     "performance/loaders",
-    "performance/caching-data-loaders",
-    "performance/edge-async-render",
     "performance/lazy-3rd-party-scripts",
     "performance/medias/images",
     "performance/medias/fonts",
     "performance/medias/css",
     "performance/medias/svg-sprites",
+
+    // Cache
+    "cache/page",
+    "cache/async-render",
+    "cache/loader",
 
     // SDK
     "sdk/headless-cms",

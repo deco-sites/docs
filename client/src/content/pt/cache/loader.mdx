@@ -1,0 +1,121 @@
+---
+title: "Caching data loaders"
+description: Cache seus data loaders com chaves e TTL para reduzir latência e carga da API.
+since: 1.0.0
+---
+
+## Por que fazer cache de loaders?
+
+Loaders buscam dados que alimentam suas páginas e seções. Fazer cache deles:
+
+- Reduz latência da API e carga no backend
+- Melhora resiliência sob picos de tráfego
+- Torna a renderização assíncrona mais rápida servindo dados aquecidos
+
+> Recomendação forte: habilite cache para todos os loaders públicos e de leitura. Desabilite apenas para dados específicos do usuário ou altamente voláteis.
+
+## Como funciona o cache de loaders
+
+Em um módulo de loader, exporte dois campos opcionais:
+
+```ts
+// Política de cache
+export const cache =
+  // "no-store" | "no-cache" | "stale-while-revalidate" | { maxAge: number }
+
+// Gerador de chave de cache
+export const cacheKey = (props, req, ctx) => string | null
+```
+
+### Modos de cache
+
+- **`"no-store"`** (padrão):
+  - Desabilita o cache completamente para este loader.
+  - Também impede que seções dependentes sejam cacheadas no edge da CDN.
+  - Use para dados específicos do usuário ou sensíveis (ex: carrinhos, sessões).
+
+- **`"no-cache"`**:
+  - Pula o cache para esta execução do loader, mas não bloqueia seções dependentes de serem cacheadas.
+  - Use quando o loader deve sempre executar atualizado, mas a seção ainda pode ser servida do cache.
+
+- **`"stale-while-revalidate"`**:
+  - Retorna dados cacheados imediatamente e revalida em segundo plano quando expirado.
+  - Melhor padrão para loaders públicos e de leitura.
+
+- **`{ maxAge: number }`**:
+  - Igual a `"stale-while-revalidate"` com um TTL personalizado (em segundos).
+
+### TTL
+
+O TTL padrão é **60 segundos**, configurável via a variável de ambiente `CACHE_MAX_AGE_S` ou por loader via `export const cache = { maxAge: 300 }`.
+
+### Chave de cache
+
+A função `cacheKey(props, req, ctx)` deve retornar uma string que identifique unicamente as entradas que afetam a resposta, ou `null` para desabilitar o cache naquela invocação.
+
+A chave final de cache é composta por:
+1. O nome do resolver do loader
+2. O valor retornado pela sua função `cacheKey`
+
+Boas entradas para incluir na chave:
+
+- Props que afetam o resultado (slugs, filtros, paginação)
+- Características do request que mudam o conteúdo (locale, moeda, segmento)
+- Query params essenciais (mas evite params de tracking ou timestamps)
+
+Exemplos:
+
+```ts
+// 1) Público, SWR com chave estável
+export const cache = "stale-while-revalidate";
+export const cacheKey = (props: { slug: string }, req: Request) => {
+  const url = new URL(req.url);
+  url.search = new URLSearchParams([["slug", props.slug]]).toString();
+  return url.href;
+};
+
+// 2) Chave com segmento; bypass para usuários logados
+export const cache = "stale-while-revalidate";
+export const cacheKey = (_props: unknown, _req: Request, ctx: AppContext) => {
+  if (!ctx.isAnonymous) return null; // não cacheia dados personalizados
+  return ctx.segment?.token ?? "anonymous";
+};
+
+// 3) TTL personalizado (5 minutos)
+export const cache = { maxAge: 300 };
+export const cacheKey = (props: { category: string }, req: Request) => {
+  const url = new URL(req.url);
+  url.search = new URLSearchParams([["category", props.category]]).toString();
+  return url.href;
+};
+
+// 4) Opt-out explícito (carrinho/sessão específica do usuário)
+export const cache = "no-store";
+```
+
+## Invalidação de cache
+
+Os caches de loaders são automaticamente invalidados a cada novo deploy — nenhuma ação manual necessária. Dentro de um deploy, as entradas expiram de acordo com o TTL configurado.
+
+Atualmente não há como invalidar manualmente uma entrada específica do cache de loader antes do TTL expirar.
+
+## Interação com renderização assíncrona e caches CDN
+
+- **Cache de loaders** reduz latência no servidor e chamadas de API upstream antes da seção ser renderizada.
+- **Stale Edge Cache** (async render) cacheia o HTML renderizado da seção na CDN.
+
+Use os dois juntos: dados rápidos de loader + seções cacheadas na CDN = menor latência possível ponta a ponta.
+
+## Melhores práticas
+
+- Prefira `"stale-while-revalidate"` para loaders públicos e de leitura.
+- Sempre implemente `cacheKey` — inclua todas as props e params que mudam o resultado, mais segmentação (locale, moeda, segmento) quando relevante.
+- Retorne `null` do `cacheKey` para respostas autenticadas ou personalizadas.
+- Evite incluir parâmetros voláteis ou irrelevantes (timestamps, params de tracking) na chave.
+- Se um loader deve sempre executar atualizado mas você quer a seção cacheada, use `"no-cache"` ao invés de `"no-store"`.
+
+## Veja também
+
+- [Edge Async Render](/pt/cache/async-render)
+- [Cache de HTML de Página](/pt/cache/page)
+- [Conceito de Loader](https://docs.deco.cx/pt/concepts/loader)

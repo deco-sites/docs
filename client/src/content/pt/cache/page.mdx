@@ -1,0 +1,92 @@
+---
+title: "Cache de HTML de Página"
+description: Cache de HTML completo no edge da CDN para páginas públicas.
+since: 1.0.0
+---
+
+import Callout from "../../../components/ui/Callout.astro";
+
+<Callout type="warning">
+  Essa funcionalidade está em desenvolvimento ativo e disponível para sites selecionados em acesso antecipado.
+</Callout>
+
+## O que é o cache de HTML de página?
+
+Em sites selecionados, a deco cacheia o HTML completo da página no edge da CDN. Em vez de toda requisição percorrer o caminho até o servidor de origem, o nó de edge retorna uma resposta de página previamente cacheada.
+
+Essa funcionalidade está ativa em sites selecionados.
+
+## O que é cacheado
+
+No momento, apenas requisições de página públicas e anônimas são elegíveis. Esse escopo pode se expandir conforme a funcionalidade evolui.
+
+- Visitantes anônimos (sem sessão ativa)
+- Requisições de navegação de página comuns
+- Páginas sem estado dinâmico por usuário
+
+## O que nunca é cacheado
+
+Os casos a seguir sempre ignoram o cache de HTML e são servidos diretamente da origem:
+
+| Cenário | Motivo |
+|---------|--------|
+| Usuários logados | Sessão de autenticação detectada — resposta é personalizada |
+| Respostas que definem cookies | `Set-Cookie` presente — resposta contém estado por usuário |
+| Páginas com flags de A/B não-cacheáveis ativas | Variante requer segmentação por usuário |
+| VTEX: usuários com campanhas ativas, tabelas de preço ou pricing por região | Segmento é personalizado — resposta diferiria por usuário |
+
+## Tempo de vida do cache
+
+O tempo de vida do cache depende do valor de `Cache-Control` em vigor — definido pelo código da sua aplicação ou configurado pela equipe deco para o seu site.
+
+O valor padrão é `public, max-age=90, s-maxage=90, stale-while-revalidate=30`, o que significa:
+
+- Respostas cacheadas são servidas por **90 segundos**. Após esse período, a próxima requisição busca uma resposta atualizada da origem.
+- Uma **janela de stale-while-revalidate de 30 segundos** é aplicada: respostas expiradas são servidas imediatamente enquanto uma resposta atualizada é buscada em segundo plano.
+
+## Como verificar
+
+Inspecione o header `Cache-Control` da resposta para verificar se uma página é elegível para o cache de HTML:
+
+```bash
+curl -sI https://www.seusite.com.br/ | grep -i cache-control
+```
+
+Saída esperada para uma requisição anônima (cacheável):
+
+```
+cache-control: public, max-age=90, s-maxage=90, stale-while-revalidate=30
+```
+
+Saída esperada para uma requisição não cacheável (ex: usuário logado):
+
+```
+cache-control: no-store, no-cache, must-revalidate
+```
+
+## Interação com outras camadas de cache
+
+O cache de HTML de página funciona junto com os outros mecanismos de cache da deco:
+
+- **Cache de loaders**: Cacheia dados buscados pelos loaders no nível do servidor. Quando ocorre um cache hit de HTML, a origem não é acessada — os loaders não executam.
+- **Stale Edge Cache (seções assíncronas)**: Cacheia seções lazy-loaded individualmente na CDN. O cache de HTML de página opera no nível da página completa montada, uma camada acima.
+
+Um cache hit de HTML no nível da CDN significa que a página é servida inteiramente do edge, sem envolver o servidor de origem.
+
+## Configuração
+
+> **Nota:** Se a sua aplicação já define um header `Cache-Control` na resposta, esse valor é usado como está e o padrão da plataforma é ignorado.
+
+## Limitações
+
+- **Ainda não disponível para todos**: o cache de HTML de página é habilitado caso a caso no momento. Entre em contato com a equipe deco se quiser habilitar no seu site.
+- **Sem purge manual**: atualmente não há como invalidar manualmente respostas HTML cacheadas. As páginas expiram naturalmente após o TTL.
+
+## Implementação
+
+A lógica de cache está no runtime da deco, open source em [github.com/deco-cx/deco](https://github.com/deco-cx/deco).
+
+## Veja também
+
+- [Cache de data loaders](/pt/cache/loader)
+- [Edge Async Render](/pt/cache/async-render)

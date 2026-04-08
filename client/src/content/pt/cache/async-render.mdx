@@ -1,0 +1,55 @@
+---
+title: "Edge Async Render"
+description: Como a deco renderiza seções de forma assíncrona e as cacheia no edge da CDN.
+---
+
+## Como funciona
+
+A renderização assíncrona carrega seções da página de forma progressiva. Cada seção está vinculada a um orçamento de tempo:
+
+- Seções cujos loaders terminam dentro do orçamento são renderizadas diretamente no HTML inicial.
+- Seções cujos loaders excedem o orçamento renderizam um skeleton primeiro. Quando a página chega ao navegador, o cliente busca e substitui o conteúdo real.
+
+Seções fora da tela não carregam até o usuário rolar a página.
+
+## Stale Edge Cache
+
+Quando uma seção é buscada de forma assíncrona, o HTML renderizado é cacheado no edge da CDN. Requisições subsequentes para a mesma seção são servidas diretamente da CDN, sem acessar a origem.
+
+**TTL padrão:**
+
+| Diretiva | Valor | Significado |
+|----------|-------|-------------|
+| `s-maxage` | 60s | CDN cacheia a seção por 60 segundos |
+| `stale-while-revalidate` | 3600s | Serve conteúdo expirado por até 1 hora enquanto revalida em segundo plano |
+| `stale-if-error` | 86400s | Serve conteúdo expirado por até 24 horas se a origem retornar erro |
+
+A janela de stale longa significa que os usuários quase sempre recebem uma resposta instantânea do cache, mesmo quando a entrada da CDN tecnicamente expirou.
+
+## O que determina se uma seção pode ser cacheada
+
+A cacheabilidade de uma seção depende inteiramente dos seus loaders:
+
+- Se qualquer loader não está configurado para cache, a resposta da seção **não é cacheada** na CDN.
+- Se todos os loaders estão configurados para cache, a seção **é cacheada**.
+
+Veja [Cache de data loaders](/pt/cache/loader) para configurar o cache de loaders.
+
+## Habilitando e desabilitando
+
+A renderização assíncrona está habilitada por padrão para todas as seções. Para desabilitar em uma seção específica, desative a opção `Optimization` nas propriedades da seção no Admin.
+
+![Desativar renderização assíncrona](/images/performance/disable-async-render.png)
+
+## Benefícios
+
+- **Resposta inicial mais rápida**: Seções pesadas não bloqueiam o primeiro byte do HTML.
+- **Cache de seções na CDN**: Seções populares são servidas do edge com latência mínima.
+- **Resiliência**: Conteúdo expirado é servido se a origem estiver lenta ou indisponível (até 24h).
+- **Menos layout shifts**: Implemente `LoadingFallback` nas seções para exibir um skeleton durante o carregamento assíncrono. Veja a [documentação do `LoadingFallback`](https://docs.deco.cx/pt/developing-capabilities/sections/loading-fallback).
+
+## Veja também
+
+- [Cache de data loaders](/pt/cache/loader)
+- [Cache de HTML de Página](/pt/cache/page)
+- [Blog post sobre Async Rendering](https://deco.cx/en/blog/async-rendering)

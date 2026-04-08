@@ -1,0 +1,121 @@
+---
+title: "Caching Data Loaders"
+description: Cache your data loaders with keys and TTL to reduce latency and API load.
+since: 1.0.0
+---
+
+## Why cache loaders?
+
+Loaders fetch data that powers your pages and sections. Caching them:
+
+- Reduces API latency and backend load
+- Improves resilience under traffic spikes
+- Makes async rendering faster by serving warm data
+
+> Strong recommendation: enable caching for all read-mostly and public data loaders. Opt out only for user-specific or highly volatile data.
+
+## How loader caching works
+
+In a loader module, export two optional fields:
+
+```ts
+// Cache policy
+export const cache =
+  // "no-store" | "no-cache" | "stale-while-revalidate" | { maxAge: number }
+
+// Cache key generator
+export const cacheKey = (props, req, ctx) => string | null
+```
+
+### Cache modes
+
+- **`"no-store"`** (default):
+  - Disables cache entirely for this loader.
+  - Also prevents dependent sections from being cached at the CDN edge.
+  - Use for user-specific or sensitive data (e.g. carts, sessions).
+
+- **`"no-cache"`**:
+  - Skips the cache for this loader run, but does not block dependent sections from being cached.
+  - Use when the loader must always run fresh but the section can still be served from cache.
+
+- **`"stale-while-revalidate"`**:
+  - Returns cached data immediately and revalidates in the background when stale.
+  - Best default for public, read-mostly loaders.
+
+- **`{ maxAge: number }`**:
+  - Same as `"stale-while-revalidate"` with a custom TTL (in seconds).
+
+### TTL
+
+The default TTL is **60 seconds**, configurable via the `CACHE_MAX_AGE_S` environment variable or per-loader via `export const cache = { maxAge: 300 }`.
+
+### Cache key
+
+The `cacheKey(props, req, ctx)` function must return a string that uniquely identifies the inputs that affect the response, or `null` to disable caching for that invocation.
+
+The final cache key is composed of:
+1. The loader's resolver name
+2. The value returned by your `cacheKey` function
+
+Good inputs to include in the key:
+
+- Props that affect the result (slugs, filters, pagination)
+- Request-scoped traits that change content (locale, currency, segment)
+- Essential query params (but avoid tracking params or timestamps)
+
+Examples:
+
+```ts
+// 1) Public, SWR with stable key
+export const cache = "stale-while-revalidate";
+export const cacheKey = (props: { slug: string }, req: Request) => {
+  const url = new URL(req.url);
+  url.search = new URLSearchParams([["slug", props.slug]]).toString();
+  return url.href;
+};
+
+// 2) Segment-aware key; bypass for logged-in users
+export const cache = "stale-while-revalidate";
+export const cacheKey = (_props: unknown, _req: Request, ctx: AppContext) => {
+  if (!ctx.isAnonymous) return null; // don't cache personalized data
+  return ctx.segment?.token ?? "anonymous";
+};
+
+// 3) Custom TTL (5 minutes)
+export const cache = { maxAge: 300 };
+export const cacheKey = (props: { category: string }, req: Request) => {
+  const url = new URL(req.url);
+  url.search = new URLSearchParams([["category", props.category]]).toString();
+  return url.href;
+};
+
+// 4) Explicitly opt-out (user-specific cart/session)
+export const cache = "no-store";
+```
+
+## Cache invalidation
+
+Loader caches are automatically invalidated on every new deployment — no manual action needed. Within a deployment, entries expire according to their TTL.
+
+There is currently no way to manually invalidate a specific loader cache entry before the TTL expires.
+
+## Interaction with async rendering and CDN caches
+
+- **Loader cache** reduces server-side latency and upstream API calls before the section is rendered.
+- **Stale Edge Cache** (async render) caches the fully rendered section HTML at the CDN.
+
+Use both together: fast loader data + CDN-cached sections = lowest possible latency end-to-end.
+
+## Best practices
+
+- Prefer `"stale-while-revalidate"` for public, read-mostly loaders.
+- Always implement `cacheKey` — include all props and params that change the result, plus segmentation (locale, currency, segment) when relevant.
+- Return `null` from `cacheKey` for authenticated or personalized responses.
+- Avoid including volatile or irrelevant parameters (timestamps, tracking params) in the key.
+- If a loader must always execute fresh but you want the section cached, use `"no-cache"` instead of `"no-store"`.
+
+## See also
+
+- [Edge Async Render](/en/cache/async-render)
+- [HTML Page Cache](/en/cache/page)
+- [Loader concept](https://docs.deco.cx/en/concepts/loader)

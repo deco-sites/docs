@@ -1,0 +1,55 @@
+---
+title: "Edge Async Render"
+description: How deco renders sections asynchronously and caches them at the CDN edge.
+---
+
+## How it works
+
+Async rendering loads page sections progressively. Each section is bound to a time budget:
+
+- Sections whose loaders finish within the budget are rendered directly into the initial HTML.
+- Sections whose loaders exceed the budget render a loading skeleton first. Once the page reaches the browser, the client fetches and patches the real content.
+
+Off-screen sections don't load until the user scrolls near them.
+
+## Stale Edge Cache
+
+When a section is fetched asynchronously, its rendered HTML is cached at the CDN edge. Subsequent requests for the same section are served directly from the CDN, skipping the origin entirely.
+
+**Default TTL:**
+
+| Directive | Value | Meaning |
+|-----------|-------|---------|
+| `s-maxage` | 60s | CDN caches the section for 60 seconds |
+| `stale-while-revalidate` | 3600s | Serve stale content for up to 1 hour while revalidating in the background |
+| `stale-if-error` | 86400s | Serve stale content for up to 24 hours if the origin returns an error |
+
+The long stale window means users almost always get an instant response from cache, even when the CDN entry has technically expired.
+
+## What determines if a section can be cached
+
+A section's cacheability depends entirely on its loaders:
+
+- If any loader is not configured for caching, the section response is **not cached** at the CDN.
+- If all loaders are configured for caching, the section **is cached**.
+
+See [Caching data loaders](/en/cache/loader) for how to configure loader cache.
+
+## Enabling and disabling
+
+Async rendering is enabled by default for all sections. To disable it for a specific section, turn off the `Optimization` option in the section properties in the Admin.
+
+![Disable Async Rendering](https://ozksgdmyrqcxcwhnbepg.supabase.co/storage/v1/object/public/assets/530/3d9ee3b7-cce2-47f3-a320-2a72b2e63e2a)
+
+## Benefits
+
+- **Faster initial response**: Heavy sections don't block the first HTML byte.
+- **CDN caching of sections**: Popular sections are served from the edge with near-zero latency.
+- **Resilience**: Stale content is served if the origin is slow or down (up to 24h).
+- **Reduced layout shifts**: Implement `LoadingFallback` in sections to show a skeleton during async loading. See [`LoadingFallback` documentation](https://docs.deco.cx/en/developing-capabilities/sections/loading-fallback).
+
+## See also
+
+- [Caching data loaders](/en/cache/loader)
+- [HTML Page Cache](/en/cache/page)
+- [Async Rendering blog post](https://deco.cx/en/blog/async-rendering)

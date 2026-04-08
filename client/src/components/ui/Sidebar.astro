@@ -61,6 +61,7 @@ const sectionOrder = [
   "developing-capabilities",
   "decopilot",
   "performance",
+  "cache",
   "sdk",
   "api-reference",
   "self-host",
@@ -112,8 +113,8 @@ const fileOrderBySection: Record<string, string[]> = {
     "loaders",
     "lazy-3rd-party-scripts",
     "islands",
-    "edge-async-render",
   ],
+  "cache": ["page", "async-render", "loader"],
   "sdk": ["headless-cms", "ab-test", "feature-flags"],
   "api-reference": ["invoke", "use-script", "use-section"],
   "self-host": ["architecture", "envs", "site"],
@@ -145,7 +146,7 @@ const subsectionOrder: Record<string, string[]> = {
 // Combined order for sections where files and folders are interleaved
 const combinedOrder: Record<string, string[]> = {
   "getting-started": ["overview", "creating-a-site", "creating-a-new-page", "changes-and-publishing", "adding-an-app", "custom-domains", "gtm"],
-  "performance": ["why", "guide", "medias", "loaders", "lazy-3rd-party-scripts", "islands", "edge-async-render"],
+  "performance": ["why", "guide", "medias", "loaders", "lazy-3rd-party-scripts", "islands"],
 };
 
 // Sections where files and folders should be mixed (not files-first)
