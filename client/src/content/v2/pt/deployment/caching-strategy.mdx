@@ -75,7 +75,7 @@ registerCachePattern("/sitemap.xml", { maxAge: 0, sMaxAge: 86400 });
 
 Padrões batem na ordem de registro; primeiro match ganha.
 
-Veja [`cache-config.ts` do Casa&Vídeo](/Users/fernandofrizzatti/development/workspace/decocms/casaevideo-storefront/src/cache-config.ts) para overrides em larga escala em loja real.
+Mantenha as overrides num arquivo dedicado (por exemplo `src/cache-config.ts`) e importe-o no topo do `setup.ts`.
 
 ## Override por rota
 
@@ -188,4 +188,3 @@ Faça quando você tiver o tracing para confirmar que sua origem aguenta a carga
 - [Caching (framework)](/v2/pt/framework/caching)
 - [Worker entry](/v2/pt/framework/worker-entry)
 - [Loaders](/v2/pt/concepts/loaders)
-- [Estudo de caso Casa&Vídeo](/v2/pt/case-studies/casaevideo)

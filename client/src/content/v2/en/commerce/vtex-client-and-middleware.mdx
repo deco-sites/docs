@@ -33,7 +33,7 @@ import { vtexCachedFetch } from "@decocms/apps/vtex/client";
 const data = await vtexCachedFetch<MyShape>("/api/...");
 ```
 
-GET-only. Routes through `fetchWithCache` from [`vtex/utils/fetchCache.ts`](/Users/fernandofrizzatti/development/workspace/decocms/apps-start/vtex/utils/fetchCache.ts):
+GET-only. Routes through `fetchWithCache` from `vtex/utils/fetchCache.ts`:
 
 - **In-flight dedup** — concurrent same-key calls share one upstream request.
 - **SWR** — cached responses serve immediately; fresh data refetches.
@@ -174,7 +174,7 @@ Returns a cache-key fragment that captures region/sales-channel/B2B state. Mix i
 
 For sites where regional pricing/availability varies, wrap the instrumented fetch with a region-aware version:
 
-```66:86:/Users/fernandofrizzatti/development/workspace/decocms/casaevideo-storefront/src/setup.ts
+```ts
 const _baseFetch = createInstrumentedFetch("vtex");
 const regionAwareFetch: typeof fetch = (input, init) => {
   const ctx = RequestContext.current;
@@ -216,4 +216,3 @@ Most of these are internal to the integration — but if you customize, they're 
 - [VTEX loaders and actions](/v2/en/commerce/vtex-loaders-and-actions)
 - [VTEX gotchas](/v2/en/commerce/vtex-gotchas)
 - [Caching](/v2/en/framework/caching)
-- [Casa&Video case study](/v2/en/case-studies/casaevideo)

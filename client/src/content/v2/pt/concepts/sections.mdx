@@ -85,7 +85,7 @@ Veja [Framework: tipos](/v2/pt/framework/sdk-utilities#types-and-widgets) para a
 
 ## Convenções
 
-`@decocms/start` aplica algumas convenções automáticas em sections no momento do registro. Veja [`applySectionConventions`](/Users/fernandofrizzatti/development/workspace/decocms/deco-start/src/cms/applySectionConventions.ts):
+`@decocms/start` aplica algumas convenções automáticas em sections no momento do registro. Veja `applySectionConventions`:
 
 - Sections são embrulhadas em error boundary, então uma section quebrada não derruba a página.
 - Sections abaixo da dobra renderizam lazy (veja [Deferred rendering](/v2/pt/concepts/deferred-rendering)).
@@ -106,7 +106,7 @@ createSiteSetup({
 });
 ```
 
-Você também pode registrar sections explicitamente via `registerSectionLoaders` de `@decocms/start/cms` se precisar de controle fino. Veja [`casaevideo-storefront/src/setup.ts`](/Users/fernandofrizzatti/development/workspace/decocms/casaevideo-storefront/src/setup.ts) para um exemplo real.
+Você também pode registrar sections explicitamente via `registerSectionLoaders` de `@decocms/start/cms` se precisar de controle fino sobre a ordem ou quiser filtrar o glob.
 
 ## Sections de layout
 

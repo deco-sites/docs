@@ -48,7 +48,7 @@ export default defineConfig({
 });
 ```
 
-Essa é a baseline canônica — toda loja de referência usa esse formato com diferenças cosméticas. Veja [`vite.config.ts` em lebiscuit-tanstack`](/Users/fernandofrizzatti/development/workspace/decocms/lebiscuit-tanstack/vite.config.ts) para um real.
+Essa é a baseline canônica — lojas v2 em produção usam esse formato no máximo com diferenças cosméticas.
 
 ## O que o plugin faz
 
@@ -64,7 +64,7 @@ Módulos que só existem no servidor (internos do registro `@decocms/start/cms`,
 - O chunker do Vite não tente quebrar um arquivo de 10 MB.
 - Tempo de init de módulo seja dominado por `JSON.parse`, a opção mais rápida.
 
-Importa: o `blocks.gen.json` da Casa&Vídeo tem 11 MB. Sem fast-path, cold starts disparam.
+Importa: lojas em produção rotineiramente têm `blocks.gen.json` com vários MBs (às vezes >10 MB). Sem fast-path, cold starts disparam.
 
 ### 3. Stub de `meta.gen` no client
 
@@ -72,7 +72,7 @@ Importa: o `blocks.gen.json` da Casa&Vídeo tem 11 MB. Sem fast-path, cold start
 
 ### 4. Daemon de dev
 
-Em modo dev, o plugin sobe o daemon (file watcher, tunnel JWT-autenticado para o admin) para que `admin.deco.cx` consiga falar com seu server local. Veja [`@decocms/start/daemon`](/Users/fernandofrizzatti/development/workspace/decocms/deco-start/src/daemon/) para o motor.
+Em modo dev, o plugin sobe o daemon (file watcher, tunnel JWT-autenticado para o admin) para que `admin.deco.cx` consiga falar com seu server local. Veja `@decocms/start/daemon` para o motor.
 
 ### 5. Dicas de chunk
 

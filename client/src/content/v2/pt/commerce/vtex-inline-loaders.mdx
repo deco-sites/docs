@@ -128,7 +128,7 @@ const customLoaders = {
 };
 ```
 
-Aí use `customLoaders` em `getCommerceLoaders`. Veja [`commerce-loaders.ts` do Casa&Vídeo](/Users/fernandofrizzatti/development/workspace/decocms/casaevideo-storefront/src/setup/commerce-loaders.ts) para um wrapper de produção real.
+Aí use `customLoaders` em `getCommerceLoaders` para passar a sua versão embrulhada.
 
 ## Loaders podados
 
@@ -138,7 +138,7 @@ Aí use `customLoaders` em `getCommerceLoaders`. Veja [`commerce-loaders.ts` do 
 node generate-loaders.ts --decofile-dir .deco/blocks
 ```
 
-Bagaggio usa; Casa e Le biscuit não. A diferença é como tunar quando o tamanho do bundle vira gargalo.
+Recomendado para sites novos; sites existentes podem adotar incrementalmente quando o tamanho do bundle vira gargalo.
 
 ## Veja também
 

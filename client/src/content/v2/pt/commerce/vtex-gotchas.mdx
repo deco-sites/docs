@@ -85,7 +85,7 @@ Não fail no run; só deixe usuários confusos. Quando suspeitar, log o sort rec
 console.log("sort recebido:", input.sort, "→ sort efetivo:", sanitizeSort(input.sort));
 ```
 
-Veja [`sortwhitelist.ts`](/Users/fernandofrizzatti/development/workspace/decocms/apps-start/src/vtex/utils/sortwhitelist.ts) para a lista exata.
+Veja `sortwhitelist.ts` para a lista exata.
 
 ## 6. Drift do README sobre `/vtex/invoke`
 
@@ -150,7 +150,7 @@ return new Response(upstream.body, {
 });
 ```
 
-Veja [`vtex-checkout-proxy.ts`](/Users/fernandofrizzatti/development/workspace/decocms/lebiscuit-tanstack/src/middleware/vtex-checkout-proxy.ts) do Le biscuit para o padrão certo.
+Veja [Worker entry → proxyHandler](/v2/pt/framework/worker-entry#proxyhandler) para o padrão recomendado.
 
 ## 14. Concorrência de write no orderForm
 
@@ -166,5 +166,3 @@ Race entre adicionar dois items rapidamente: VTEX serializa updates no orderForm
 
 - [VTEX overview](/v2/pt/commerce/vtex-overview)
 - [VTEX client e middleware](/v2/pt/commerce/vtex-client-and-middleware)
-- [Estudo de caso Casa&Vídeo](/v2/pt/case-studies/casaevideo)
-- [Estudo de caso Le biscuit](/v2/pt/case-studies/lebiscuit)

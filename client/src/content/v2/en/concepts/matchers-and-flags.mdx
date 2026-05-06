@@ -55,7 +55,7 @@ registerBuiltinMatchers({
 });
 ```
 
-See [`casaevideo-storefront/src/setup.ts`](/Users/fernandofrizzatti/development/workspace/decocms/casaevideo-storefront/src/setup.ts) for a real registration.
+Register custom matchers in `setup.ts` after `createSiteSetup` runs, so the registry is ready by the time loaders execute.
 
 ## PostHog matcher
 

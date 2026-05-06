@@ -28,7 +28,7 @@ v2 storefronts run on Cloudflare Workers. This page documents the deployment ess
 }
 ```
 
-This is the canonical baseline. Every reference site uses this shape — see [`lebiscuit-tanstack/wrangler.jsonc`](/Users/fernandofrizzatti/development/workspace/decocms/lebiscuit-tanstack/wrangler.jsonc).
+This is the canonical baseline — production v2 storefronts use this shape with at most minor adjustments.
 
 ### `main`
 
@@ -36,7 +36,7 @@ Always points to `./src/worker-entry.ts`. Don't point at `server.ts` directly �
 
 ### `compatibility_date`
 
-Pin to a recent date. Cloudflare's compat dates control which Workers runtime features are active. The reference sites use `2026-02-14`; the latest reasonable date at any given time is fine.
+Pin to a recent date. Cloudflare's compat dates control which Workers runtime features are active. `2026-02-14` is a known-good baseline; the latest reasonable date at any given time is fine.
 
 ### `compatibility_flags`
 
@@ -71,7 +71,7 @@ wrangler kv:namespace create SITES_KV
 # copy the returned id into wrangler.jsonc
 ```
 
-The `SITES_KV` binding is the conventional name [`withABTesting`](/v2/en/framework/sdk-utilities) reads from. Casa&Video and Le biscuit have it bound; Bagaggio leaves it commented out.
+The `SITES_KV` binding is the conventional name [`withABTesting`](/v2/en/framework/sdk-utilities) reads from. Bind it when you want full-stack A/B testing; leave it out (or commented) otherwise.
 
 ### R2
 

@@ -51,7 +51,7 @@ export const Route = createFileRoute("/")(
 - An **`errorComponent`** that surfaces section errors.
 - A **default `component`** that renders `<DecoPageRenderer />` over the loaded page.
 
-You can override any of these. The reference sites do — see [`baggagio-tanstack/src/routes/$.tsx`](/Users/fernandofrizzatti/development/workspace/decocms/baggagio-tanstack/src/routes/$.tsx) for a real route file.
+You can override any of these — pass your own `loader`, `validateSearch`, or `component` and the framework merges them in.
 
 ## Important options
 
@@ -83,11 +83,11 @@ The site identifier the admin uses. Match what's in `admin.deco.cx`.
 
 Some sites layer site-wide loaders or head defaults on top of the CMS route. `@decocms/start/routes` exports `withSiteGlobals` for this:
 
-```9:18:/Users/fernandofrizzatti/development/workspace/decocms/baggagio-tanstack/src/routes/$.tsx
+```tsx
 const routeConfig = withSiteGlobals(
   cmsRouteConfig({
-    siteName: "Bagaggio",
-    defaultTitle: "Baggagio-tanstack",
+    siteName: "my-store",
+    defaultTitle: "My Store",
     ignoreSearchParams: ["skuId"],
   }),
 );
@@ -118,7 +118,7 @@ TanStack Router resolves more specific paths first, so any explicit file beats t
 
 ### Use `DecoRootLayout`
 
-Casa&Video and Le biscuit use the framework-provided shell, which handles fonts, preconnects, and the CMS preview iframe:
+The framework-provided shell handles fonts, preconnects, and the CMS preview iframe:
 
 ```tsx
 import { DecoRootLayout } from "@decocms/start/hooks";
@@ -135,7 +135,7 @@ export const Route = createRootRoute({
 
 ### Roll your own
 
-Bagaggio uses a custom shell so it can place the minicart drawer and Google Fonts links directly. See [`baggagio-tanstack/src/routes/__root.tsx`](/Users/fernandofrizzatti/development/workspace/decocms/baggagio-tanstack/src/routes/__root.tsx).
+Drop `DecoRootLayout` and write a `__root.tsx` from scratch when you need bespoke font loading, an in-shell minicart drawer, or any markup the framework defaults can't express. Copy the providers you need from `PreviewProviders` and `LiveControls` (both from `@decocms/start/hooks`).
 
 ## Server functions and loaders
 

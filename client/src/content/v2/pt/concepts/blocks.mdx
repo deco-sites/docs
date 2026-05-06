@@ -53,7 +53,7 @@ Um único objeto JSON que mapeia IDs de block para seu JSON. Gerado pelo script 
 npm run generate:blocks
 ```
 
-É o que o framework carrega em runtime. O `blocks.gen.json` das lojas de referência vai de ~2 MB ([baggagio](/Users/fernandofrizzatti/development/workspace/decocms/baggagio-tanstack)) a ~11 MB ([casaevideo](/Users/fernandofrizzatti/development/workspace/decocms/casaevideo-storefront)).
+É o que o framework carrega em runtime. Em lojas em produção, o `blocks.gen.json` tipicamente fica entre alguns MBs e mais de 10 MB, dependendo do número de páginas e sections no CMS.
 
 ### Re-export: `src/server/cms/blocks.gen.ts`
 

@@ -49,7 +49,7 @@ setCacheProfile("listing", {
 });
 ```
 
-This is exactly what [Casa&Video does](/Users/fernandofrizzatti/development/workspace/decocms/casaevideo-storefront/src/cache-config.ts) — looser TTLs for static-shaped routes, tighter for search.
+A common production pattern is looser TTLs for static-shaped routes, tighter for search.
 
 Import the file from `setup.ts` so the overrides apply before the framework reads the config:
 
@@ -73,7 +73,7 @@ registerCachePattern({
 });
 ```
 
-This is what [Bagaggio uses](/Users/fernandofrizzatti/development/workspace/decocms/baggagio-tanstack/src/cache-config.ts) to route the sitemap to the static profile.
+This is the canonical way to route the sitemap to the `static` profile.
 
 ## Cache API mechanics
 
@@ -141,7 +141,7 @@ The key function is critical. If two semantically-different requests produce the
 
 ### Where it's used
 
-`@decocms/apps` wraps every commerce inline loader with `createCachedLoader`. PDP, PLP, shelves, suggestions — all cached and deduped automatically. See [`createVtexCommerceLoaders`](/Users/fernandofrizzatti/development/workspace/decocms/apps-start/vtex/commerceLoaders.ts).
+`@decocms/apps` wraps every commerce inline loader with `createCachedLoader`. PDP, PLP, shelves, suggestions — all cached and deduped automatically. See `createVtexCommerceLoaders`.
 
 ## `mergeCacheControl`
 
@@ -242,4 +242,3 @@ Where `<key>` matches `cachePurgeKey` you passed to `createDecoWorkerEntry`. The
 - [Worker entry](/v2/en/framework/worker-entry)
 - [Loaders](/v2/en/concepts/loaders)
 - [Caching strategy (deployment)](/v2/en/deployment/caching-strategy)
-- [Casa&Video case study](/v2/en/case-studies/casaevideo)

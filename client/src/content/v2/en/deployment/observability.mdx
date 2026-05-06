@@ -216,7 +216,7 @@ OTel from Workers doesn't capture client-side metrics (LCP, FID, CLS). For RUM, 
 - [Sentry Performance](https://sentry.io) (paid, integrates with the OTel APM).
 - A custom `<script>` reading `PerformanceObserver` and posting to `/api/rum`.
 
-Casa&Video's setup includes Sentry; Le biscuit and Bagaggio don't ship with one out of the box.
+Sentry is not wired by default — install `@sentry/cloudflare` and call its init from `setup.ts` if you want it.
 
 ## Cost considerations
 

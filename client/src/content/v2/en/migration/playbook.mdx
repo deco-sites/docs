@@ -88,7 +88,7 @@ npm run generate:loaders
 npx tsr generate
 ```
 
-The reference sites have all of these as composite scripts in `package.json`.
+Wire all of these as composite scripts in `package.json` so a single `npm run generate` (or equivalent) keeps everything in sync.
 
 ## Phase 6 — Verify
 
@@ -133,7 +133,7 @@ export default function Header({ ... }: Props) {
 }
 ```
 
-See [Casa&Video's `use-client-migration.md`](/Users/fernandofrizzatti/development/workspace/decocms/casaevideo-storefront/docs/use-client-migration.md) for an exhaustive island-by-island map from a real site.
+Walk islands one at a time, deciding per island whether it can hoist into the section (server) or needs to remain a client component.
 
 ### `useScript(fn)` removal
 
@@ -148,7 +148,7 @@ If your v1 site had custom overrides, port them. The default implementations in 
 
 ### Third-party `<head>` scripts
 
-Scripts that mutate `<head>` (Google Tag Manager, Adobe Launch, Hotjar) often cause hydration mismatches in React. The fix is to inject them in the worker response, after React has rendered, instead of in JSX. See [Casa&Video's `cls-pending-issues.md`](/Users/fernandofrizzatti/development/workspace/decocms/casaevideo-storefront/docs/cls-pending-issues.md).
+Scripts that mutate `<head>` (Google Tag Manager, Adobe Launch, Hotjar) often cause hydration mismatches in React. The fix is to inject them in the worker response, after React has rendered, instead of in JSX.
 
 ## Phase 8 — Performance pass
 
@@ -156,7 +156,7 @@ After functional correctness:
 
 - **Tune `foldThreshold`** — usually 2-3 sections eager, rest deferred.
 - **Audit cache profiles** — the defaults are conservative; loosen for static content, tighten for cart-adjacent pages.
-- **Prune `loaders.gen.ts`** — use `--decofile-dir .deco/blocks` so only loaders the CMS actually references appear in the registry. Bagaggio uses this; Casa&Video and Le biscuit don't yet.
+- **Prune `loaders.gen.ts`** — use `--decofile-dir .deco/blocks` so only loaders the CMS actually references appear in the registry. Recommended for new sites; existing sites can adopt incrementally.
 - **Verify deferred sections in dev** — if you hit "I/O across requests" errors, set `no_handle_cross_request_promise_resolution` in `wrangler.jsonc`.
 
 ## Phase 9 — QA and deploy

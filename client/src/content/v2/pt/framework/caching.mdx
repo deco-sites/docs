@@ -18,7 +18,7 @@ Toda página de loja toca pelo menos as duas primeiras.
 
 `@decocms/start/sdk/cacheHeaders` contém um catálogo de profiles por padrão de URL. Quando um request entra em `createDecoWorkerEntry`, o framework casa a URL com um profile e usa seu TTL.
 
-Profiles default (extraídos de [`cacheHeaders.ts`](/Users/fernandofrizzatti/development/workspace/decocms/deco-start/src/sdk/cacheHeaders.ts)):
+Profiles default (extraídos de `cacheHeaders.ts`):
 
 | Padrão | Profile | maxAge | s-maxage |
 |---|---|---|---|
@@ -61,7 +61,7 @@ registerCachePattern(/^\/landing\/.*/, "home");
 
 Padrões são casados na ordem de registro; primeiro match ganha.
 
-Veja [`cache-config.ts` do Casa&Vídeo](/Users/fernandofrizzatti/development/workspace/decocms/casaevideo-storefront/src/cache-config.ts) para um exemplo real de override em larga escala.
+Mantenha as overrides num arquivo dedicado (por exemplo `src/cache-config.ts`) e importe-o no topo do `setup.ts` para que rodem antes do framework ler a config.
 
 ## `cacheHeaders` em rotas
 
@@ -99,7 +99,7 @@ Comportamento:
 - **TTL por status HTTP** — 2xx cacheia pelo TTL; 4xx cacheia 1/10 do TTL; 5xx não cacheia.
 - **LRU eviction** — limite default de 1000 entradas por isolate.
 
-Veja [`vtex-fetch-cache.ts`](/Users/fernandofrizzatti/development/workspace/decocms/apps-start/src/vtex/sdk/vtex-fetch-cache.ts) em `@decocms/apps` para a versão de fetch (`vtexFetchWithCache`).
+Veja `vtex-fetch-cache.ts` em `@decocms/apps` para a versão de fetch (`vtexFetchWithCache`).
 
 ### Tunning
 
@@ -201,4 +201,3 @@ Em desenvolvimento, defina `DEBUG_CACHE=1` no `vite.config.ts` para emitir log d
 - [Estratégia de cache](/v2/pt/deployment/caching-strategy)
 - [Worker entry](/v2/pt/framework/worker-entry)
 - [Loaders](/v2/pt/concepts/loaders)
-- [Estudo de caso Casa&Vídeo](/v2/pt/case-studies/casaevideo)

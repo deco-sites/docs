@@ -88,7 +88,7 @@ npm run generate:loaders
 npx tsr generate
 ```
 
-As lojas de referência têm tudo isso como scripts compostos no `package.json`.
+Conecte tudo isso como scripts compostos no `package.json` para que um único `npm run generate` (ou equivalente) mantenha tudo em sincronia.
 
 ## Fase 6 — Verificação
 
@@ -133,7 +133,7 @@ export default function Header({ ... }: Props) {
 }
 ```
 
-Veja [`use-client-migration.md`](/Users/fernandofrizzatti/development/workspace/decocms/casaevideo-storefront/docs/use-client-migration.md) do Casa&Vídeo para um mapa exaustivo de island por island de uma loja real.
+Caminhe pelas islands uma a uma, decidindo por island se ela pode subir para a section (server) ou se precisa continuar como client component.
 
 ### Remoção de `useScript(fn)`
 
@@ -148,7 +148,7 @@ Se sua loja v1 tinha overrides custom, porte. As implementações default em `@d
 
 ### Scripts de terceiros no `<head>`
 
-Scripts que mutam o `<head>` (Google Tag Manager, Adobe Launch, Hotjar) frequentemente causam mismatch de hidratação em React. A correção é injetar via resposta do worker, depois do React renderizar, em vez de em JSX. Veja [`cls-pending-issues.md`](/Users/fernandofrizzatti/development/workspace/decocms/casaevideo-storefront/docs/cls-pending-issues.md) do Casa&Vídeo.
+Scripts que mutam o `<head>` (Google Tag Manager, Adobe Launch, Hotjar) frequentemente causam mismatch de hidratação em React. A correção é injetar via resposta do worker, depois do React renderizar, em vez de em JSX.
 
 ## Fase 8 — Pass de performance
 
@@ -156,7 +156,7 @@ Depois da correção funcional:
 
 - **Tunning do `foldThreshold`** — geralmente 2-3 sections eager, resto deferred.
 - **Auditoria de profiles de cache** — defaults são conservadores; afrouxe para conteúdo estático, aperte para páginas perto do checkout.
-- **Pode `loaders.gen.ts`** — use `--decofile-dir .deco/blocks` para que só apareçam loaders que o CMS realmente referencia. Bagaggio usa; Casa e Le biscuit ainda não.
+- **Pode `loaders.gen.ts`** — use `--decofile-dir .deco/blocks` para que só apareçam loaders que o CMS realmente referencia. Recomendado para sites novos; sites existentes podem adotar incrementalmente.
 - **Verifique sections deferred em dev** — se aparecer "I/O across requests", configure `no_handle_cross_request_promise_resolution` em `wrangler.jsonc`.
 
 ## Fase 9 — QA e deploy

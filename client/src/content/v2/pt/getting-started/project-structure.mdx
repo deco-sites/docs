@@ -6,7 +6,7 @@ icon: "FolderTree"
 
 import Callout from "../../../../components/ui/Callout.astro";
 
-Uma loja v2 tem uma superfície deliberadamente pequena. A maioria dos arquivos é gerada. Esta página percorre o layout que você vai ver depois de clonar uma loja de referência.
+Uma loja v2 tem uma superfície deliberadamente pequena. A maioria dos arquivos é gerada. Esta página percorre o layout que você vai ter depois de seguir [Começar do zero](/v2/pt/getting-started/start-fresh).
 
 ## Layout de topo
 
@@ -32,7 +32,7 @@ minha-loja/
 └── wrangler.jsonc
 ```
 
-Toda loja de referência — [casaevideo](/Users/fernandofrizzatti/development/workspace/decocms/casaevideo-storefront), [baggagio](/Users/fernandofrizzatti/development/workspace/decocms/baggagio-tanstack), [lebiscuit](/Users/fernandofrizzatti/development/workspace/decocms/lebiscuit-tanstack) — segue essa forma.
+Lojas v2 em produção seguem exatamente essa forma.
 
 ## `.deco/blocks/`
 
@@ -77,8 +77,8 @@ O pipeline de build escaneia essa pasta e emite um registro `sections.gen.ts`. V
 
 Rotas baseadas em arquivo do TanStack Router. As duas rotas que toda loja precisa:
 
-- **[`src/routes/index.tsx`](/Users/fernandofrizzatti/development/workspace/decocms/lebiscuit-tanstack/src/routes/index.tsx)** — homepage; usa `cmsHomeRouteConfig`.
-- **[`src/routes/$.tsx`](/Users/fernandofrizzatti/development/workspace/decocms/lebiscuit-tanstack/src/routes/$.tsx)** — catch-all para URLs guiadas pelo CMS; usa `cmsRouteConfig`.
+- **`src/routes/index.tsx`** — homepage; usa `cmsHomeRouteConfig`.
+- **`src/routes/$.tsx`** — catch-all para URLs guiadas pelo CMS; usa `cmsRouteConfig`.
 
 Mais um `src/routes/__root.tsx` para o shell global, tipicamente.
 
@@ -100,7 +100,7 @@ Vários arquivos, todos gerados por scripts em `@decocms/start`:
 Não edite na mão. Rode os geradores quando mexer em sections ou blocks.
 
 <Callout type="warning">
-**`blocks.gen.json` pode ser grande** (o da Casa&Vídeo tem 11,6 MB). O Vite plugin troca o re-export `.ts` por um `JSON.parse` rápido do `.json` em load time. Não tente chunk manual de `@decocms/start` ou `@decocms/apps` — re-exports circulares quebram em load.
+**`blocks.gen.json` pode ser grande** (lojas em produção rotineiramente passam de 10 MB). O Vite plugin troca o re-export `.ts` por um `JSON.parse` rápido do `.json` em load time. Não tente chunk manual de `@decocms/start` ou `@decocms/apps` — re-exports circulares quebram em load.
 </Callout>
 
 ## `src/setup.ts`

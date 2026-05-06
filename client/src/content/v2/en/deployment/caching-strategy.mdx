@@ -52,7 +52,7 @@ setCacheProfile("listing", {
 });
 ```
 
-[Casa&Video does this](/Users/fernandofrizzatti/development/workspace/decocms/casaevideo-storefront/src/cache-config.ts) — looser TTLs for static-shaped routes, tighter for search.
+A common production pattern is looser TTLs for static-shaped routes, tighter for search.
 
 Import the file from `setup.ts` so the overrides apply before the framework reads the config:
 
@@ -93,7 +93,7 @@ registerCachePattern({
 
 Earlier-registered patterns win. The default catch-all (`listing`) only applies if nothing else matches.
 
-[Bagaggio uses this](/Users/fernandofrizzatti/development/workspace/decocms/baggagio-tanstack/src/cache-config.ts) for the sitemap; their other defaults are inherited.
+This is the canonical way to route the sitemap to the `static` profile while inheriting all other defaults.
 
 ## Route-level cache (TanStack Router)
 
@@ -236,4 +236,3 @@ In `wrangler tail`, every request shows the cache verdict. If you expect HIT and
 - [Caching (framework reference)](/v2/en/framework/caching)
 - [Worker entry](/v2/en/framework/worker-entry)
 - [Loaders](/v2/en/concepts/loaders)
-- [Casa&Video case study](/v2/en/case-studies/casaevideo)
