@@ -1,0 +1,92 @@
+---
+title: "Visão geral da migração"
+description: "Migrar uma loja deco.cx Fresh/Deno para v2 com o mínimo de surpresas."
+icon: "ArrowRightLeft"
+---
+
+import Callout from "../../../../components/ui/Callout.astro";
+
+Este é o ponto de entrada da migração v1 → v2. O playbook completo está espalhado nesta seção; esta página diz o que ler em qual ordem.
+
+## Leia nesta ordem
+
+1. **[Visão geral da migração](/v2/pt/migration/overview)** — você está aqui.
+2. **[Playbook](/v2/pt/migration/playbook)** — passo a passo manual, fase por fase.
+3. **[Script de migração](/v2/pt/migration/migrate-script)** — o que `npx -p @decocms/start deco-migrate` faz.
+4. **[Agent skills](/v2/pt/migration/agent-skills)** — usar IA de coding para a cauda longa.
+5. **[Checklist](/v2/pt/migration/checklist)** — validação antes do merge.
+
+## Matriz de decisão
+
+| Situação | Caminho recomendado |
+|---|---|
+| Site médio, time confortável | Rodar `deco-migrate`, ajustar o que ele apontar, deployar. |
+| Site grande (100+ sections), muito VTEX | Rodar `deco-migrate` em `--dry-run`, revisar relatório, executar. Usar Agent Skill para ajustes manuais. |
+| Site pequeno, controle total | Port manual — clonar [`lebiscuit-tanstack`](https://github.com/deco-sites/lebiscuit-tanstack) e migrar sections na mão. |
+| Worker bem customizado (proxies, harness AB) | Rodar `deco-migrate`, depois portar a lógica custom do worker manualmente usando [Referência do worker entry](/v2/pt/framework/worker-entry). |
+
+Não há prazo. v1 segue mantida.
+
+## Compatibilidade de versões
+
+O script de migração mira a **major atual** de `@decocms/start` (^2.x) e `@decocms/apps` (^1.x). Fixe versões específicas no `package.json` migrado:
+
+```jsonc
+{
+  "dependencies": {
+    "@decocms/start": "^2.28.0",
+    "@decocms/apps": "^1.11.0",
+    "@tanstack/react-start": "^1.166.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "vite": "^6.0.0",
+    "wrangler": "^4.72.0"
+  }
+}
+```
+
+As lojas de referência estão fixadas nessas ou perto — veja [`lebiscuit-tanstack/package.json`](/Users/fernandofrizzatti/development/workspace/decocms/lebiscuit-tanstack/package.json).
+
+## O que sobrevive à migração
+
+- **Todo o conteúdo `.deco/blocks/*.json`** — o decofile tem o mesmo formato.
+- **Todas as interfaces `Props` de section** — sem reescrita de schema.
+- **Toda a lógica de matcher** — built-ins portados 1:1.
+- **SEO do site** — `configureWebsite({ seo })` de `@decocms/apps/website` espelha o config do v1.
+- **Semântica das integrações VTEX/Shopify** — mesmo formato de loader/action; novo path de pacote.
+
+## O que você vai ter que refazer
+
+- **Tudo em `src/islands/`** — islands não existem em React. A maior parte vira componentes `"use client"`, alguns viram parte da section pai, outros viram helpers.
+- **Padrões `useScript(fn)`** — o pattern do v1 não sobrevive. Use `inlineScript`, mova para o client ou reestruture.
+- **Rotas Fresh customizadas** — porte para file routes do TanStack Router.
+- **Leituras `Deno.env`** — substitua por bindings `env` do Worker via `RequestContext.current.env`.
+- **Steps de build customizados em `deno.json`** — traduza para scripts em `package.json`.
+
+## Orçamento de tempo (aproximado)
+
+Para uma loja média (50-100 sections):
+
+| Fase | Tempo |
+|---|---|
+| Rodar `deco-migrate` | 5-15 minutos |
+| Resolver ajustes manuais (typecheck + lint limpos) | 2-8 horas |
+| Plugar hooks de commerce + verificar carrinho/PDP/PLP | 1-3 dias |
+| Pass de performance (deferred sections, profiles de cache) | 1-2 dias |
+| QA + deploy de produção | 2-5 dias |
+
+Ou seja: **mais ou menos 1-2 semanas para um engenheiro só**, mais rápido em par, mais lento se houver muita lógica custom.
+
+## O que NÃO fazer
+
+- **Não tente suportar v1 e v2 no mesmo repo.** Usam runtimes incompatíveis; a coexistência não vale a fricção.
+- **Não adicione pastas `compat/`.** O framework proíbe shims de compat por design — substitua imports, não embrulhe.
+- **Não corrija manualmente imports que o script vai resolver.** Rode o script primeiro; ele cobre 70+ regras de reescrita.
+- **Não pule o checklist.** Type-clean, lint-clean e build-clean não são o mesmo que correto em runtime — verifique carrinho, PDP, PLP e busca de ponta a ponta.
+
+## Veja também
+
+- [Playbook de migração](/v2/pt/migration/playbook)
+- [Script de migração](/v2/pt/migration/migrate-script)
+- [Agent skills](/v2/pt/migration/agent-skills)
+- [Checklist de migração](/v2/pt/migration/checklist)

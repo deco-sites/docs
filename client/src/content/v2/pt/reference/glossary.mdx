@@ -1,0 +1,269 @@
+---
+title: "Glossário"
+description: "Definições em linguagem direta para os termos do framework v2."
+icon: "BookA"
+---
+
+import Callout from "../../../../components/ui/Callout.astro";
+
+Uma referência curta para o vocabulário que aparece nestes docs. Quando um termo tem página dedicada, o termo lincа para ela.
+
+## A
+
+### Action
+
+Uma função server-side que **muta** estado — adicionar ao carrinho, sign-in, enviar email. Espelho de um [loader](#loader) mas para escritas. Vive em `vtex/actions/`, `shopify/actions/`, etc. Veja [VTEX loaders e actions](/v2/pt/commerce/vtex-loaders-and-actions).
+
+### Admin
+
+[`admin.deco.cx`](https://admin.deco.cx) — o editor onde autores de conteúdo editam páginas, sections e blocks. Conversa com sua loja via o [protocolo do admin](/v2/pt/concepts/admin-protocol).
+
+### Protocolo do admin
+
+O contrato HTTP entre admin e a loja: `/live/_meta`, `/.decofile`, `/deco/render`, `/deco/invoke`. Veja [Protocolo do admin](/v2/pt/concepts/admin-protocol).
+
+### App
+
+Uma integração plugável com um serviço externo. VTEX, Shopify, Resend e Website são todos "apps". Veja [Visão geral de commerce](/v2/pt/commerce/overview).
+
+## B
+
+### Block
+
+Um documento JSON com campo `__resolveType`. Páginas, sections, configs de app, matchers, loaders são todos blocks. Veja [Blocks](/v2/pt/concepts/blocks).
+
+### `blocks.gen.json`
+
+O bundle gerado de todo conteúdo `.deco/blocks/*.json`, carregado em runtime. Gerado por `generate-blocks`.
+
+### `blocks.gen.ts`
+
+Um re-export de `blocks.gen.json`. O [Vite plugin](/v2/pt/framework/vite-plugin) substitui isso por um `JSON.parse` rápido em load time.
+
+## C
+
+### Cache profile
+
+Um conjunto nomeado de TTLs de cache (`s-maxage` no edge, `max-age` no browser, janela SWR). O framework auto-detecta um profile pela URL. Veja [Estratégia de cache](/v2/pt/deployment/caching-strategy).
+
+### `cachedLoader`
+
+Um wrapper que adiciona dedup in-flight, SWR e TTL-por-status a qualquer loader. Veja [Caching](/v2/pt/framework/caching).
+
+### Catch-all route
+
+`src/routes/$.tsx` — lida com toda URL que não casa com rota mais específica. Bancada por `cmsRouteConfig`. Veja [Páginas e rotas](/v2/pt/concepts/pages-and-routes).
+
+### `cmsRouteConfig` / `cmsHomeRouteConfig`
+
+Configs TanStack Router que conectam resolução do CMS aos loaders de rota. Veja [Routes](/v2/pt/framework/routes).
+
+### `createDecoWorkerEntry`
+
+O wrapper mais externo do seu Cloudflare Worker. Roda rotas de admin, cache e bypass de assets estáticos antes do framework. Veja [Worker entry](/v2/pt/framework/worker-entry).
+
+### `createSiteSetup`
+
+A chamada de função única que faz bootstrap de uma loja v2. Veja [Setup](/v2/pt/framework/setup).
+
+## D
+
+### Daemon
+
+O tunnel local de dev que deixa `admin.deco.cx` falar com seu localhost. Iniciado pelo Vite plugin em modo dev.
+
+### Decofile
+
+O conjunto completo de blocks de um site. Vive em `.deco/blocks/`, servido em `/.decofile`.
+
+### Section deferred
+
+Uma section que renderiza um placeholder server-side e hidrata em scroll. Veja [Deferred rendering](/v2/pt/concepts/deferred-rendering).
+
+### `defineTool`
+
+O padrão para declarar uma tool tipada e auditável — usado em `@decocms/start` para handlers de admin. A maioria dos usuários do app não escreve tools direto.
+
+## E
+
+### ETag
+
+Um hash de conteúdo usado por `/live/_meta` e `/.decofile` para que o admin cacheie respostas. O framework usa DJB2 sobre o conteúdo.
+
+### Edge cache
+
+`caches.default` do Cloudflare — a camada de cache regional entre usuários e seu Worker. O framework lê/escreve aqui automaticamente. Veja [Estratégia de cache](/v2/pt/deployment/caching-strategy).
+
+### `expectedOrderFormSections`
+
+A lista de seções `orderForm` VTEX requisitadas por um loader/action de cart. O cart server-side e o `useCart` client-side têm que requisitar a mesma lista. Veja [VTEX gotchas](/v2/pt/commerce/vtex-gotchas).
+
+## F
+
+### `foldThreshold`
+
+Em `setAsyncRenderingConfig`, o índice da primeira section deferred. Sections [0..foldThreshold) renderizam eager. Veja [Deferred rendering](/v2/pt/concepts/deferred-rendering).
+
+## I
+
+### Inline loader
+
+Um loader em forma de CMS que compõe múltiplos fetches de baixo nível em uma payload de página (PDP, PLP, prateleira, busca). Veja [VTEX inline loaders](/v2/pt/commerce/vtex-inline-loaders).
+
+### `instrumentedFetch`
+
+Um wrapper de `fetch` com tracing OpenTelemetry, métricas e Server-Timing. Use em loaders. Veja [Caching](/v2/pt/framework/caching).
+
+### `invoke`
+
+O mecanismo para chamar um loader/action sobre HTTP em `/deco/invoke`. O cliente tipado gerado é `invoke.gen.ts`. Veja [Invoke](/v2/pt/framework/invoke).
+
+### Islands
+
+O padrão Fresh/Preact de componentes hidratados seletivamente. **Não existe em v2** — substituído por boundaries `"use client"` React e Server Components. Veja [Playbook de migração](/v2/pt/migration/playbook).
+
+## L
+
+### `LazySection`
+
+O componente que embrulha sections deferred. Renderiza um placeholder + IntersectionObserver. Veja [Deferred rendering](/v2/pt/concepts/deferred-rendering).
+
+### `LiveControls`
+
+Um script que deixa o iframe de preview do admin se comunicar com a loja. Hover-highlight, click-to-source. Veja [Hooks](/v2/pt/framework/hooks).
+
+### Loader
+
+Uma função server-side que **lê** estado. Dois sabores: section-acoplado (devolve props para a section) ou top-level (exposto via `/deco/invoke`). Veja [Loaders](/v2/pt/concepts/loaders).
+
+### `loadCmsPage`
+
+A função que resolve uma página CMS de `siteName + pathname`. Chamada pelo loader de `cmsRouteConfig`. Veja [Routes](/v2/pt/framework/routes).
+
+### `loadDeferredSection`
+
+A server function TanStack Start que hidrata uma section deferred em scroll. Chamada por `LazySection`. Veja [Deferred rendering](/v2/pt/concepts/deferred-rendering).
+
+## M
+
+### Manifesto
+
+O registro de IDs de section, IDs de loader, IDs de action e IDs de app disponíveis para o CMS. Parte de `/live/_meta`.
+
+### Matcher
+
+Uma função que devolve true/false baseada no request, usada dentro de blocks multivariados. Veja [Matchers e flags](/v2/pt/concepts/matchers-and-flags).
+
+### `meta.gen.json`
+
+O bundle JSON Schema gerado dos seus tipos TS de section. Servido em `/live/_meta`. Gerado por `generate-schema`.
+
+### Block multivariado
+
+Um block que troca baseado no veredito de um matcher — o primitivo core de A/B / targeting. Veja [Matchers e flags](/v2/pt/concepts/matchers-and-flags).
+
+## P
+
+### Página
+
+Um block de `__resolveType: "$live/pages/Page.ts"` com `path` e array `sections`. O CMS roteia URLs para páginas.
+
+### `pageType`
+
+Classificação VTEX de uma URL: `Department`, `Category`, `Brand`, `Product`, etc. Dirige roteamento de PLP. Veja [VTEX loaders e actions](/v2/pt/commerce/vtex-loaders-and-actions).
+
+### Profile (cache)
+
+Veja [Cache profile](#cache-profile).
+
+## R
+
+### `RequestContext`
+
+O state por request bancado por AsyncLocalStorage, disponível server-side. Lê cookies, env, headers do request. Veja [Loaders](/v2/pt/concepts/loaders).
+
+### `resolveDecoPage`
+
+A função interna que resolve a lista de sections de um block de página em uma árvore renderizável. Chamada por `loadCmsPage`.
+
+## S
+
+### Sales channel
+
+Conceito específico VTEX: um slot numerado para produtos + preços + currency. Default `"1"`. Veja [VTEX gotchas](/v2/pt/commerce/vtex-gotchas).
+
+### Section
+
+Um componente React que o CMS pode renderizar numa página. Vive em `src/sections/`. Veja [Sections](/v2/pt/concepts/sections).
+
+### Segment
+
+Um objeto chave-valor misturado na cache key para variação de resposta (device, região, estado do usuário). Construído por `buildSegment` em `createDecoWorkerEntry`. Veja [Worker entry](/v2/pt/framework/worker-entry).
+
+### `setAsyncRenderingConfig`
+
+Configura a estratégia de deferred rendering: fold threshold, respeito a CMS lazy, kinds always-eager. Veja [Deferred rendering](/v2/pt/concepts/deferred-rendering).
+
+### `setCacheProfile`
+
+Sobrescreve TTLs de um cache profile. Veja [Estratégia de cache](/v2/pt/deployment/caching-strategy).
+
+### `setVtexFetch`
+
+Substitui o fetch VTEX global por uma versão embrulhada (instrumentada, region-aware). Veja [VTEX overview](/v2/pt/commerce/vtex-overview).
+
+### `siteName`
+
+O identificador usado por `admin.deco.cx` para identificar sua loja. Case com o que está nas configurações do admin.
+
+### Slug cache
+
+O mapa de slug do produto → SKU canônico, usado para skip de round-trip em PDP. Veja [VTEX gotchas](/v2/pt/commerce/vtex-gotchas).
+
+### SWR (stale-while-revalidate)
+
+O padrão de servir dados cacheados stale imediatamente enquanto roda revalidação em background. O framework usa em toda camada de cache.
+
+## T
+
+### TanStack Start
+
+O framework full-stack React em que v2 é construído. Substitui Fresh em v1.
+
+## V
+
+### Vite plugin
+
+`decoVitePlugin()` de `@decocms/start/vite`. Obrigatório em todo Vite config de site. Cuida do fast-path do `blocks.gen`, stubs de server, daemon de dev. Veja [Vite plugin](/v2/pt/framework/vite-plugin).
+
+### `vtex_segment`
+
+O cookie que carrega região, sales channel e currency do usuário VTEX. Crítico para commerce regional — tem que propagar de request entrante para chamadas upstream. Veja [VTEX client e middleware](/v2/pt/commerce/vtex-client-and-middleware).
+
+## W
+
+### Widget
+
+Uma anotação tipada em `@decocms/start/types/widgets` que diz para o gerador de schema renderizar um controle de UI custom no admin (image picker, color picker, editor de rich text). Veja [Sections](/v2/pt/concepts/sections).
+
+### `withABTesting`
+
+Wrapper de Worker para A/B testing no nível de versão de site. Veja [A/B testing e redirects](/v2/pt/deployment/ab-testing-and-redirects).
+
+### `withSiteGlobals`
+
+Embrulha um config de rota com globais do site (analytics IDs, theme tokens). Veja [Routes](/v2/pt/framework/routes).
+
+### Worker entry
+
+`src/worker-entry.ts` — o arquivo que o Cloudflare carrega. Embrulha o server entry do TanStack com `createDecoWorkerEntry`. Veja [Worker entry](/v2/pt/framework/worker-entry).
+
+### `wrangler.jsonc`
+
+O arquivo de config do Cloudflare Workers. Veja [Deployment Cloudflare Workers](/v2/pt/deployment/cloudflare-workers).
+
+## Veja também
+
+- [Exports do package (@decocms/start)](/v2/pt/reference/package-exports)
+- [Exports de commerce (@decocms/apps)](/v2/pt/reference/commerce-exports)
+- [Visão geral da stack](/v2/pt/getting-started/stack-overview)

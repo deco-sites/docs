@@ -1,0 +1,147 @@
+---
+title: "Script de migração"
+description: "O que npx -p @decocms/start deco-migrate faz de fato."
+icon: "Terminal"
+---
+
+import Callout from "../../../../components/ui/Callout.astro";
+
+`@decocms/start` provê três binários CLI sob `bin`. O carro-chefe é `deco-migrate`, que roda a migração v1 → v2 de ponta a ponta. Esta página documenta o que ele faz, quais flags aceita e o que não faz.
+
+## Início rápido
+
+```bash
+# de dentro do diretório da loja v1
+npx -p @decocms/start deco-migrate
+```
+
+Pronto. O script analisa o layout, gera arquivos v2, transforma imports/JSX/APIs, limpa código morto, gera relatório, verifica e instala dependências.
+
+## Flags
+
+| Flag | Função |
+|---|---|
+| `--source <dir>` | Diretório de origem (default: cwd) |
+| `--dry-run` | Mostra o que aconteceria, sem escrever |
+| `--verbose` | Saída detalhada por transformação |
+| `--no-compile` | Pula o `tsc --noEmit` + `vite build` pós-transformação |
+| `--no-cleanup-audit` | Pula a auditoria pós-migração (read-only) |
+| `--strict` | Fail no run em qualquer warning de auditoria |
+| `--with-build` | Roda `vite build` completo (default só typecheck) |
+| `--help`, `-h` | Mostra ajuda |
+
+## As sete fases
+
+Vindo de [`scripts/migrate.ts`](/Users/fernandofrizzatti/development/workspace/decocms/deco-start/scripts/migrate.ts):
+
+```
+1. Análise     — escaneia origem, detecta padrões Preact/Fresh/Deco
+2. Scaffold    — gera vite.config.ts, wrangler.jsonc, rotas, setup.ts, worker-entry
+3. Transform   — reescreve imports (70+ regras), atributos JSX, APIs Fresh, Deno-isms, Tailwind v3→v4
+4. Cleanup     — apaga islands/, rotas antigas, deno.json, move static/ → public/
+5. Report      — gera MIGRATION_REPORT.md com itens manuais
+6. Verify      — 18+ smoke tests (zero imports antigos, arquivos scaffolded existem)
+7. Bootstrap   — npm install, gera blocks do CMS, gera rotas
+```
+
+Depois da fase 7, opcionalmente:
+
+- **Compila** (`--no-compile` para pular): roda `tsc --noEmit` e (com `--with-build`) `vite build`. Falhas são reportadas, mas não fazem o run falhar a menos que `--strict`.
+- **Auditoria de cleanup** (`--no-cleanup-audit` para pular): auditoria read-only de padrões Fresh remanescentes. Aponta coisas como pastas `compat/` esquecidas ou `useScript(fn)` perdidos.
+
+## Detecção de layout
+
+A fase 0 (preflight) detecta o layout de origem:
+
+- **Clássico** — `routes/` na raiz, `src/sections/` para sections (o layout canônico de loja Fresh).
+- **Outro** — qualquer outra coisa (apps Fresh customizadas, monorepos, etc.).
+
+Layouts não-clássicos **abortam** com mensagem de erro. O script é deliberadamente conservador — auto-migrar layout estranho corrompe mais do que ajuda.
+
+Se você tem layout não-clássico, duas opções:
+
+1. Reorganize para clássico antes de rodar.
+2. Rode em `--dry-run` para ver o que ele faria, depois aplique manualmente seguindo o [playbook](/v2/pt/migration/playbook).
+
+## O que `MIGRATION_REPORT.md` contém
+
+Após um run real:
+
+- **Modo do run** (DRY_RUN ou EXECUTED) e timestamp.
+- **Contagem de arquivos** — scaffolded, transformados, deletados.
+- **Listas completas** de arquivos por categoria.
+- **Inventário de loaders** — todo `loaders/*.ts` e `actions/*.ts` encontrado, com status de port.
+- **Pegadinhas Tailwind v3 → v4** — `z-index` negativo, migrações de opacidade, reescritas de `@apply`.
+- **Boilerplate duplicado de `@decocms/start`** — lugares onde o código migrado se sobrepõe a helpers do framework (candidatos a limpeza).
+- **Próximos passos concretos** — comandos exatos para rodar.
+
+Um exemplo real vive em [`baggagio-tanstack/MIGRATION_REPORT.md`](/Users/fernandofrizzatti/development/workspace/decocms/baggagio-tanstack/MIGRATION_REPORT.md).
+
+## Arquivo de configuração
+
+Você pode fixar comportamento via `.deco-migrate.config.json` na raiz do projeto:
+
+```json
+{
+  "exclude": ["src/legacy/**"],
+  "skipPhases": [],
+  "verbose": false
+}
+```
+
+A maioria não precisa; defaults são razoáveis.
+
+## Scripts companheiros
+
+### `deco-post-cleanup`
+
+Rode após a migração para limpar boilerplate que o framework já absorveu:
+
+```bash
+npx -p @decocms/start deco-post-cleanup
+```
+
+É read + write — revise o diff antes de commitar.
+
+### `deco-htmx-analyze`
+
+Para sites que usavam HTMX no v1. Reporta uso para você planejar a conversão para padrões React. HTMX **não vem** em `@decocms/start` — sites que dependiam precisam reescrever para React.
+
+```bash
+npx -p @decocms/start deco-htmx-analyze
+```
+
+## O que o script NÃO faz
+
+- **Não migra overrides de `useCart` / `useUser` / `useWishlist`.** Se sua loja v1 sobrescreveu, porte manualmente usando as factories v2. Veja [Hooks VTEX](/v2/pt/commerce/vtex-hooks).
+- **Não migra lógica custom de worker.** Proxies, harness AB, transforms de borda — o script gera um `worker-entry.ts` baunilha e deixa você camadear lógica custom em cima usando [`createDecoWorkerEntry`](/v2/pt/framework/worker-entry).
+- **Não corrige correção em runtime.** Migração bem-sucedida produz código que compila; problemas em runtime (carrinho não carrega, PDP errado, mismatches de hidratação) precisam de atenção humana.
+- **Não traduz sites não-loja.** Tunado para o arquétipo de loja deco.cx. Sites de marketing com setups Fresh muito custom devem esperar mais trabalho manual.
+
+## Troubleshooting
+
+### "Layout não clássico — abortando"
+
+Seu `routes/` ou `src/` não parece com loja Fresh padrão. Reorganize ou faça manual.
+
+### `tsc --noEmit` falha após a migração
+
+Leia `MIGRATION_REPORT.md`. Causas comuns:
+- Hook de plataforma (`useCart` etc.) que precisa de implementação específica do site.
+- `useScript(fn)` que o script transformou mas o chamador não aceita.
+- Matcher ou loader custom usando APIs Deno-only.
+
+### `vite build` falha
+
+Rode com `--with-build` para ver durante a migração. Depois leia o erro — a maioria são imports faltando causados por uma island que foi deletada mas ainda é referenciada.
+
+### Deploy de produção funciona mas preview do admin está quebrado
+
+Provavelmente moveu handlers de admin para o server entry do TanStack em vez do worker entry. Veja [Referência do worker entry](/v2/pt/framework/worker-entry).
+
+## Veja também
+
+- [Visão geral da migração](/v2/pt/migration/overview)
+- [Playbook de migração](/v2/pt/migration/playbook)
+- [Agent skills](/v2/pt/migration/agent-skills)
+- [Checklist de migração](/v2/pt/migration/checklist)

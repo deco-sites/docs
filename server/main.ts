@@ -12,6 +12,9 @@ const rootRedirects: Record<string, string> = {
   "/": "/en/getting-started/overview",
   "/en": "/en/getting-started/overview",
   "/pt": "/pt/getting-started/overview",
+  "/v2": "/v2/en/getting-started/overview",
+  "/v2/en": "/v2/en/getting-started/overview",
+  "/v2/pt": "/v2/pt/getting-started/overview",
 };
 
 const clientDir = resolveClientDir(import.meta.url, "../client");

@@ -1,0 +1,141 @@
+---
+title: "Checklist de migração"
+description: "Passe por essa lista antes de mergear o PR de migração."
+icon: "ListChecks"
+---
+
+import Callout from "../../../../components/ui/Callout.astro";
+
+Use esta lista como o portão entre "migração feita" e "merge para main". Se algum item está sem marcação e você não tem motivo escrito, corrija antes.
+
+## Build & types
+
+- [ ] `npm run typecheck` limpo (sem erros, sem warnings de `any` implícito).
+- [ ] `npm run lint` limpo.
+- [ ] `npx vite build` produz bundle sem warnings de imports faltando.
+- [ ] `npx wrangler deploy --dry-run` passa.
+- [ ] `npx tsr generate` sem erros.
+- [ ] Sem imports de `@deco/deco/*`, `$fresh/*`, `preact/*` ou `@preact/signals`.
+- [ ] Sem chamadas `Deno.env.get(...)` fora de `node_modules`.
+- [ ] Sem diretório `src/islands/`.
+- [ ] Sem pastas `compat/`.
+
+## Arquivos gerados
+
+- [ ] `src/server/cms/blocks.gen.json` existe e não está vazio.
+- [ ] `src/server/cms/sections.gen.ts` lista todas as sections esperadas.
+- [ ] `src/server/cms/loaders.gen.ts` lista todos os loaders esperados.
+- [ ] `meta.gen.json` valida (`/live/_meta` retorna 200 com conteúdo válido).
+
+## Wiring obrigatório
+
+- [ ] Imports do `src/setup.ts` vêm primeiro em `src/server.ts` e `src/worker-entry.ts`.
+- [ ] `src/worker-entry.ts` chama `createDecoWorkerEntry` com handlers de admin (`handleMeta`, `handleDecofile`, `handleRender`, `handleInvoke`).
+- [ ] `vite.config.ts` inclui `decoVitePlugin()` e a lista de `dedupe`.
+- [ ] `wrangler.jsonc` tem flags `nodejs_compat` e `no_handle_cross_request_promise_resolution`.
+- [ ] `wrangler.jsonc` `main` aponta para `./src/worker-entry.ts`.
+
+## Rotas
+
+- [ ] `src/routes/__root.tsx` existe e renderiza o shell global.
+- [ ] `src/routes/index.tsx` usa `cmsHomeRouteConfig`.
+- [ ] `src/routes/$.tsx` usa `cmsRouteConfig`.
+- [ ] `siteName` casa com o que está em `admin.deco.cx`.
+- [ ] `ignoreSearchParams` inclui `skuId` (e qualquer outro param de variante que seu site usa).
+
+## Sections
+
+- [ ] Toda section em `.deco/blocks/` resolve para um arquivo registrado (sem warnings de "section not found" no `npm run dev`).
+- [ ] Toda section que tinha loader no v1 ainda tem no v2.
+- [ ] Nenhuma section default-exporta algo que não é componente (funções, objetos etc.).
+- [ ] Exports de `LoadingFallback` para cada section de prateleira/grid.
+
+## Commerce
+
+### VTEX
+
+- [ ] Block `deco-vtex` no admin tem `account`, `appKey`, `appToken` configurados.
+- [ ] `setVtexFetch(createInstrumentedFetch("vtex"))` roda no `setup.ts`.
+- [ ] Se você usava fetch regional no v1, porte (veja [exemplo Casa&Vídeo](/Users/fernandofrizzatti/development/workspace/decocms/casaevideo-storefront/src/setup.ts)).
+- [ ] PDP renderiza o produto certo com o preço certo para a região certa.
+- [ ] PLP renderiza produtos e respeita filtros de facets.
+- [ ] Busca retorna resultados.
+- [ ] Carrinho adiciona, atualiza, remove via `useCart`.
+- [ ] Fluxo de auth (sign-in, sign-up, logout) funciona via `useUser`.
+- [ ] Wishlist adiciona/remove via `useWishlist`.
+
+### Shopify
+
+- [ ] Block `deco-shopify` tem `storeName` e `storefrontAccessToken`.
+- [ ] PDP renderiza.
+- [ ] PLP renderiza.
+- [ ] Cookie do carrinho é setado no primeiro acesso (`getCart` com `responseHeaders`).
+
+## Admin
+
+- [ ] `/live/_meta` retorna 200 com JSON Schema válido.
+- [ ] `/.decofile` retorna 200 com todos os blocks.
+- [ ] Editar uma section no admin dispara `/deco/render` bem-sucedido e mostra preview atualizado.
+- [ ] Publicar uma mudança no admin produz ETag novo e invalida caches.
+
+## Performance
+
+- [ ] FCP da homepage dentro do orçamento (alvo: ≤1.5s em cold cache).
+- [ ] Sections deferred renderizam o `LoadingFallback`, não espaço em branco.
+- [ ] Sem erros de hydration mismatch no console.
+- [ ] Sem CLS de scripts de terceiros no head (GTM etc.).
+- [ ] `wrangler tail --format pretty` mostra timings razoáveis sob carga.
+
+## Cache
+
+- [ ] Profile de cache de borda configurado para home, PDP, PLP e busca.
+- [ ] Endpoint de purge funciona (`?__deco_purge_cache=1`).
+- [ ] Assets estáticos passam pelo bypass (retornam de `caches.default` rapidamente).
+
+## SEO & robots
+
+- [ ] `robots.txt` correto.
+- [ ] `sitemap.xml` gerado e acessível.
+- [ ] Title e meta description de PDP renderizam server-side.
+- [ ] Tags Open Graph renderizam para previews de compartilhamento.
+- [ ] JsonLd estruturado renderiza em PDP e PLP.
+
+## Observabilidade
+
+- [ ] Traces OpenTelemetry visíveis no dashboard para requests representativas.
+- [ ] Headers Server-Timing aparecem em respostas de produção.
+- [ ] Endpoint de health (`/_health` ou equivalente) retorna 200.
+
+## Deploy
+
+- [ ] Secrets configurados no Wrangler: `appKey` / `appToken` / API keys.
+- [ ] Bindings KV (e.g. `SITES_KV`) configurados se você usa A/B ou redirects armazenados.
+- [ ] DNS / domínio custom configurado se aplicável.
+- [ ] `wrangler deploy` passa.
+
+## QA pass
+
+- [ ] Click-through manual de:
+  - Home → categoria → PDP → adicionar ao carrinho → entrada do checkout.
+  - Busca → resultado → PDP.
+  - Login → conta → logout.
+- [ ] Mobile (device real ou emulador) renderiza certo — header, drawer, PDP, carrinho.
+- [ ] Render de bot (curl como Googlebot) retorna HTML completo para SEO.
+
+## Pós-merge
+
+- [ ] Tag de release.
+- [ ] Atualizar docs internas / runbooks.
+- [ ] Notificar time de conteúdo de qualquer mudança no comportamento do admin.
+- [ ] Agendar revisão em +1 semana e +1 mês para pegar regressões lentas.
+
+<Callout type="info">
+**Pular um passo é arriscado.** Os incidentes de produção mais comuns vindos de sites migrados rastreiam para itens do checklist que estavam "provavelmente OK" em vez de verificados.
+</Callout>
+
+## Veja também
+
+- [Visão geral da migração](/v2/pt/migration/overview)
+- [Playbook de migração](/v2/pt/migration/playbook)
+- [Script de migração](/v2/pt/migration/migrate-script)
+- [Agent skills](/v2/pt/migration/agent-skills)

@@ -1,0 +1,133 @@
+---
+title: "Blocks"
+description: "JSON que o CMS produz e o framework resolve em componentes renderizados."
+icon: "Boxes"
+---
+
+import Callout from "../../../../components/ui/Callout.astro";
+
+Um **block** é um documento JSON que o CMS usa para descrever uma peça de conteúdo — uma página, uma instância de section, uma configuração de app ou um matcher. Blocks são a unidade de versionamento de conteúdo, A/B testing e edição no admin.
+
+## Anatomia
+
+Todo block tem um campo `__resolveType` que diz ao framework qual código invocar. Tudo o mais no JSON são as props para esse código.
+
+```json
+{
+  "__resolveType": "site/sections/Hero/HeroBanner.tsx",
+  "title": "Bem-vinda à nossa loja",
+  "cta": {
+    "label": "Comprar agora",
+    "href": "/produtos"
+  }
+}
+```
+
+Quando o framework vê `__resolveType: "site/sections/Hero/HeroBanner.tsx"`, ele:
+
+1. Procura a section no registro.
+2. Valida o resto do JSON contra a interface `Props` da section.
+3. Renderiza a section com essas props.
+
+## Tipos de block
+
+| Tipo | exemplo `__resolveType` | O que representa |
+|---|---|---|
+| Página | `$live/pages/Page.ts` | Uma página com suas sections em ordem |
+| Instância de section | `site/sections/Hero/HeroBanner.tsx` | Um posicionamento de uma section |
+| Configuração de app | `deco-vtex` | Setup de VTEX, Shopify ou Resend |
+| Matcher | `site/matchers/MatchUserAgent.ts` | Uma regra de flag/AB |
+| Instância de loader | `vtex/loaders/intelligentSearch/productList.ts` | Uma chamada de loader configurada |
+
+## Onde os blocks vivem
+
+### Fonte: `.deco/blocks/*.json`
+
+Um arquivo JSON por block, commitado. O admin sincroniza o diretório nos dois sentidos — edições no admin viram arquivos em `.deco/blocks/` e vice-versa.
+
+### Bundle: `src/server/cms/blocks.gen.json`
+
+Um único objeto JSON que mapeia IDs de block para seu JSON. Gerado pelo script `generate-blocks`:
+
+```bash
+npm run generate:blocks
+```
+
+É o que o framework carrega em runtime. O `blocks.gen.json` das lojas de referência vai de ~2 MB ([baggagio](/Users/fernandofrizzatti/development/workspace/decocms/baggagio-tanstack)) a ~11 MB ([casaevideo](/Users/fernandofrizzatti/development/workspace/decocms/casaevideo-storefront)).
+
+### Re-export: `src/server/cms/blocks.gen.ts`
+
+Um módulo fino que o [Vite plugin](/v2/pt/framework/vite-plugin) substitui por `JSON.parse` do `.json` irmão em load time. Não edite na mão nenhum dos dois.
+
+<Callout type="warning">
+**Não tente chunk manual de `@decocms/start` ou `@decocms/apps`** no `vite.config.ts`. O Vite plugin cuida do fast path do JSON, e esses pacotes têm re-exports circulares que crasham se forem divididos em chunks.
+</Callout>
+
+## Como a resolução funciona
+
+Quando chega uma requisição para `/produtos/algum-produto`:
+
+1. A rota catch-all chama `loadCmsPage({ siteName, pathname })`.
+2. `loadCmsPage` chama `resolveDecoPage` de `@decocms/start/cms`, que:
+   - Procura o block da página por padrão de URL.
+   - Percorre cada referência de section na lista da página.
+   - Resolve o `__resolveType` de cada section para um componente registrado.
+   - Roda o loader de cada section (se tiver).
+   - Devolve uma árvore que o renderer percorre.
+3. `DecoPageRenderer` percorre a árvore e renderiza cada section.
+
+Veja [Páginas e rotas](/v2/pt/concepts/pages-and-routes) para como páginas casam com URLs.
+
+## Composabilidade
+
+Blocks referenciam outros blocks. Uma página contém referências de section; uma section pode conter uma referência de loader; um matcher pode conter outros matchers. O CMS resolve o grafo todo de forma preguiçosa.
+
+```json
+{
+  "__resolveType": "$live/pages/Page.ts",
+  "path": "/produtos/:slug",
+  "sections": [
+    {
+      "__resolveType": "site/sections/Header/Header.tsx"
+    },
+    {
+      "__resolveType": "site/sections/Product/ProductDetail.tsx",
+      "loader": {
+        "__resolveType": "vtex/loaders/intelligentSearch/productDetailsPage.ts",
+        "slug": "{slug}"
+      }
+    }
+  ]
+}
+```
+
+Parâmetros de URL (`{slug}`) são interpolados em tempo de resolução.
+
+## Blocks multivariados
+
+Um block pode referenciar um matcher para fazer A/B ou segmentar conteúdo:
+
+```json
+{
+  "__resolveType": "$live/matchers/MultivariateBlock.ts",
+  "variants": [
+    { "matcher": { "__resolveType": "..." }, "block": { "__resolveType": "..." } },
+    { "block": { "__resolveType": "..." } }
+  ]
+}
+```
+
+O primeiro variant cujo matcher retornar true ganha. Veja [Matchers e flags](/v2/pt/concepts/matchers-and-flags).
+
+## ETag e invalidação de cache
+
+O framework calcula um hash de conteúdo (DJB2) sobre os blocks resolvidos e expõe como header ETag. Quando você edita um block no admin e republica, o ETag muda e os caches de CDN/browser invalidam corretamente.
+
+Não é um hash de tamanho de string — é um hash de conteúdo de verdade, então duas versões com mesmo tamanho mas conteúdo diferente invalidam corretamente.
+
+## Veja também
+
+- [Sections](/v2/pt/concepts/sections)
+- [Páginas e rotas](/v2/pt/concepts/pages-and-routes)
+- [Protocolo do admin](/v2/pt/concepts/admin-protocol)
+- [Vite plugin](/v2/pt/framework/vite-plugin)

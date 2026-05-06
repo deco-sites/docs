@@ -1,0 +1,219 @@
+---
+title: "VTEX client and middleware"
+description: "vtexFetch family, intelligentSearch, fetchCache, extractVtexContext, propagateISCookies."
+icon: "Network"
+---
+
+import Callout from "../../../../components/ui/Callout.astro";
+
+The HTTP layer and middleware that make VTEX integration work. You'll touch this when you customize fetch behavior (regional cookies, custom headers) or compose your own request middleware.
+
+## The `vtexFetch` family
+
+Three flavors, each for a different scenario.
+
+### `vtexFetch`
+
+```ts
+import { vtexFetch, vtexFetchResponse } from "@decocms/apps/vtex/client";
+
+const data = await vtexFetch<MyShape>("/api/...", { headers: {...} });
+const response = await vtexFetchResponse("/api/...", { headers: {...} });
+```
+
+- Auto-prepends `https://{account}.vtexcommercestable.com.br` (or your configured domain).
+- Auto-injects the **`vtex_segment`** cookie from the inbound request when the caller hasn't supplied a `cookie` header (regional sellers depend on this).
+- Returns parsed JSON (`vtexFetch`) or the raw `Response` (`vtexFetchResponse`).
+
+### `vtexCachedFetch`
+
+```ts
+import { vtexCachedFetch } from "@decocms/apps/vtex/client";
+
+const data = await vtexCachedFetch<MyShape>("/api/...");
+```
+
+GET-only. Routes through `fetchWithCache` from [`vtex/utils/fetchCache.ts`](/Users/fernandofrizzatti/development/workspace/decocms/apps-start/vtex/utils/fetchCache.ts):
+
+- **In-flight dedup** — concurrent same-key calls share one upstream request.
+- **SWR** — cached responses serve immediately; fresh data refetches.
+- **TTL by status** — 2xx: 180s, 404: 10s, 5xx: not cached.
+- **LRU eviction** — bounded ~500 entries.
+
+Use this for read-heavy paths (catalog data, brands, navigation) where data is shared across users.
+
+<Callout type="warning">
+**`vtexCachedFetch` does not duplicate `vtexFetch`'s segment-forwarding logic.** That's intentional — segments would explode the cache key — but it means cached responses are shared across regions. If your data is region-specific, use `vtexFetch` (uncached) or build your own segment-aware cache key.
+</Callout>
+
+### `vtexFetchWithCookies`
+
+```ts
+import { vtexFetchWithCookies } from "@decocms/apps/vtex/client";
+
+const data = await vtexFetchWithCookies("/api/checkout/...", {
+  responseHeaders: requestEvent.responseHeaders,
+});
+```
+
+Used for endpoints that need cookies to round-trip (orderForm, sessions, auth):
+
+1. **Inbound** — pulls cookies from `RequestContext.current.request` and forwards to upstream.
+2. **Outbound** — captures upstream `Set-Cookie` and merges into `responseHeaders` so the browser receives them.
+3. **Strips** `vtex_is_session` / `vtex_is_anonymous` from outbound — middleware controls those, not actions.
+
+Used internally by every `vtex/actions/checkout.ts` function. Use it any time you write a custom action that mutates user state.
+
+## `intelligentSearch`
+
+```ts
+import { intelligentSearch } from "@decocms/apps/vtex/client";
+
+const results = await intelligentSearch("product_search/products", {
+  query: "shoes",
+  facets: "brand:nike",
+  sort: "price:asc",
+});
+```
+
+Builds the IS URL, adds `sc` (sales channel), `locale`, and `regionId` (extracted from the segment cookie via `extractRegionIdFromCookies`), and routes through `fetchWithCache`. Used internally by every IS-backed inline loader.
+
+## VTEX IO GraphQL
+
+```ts
+import { vtexIOGraphQL } from "@decocms/apps/vtex/client";
+
+const data = await vtexIOGraphQL(query, variables, {
+  app: "vtex.session-graphql@1.x",
+});
+```
+
+Queries `account.myvtex.com/_v/private/graphql/v1` with the right `x-vtex-platform` headers. Used for session details and other VTEX IO endpoints.
+
+## Helpers
+
+### `pageTypesFromPath`
+
+```ts
+import { pageTypesFromPath } from "@decocms/apps/vtex/client";
+
+const types = await pageTypesFromPath("/men/shirts");
+// → [{ pageType: "Department" }, { pageType: "Category" }]
+```
+
+Walks the catalog page-type endpoint for each path segment. Used by PLP routing to detect "is this a department or a brand listing?"
+
+### `filtersFromPageTypes`
+
+Translates a page type list into IS facet filters. Internal helper; you rarely call directly.
+
+### `toFacetPath`
+
+```ts
+import { toFacetPath } from "@decocms/apps/vtex/client";
+
+const path = toFacetPath({ category: "shirts", color: "blue" });
+// → "category-1/shirts/color/blue"
+```
+
+Builds the IS facet path from a key/value map.
+
+## Middleware
+
+`@decocms/apps/vtex/middleware.ts` exports composable middleware functions for your TanStack middleware stack.
+
+### `extractVtexContext`
+
+Reads the inbound request and attaches:
+
+- **Segment** — parsed `vtex_segment` cookie + UTM params + sales channel from `VTEXSC`.
+- **Auth** — JWT extraction from auth cookies (handled by `utils/vtexId`).
+- **IS IDs** — generates `vtex_is_session` / `vtex_is_anonymous` if missing so caching works.
+
+Once attached, downstream code can read context off the request without re-parsing cookies.
+
+### `vtexCacheControl`
+
+Sets `Cache-Control: private` for logged-in users or B2B price tables. Public for everyone else.
+
+```ts
+import { createMiddleware } from "@tanstack/react-start";
+import { extractVtexContext, vtexCacheControl, propagateISCookies } from "@decocms/apps/vtex/middleware";
+
+export const vtexMiddleware = createMiddleware().middleware([
+  extractVtexContext,
+  vtexCacheControl,
+  propagateISCookies,
+]);
+```
+
+### `propagateISCookies`
+
+Reads the **outbound** `vtex_is_session` / `vtex_is_anonymous` produced server-side and writes them back to the browser. The framework strips them from individual fetch calls (so they don't leak into the cache) but propagates from the final response.
+
+### `buildSegmentSetCookie`
+
+Builds the `Set-Cookie` for `vtex_segment` so changes from upstream calls reach the browser.
+
+### `vtexCacheKeySuffix`
+
+```ts
+import { vtexCacheKeySuffix } from "@decocms/apps/vtex/middleware";
+
+const decoWorker = createDecoWorkerEntry(serverEntry, {
+  // ...
+  buildSegment: (request) => ({
+    vtex: vtexCacheKeySuffix(request),
+  }),
+});
+```
+
+Returns a cache-key fragment that captures region/sales-channel/B2B state. Mix into the segment so different cache regions get different cached responses.
+
+## Region-aware fetch (advanced)
+
+For sites where regional pricing/availability varies, wrap the instrumented fetch with a region-aware version:
+
+```66:86:/Users/fernandofrizzatti/development/workspace/decocms/casaevideo-storefront/src/setup.ts
+const _baseFetch = createInstrumentedFetch("vtex");
+const regionAwareFetch: typeof fetch = (input, init) => {
+  const ctx = RequestContext.current;
+  if (ctx) {
+    const cookies = ctx.request.headers.get("cookie") ?? "";
+    const segMatch = cookies.match(/(?:^|;\s*)vtex_segment=([^;]+)/);
+    if (segMatch?.[1]) {
+      const existingHeaders = init?.headers as Record<string, string> | undefined;
+      if (!existingHeaders?.["cookie"]) {
+        init = { ...init, headers: { ...existingHeaders, cookie: `vtex_segment=${segMatch[1]}` } };
+      }
+    }
+  }
+  return _baseFetch(input, init);
+};
+setVtexFetch(regionAwareFetch);
+```
+
+This makes every legacy catalog call carry the user's region cookie — fixing the "PDP shows out-of-stock for region A even though product is available" bug.
+
+## Utils worth knowing
+
+| Module | Use |
+|---|---|
+| `vtex/utils/segment` | Parse / serialize `vtex_segment` |
+| `vtex/utils/intelligentSearch` | `VALID_IS_SORTS`, IS cookie names, region extraction |
+| `vtex/utils/cookies` | Cookie helpers specific to VTEX names |
+| `vtex/utils/slugCache` | Slug → SKU canonical map (PDP fast path) |
+| `vtex/utils/transform` | Raw VTEX → schema.org product transform |
+| `vtex/utils/enrichment` | Adds `isSimilarTo` and other relations |
+| `vtex/utils/vtexId` | JWT helpers for auth cookies |
+| `vtex/utils/sitemap` | Sitemap generation from catalog |
+
+Most of these are internal to the integration — but if you customize, they're the building blocks.
+
+## See also
+
+- [VTEX overview](/v2/en/commerce/vtex-overview)
+- [VTEX loaders and actions](/v2/en/commerce/vtex-loaders-and-actions)
+- [VTEX gotchas](/v2/en/commerce/vtex-gotchas)
+- [Caching](/v2/en/framework/caching)
+- [Casa&Video case study](/v2/en/case-studies/casaevideo)

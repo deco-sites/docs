@@ -1,0 +1,281 @@
+---
+title: "Cloudflare Workers"
+description: "wrangler.jsonc essentials, compatibility flags, KV bindings, secrets, observability."
+icon: "Cloud"
+---
+
+import Callout from "../../../../components/ui/Callout.astro";
+
+v2 storefronts run on Cloudflare Workers. This page documents the deployment essentials — what goes in `wrangler.jsonc`, which flags matter, how to wire KV/secrets, and the basic deploy flow.
+
+## `wrangler.jsonc` minimum
+
+```jsonc
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "my-store",
+  "main": "./src/worker-entry.ts",
+  "compatibility_date": "2026-02-14",
+  "compatibility_flags": [
+    "nodejs_compat",
+    "no_handle_cross_request_promise_resolution"
+  ],
+  "workers_dev": true,
+  "preview_urls": true,
+  "observability": {
+    "logs": { "enabled": true }
+  }
+}
+```
+
+This is the canonical baseline. Every reference site uses this shape — see [`lebiscuit-tanstack/wrangler.jsonc`](/Users/fernandofrizzatti/development/workspace/decocms/lebiscuit-tanstack/wrangler.jsonc).
+
+### `main`
+
+Always points to `./src/worker-entry.ts`. Don't point at `server.ts` directly — Workers needs the framework's worker wrapper to handle admin routes and edge caching before the framework runs.
+
+### `compatibility_date`
+
+Pin to a recent date. Cloudflare's compat dates control which Workers runtime features are active. The reference sites use `2026-02-14`; the latest reasonable date at any given time is fine.
+
+### `compatibility_flags`
+
+Two are required:
+
+- **`nodejs_compat`** — enables `node:async_hooks`, `node:buffer`, etc., which the framework uses for `RequestContext` and a handful of utilities.
+- **`no_handle_cross_request_promise_resolution`** — required for [deferred section rendering](/v2/en/concepts/deferred-rendering) to work in Cloudflare Vite dev mode without "I/O across requests" errors.
+
+### `observability.logs`
+
+Enables structured logs reachable via `wrangler tail`. Off by default; turn it on or you can't see production errors.
+
+## Bindings
+
+### KV
+
+For A/B testing or persistent redirect tables, add a KV namespace:
+
+```jsonc
+{
+  // ...
+  "kv_namespaces": [
+    { "binding": "SITES_KV", "id": "your-kv-namespace-id" }
+  ]
+}
+```
+
+Create the namespace first:
+
+```bash
+wrangler kv:namespace create SITES_KV
+# copy the returned id into wrangler.jsonc
+```
+
+The `SITES_KV` binding is the conventional name [`withABTesting`](/v2/en/framework/sdk-utilities) reads from. Casa&Video and Le biscuit have it bound; Bagaggio leaves it commented out.
+
+### R2
+
+For images, video, large static assets:
+
+```jsonc
+{
+  "r2_buckets": [
+    { "binding": "ASSETS", "bucket_name": "my-store-assets" }
+  ]
+}
+```
+
+The framework doesn't ship an R2 integration — you'd reach into `env.ASSETS` from a custom route handler.
+
+### D1
+
+For lightweight relational storage (custom user data, polls, comments):
+
+```jsonc
+{
+  "d1_databases": [
+    { "binding": "DB", "database_name": "my-store-db", "database_id": "..." }
+  ]
+}
+```
+
+Again, no built-in framework integration — query from your own code via `env.DB`.
+
+### Service bindings
+
+For Worker-to-Worker calls (microservice patterns):
+
+```jsonc
+{
+  "services": [
+    { "binding": "API", "service": "my-store-api" }
+  ]
+}
+```
+
+## Secrets
+
+Set secrets via wrangler:
+
+```bash
+wrangler secret put VTEX_APP_KEY
+wrangler secret put VTEX_APP_TOKEN
+wrangler secret put RESEND_API_KEY
+wrangler secret put POSTHOG_API_KEY
+```
+
+Secrets aren't visible in `wrangler.jsonc`. They show up in `env` at runtime:
+
+```ts
+const apiKey = env.VTEX_APP_KEY;
+```
+
+The decofile resolver reads secrets via `{ "__resolveType": "secret", "name": "VTEX_APP_KEY" }` — the resolver pulls from `env` at request time.
+
+## Environment variables (non-secret)
+
+For configuration that's not a secret, use `vars`:
+
+```jsonc
+{
+  "vars": {
+    "ENVIRONMENT": "production",
+    "DECO_SITE_NAME": "my-store"
+  }
+}
+```
+
+Secrets and vars both appear in `env`. Secrets are encrypted at rest and not visible in deployment logs; vars are plain text.
+
+## Static assets
+
+Cloudflare Workers serves static assets from the bundled output. After `vite build`:
+
+```
+dist/
+├── _worker.js          # the bundled worker
+├── _worker.js.map
+├── assets/             # JS/CSS chunks
+├── client/             # client-only assets
+└── ...
+```
+
+The Worker entry recognizes paths like `/assets/*`, `/favicon.ico`, `/sprite.svg` and serves them directly without invoking the framework. No extra config needed.
+
+For a custom `_routes.json` (when you want certain paths to bypass Workers entirely), add it to `dist/` during build.
+
+## Deploy
+
+### First deploy
+
+```bash
+npx wrangler deploy
+```
+
+Prompts you to log in if needed. Lints the config, bundles, uploads, and registers the Worker.
+
+### Preview a deploy
+
+```bash
+npx wrangler deploy --dry-run
+```
+
+Builds and validates without uploading. Use in CI as a smoke test.
+
+### Per-environment deploys
+
+`wrangler.jsonc` supports environments:
+
+```jsonc
+{
+  // base config
+  "env": {
+    "staging": {
+      "name": "my-store-staging",
+      "vars": { "ENVIRONMENT": "staging" }
+    }
+  }
+}
+```
+
+Deploy to staging:
+
+```bash
+npx wrangler deploy --env staging
+```
+
+Each env has its own bindings and vars but shares secrets unless overridden.
+
+## Custom domains
+
+In the Cloudflare dashboard:
+
+1. Add the domain to your account.
+2. Worker → Routes → add the domain pattern (e.g. `my-store.com/*`).
+3. (Optional) DNS: point apex/www CNAME at the Worker.
+
+Workers can serve under `*.workers.dev` (free), or your own custom domain with a Cloudflare DNS record.
+
+## Observability
+
+```bash
+# stream logs in real time
+wrangler tail
+
+# pretty format
+wrangler tail --format pretty
+
+# filter by status
+wrangler tail --status error
+```
+
+For long-term observability, ship to your APM via OpenTelemetry. See [Observability](/v2/en/deployment/observability).
+
+## Cron triggers
+
+For scheduled jobs (cache warming, sitemap regeneration):
+
+```jsonc
+{
+  "triggers": {
+    "crons": ["0 */6 * * *"]
+  }
+}
+```
+
+Then handle in `worker-entry.ts`:
+
+```ts
+export default {
+  fetch: decoWorker.fetch,
+  scheduled: async (event, env, ctx) => {
+    // your cron logic
+  },
+};
+```
+
+Cron limits: max 1000 invocations/day on the free tier; minute-level granularity on paid tiers.
+
+## Limits worth knowing
+
+| Limit | Free | Paid (Workers Standard) |
+|---|---|---|
+| CPU time per request | 10ms | 30s |
+| Memory | 128 MB | 128 MB |
+| Subrequests | 50 | 50 (configurable up to 1000) |
+| Request body | 100 MB | 500 MB |
+| Cron triggers | 3 | 250 |
+| KV reads/writes | 100K/day | 1B reads, 1M writes/day |
+
+The 30s CPU budget is generous for v2 — most pages render in under 200ms. The 50-subrequest limit (default) is what you usually hit when you add too many uncached commerce calls.
+
+<Callout type="warning">
+**Cold start times.** Workers have ~10ms cold starts in most regions, but the first request to a fresh isolate also has to load the bundle, parse `blocks.gen.json` (which can be 10+ MB), and hit upstream APIs to populate caches. Expect cold-start P99 in the 500ms-2s range. Use the Cache API to keep cold starts off the critical path.
+</Callout>
+
+## See also
+
+- [Worker entry](/v2/en/framework/worker-entry)
+- [Caching strategy](/v2/en/deployment/caching-strategy)
+- [A/B testing and redirects](/v2/en/deployment/ab-testing-and-redirects)
+- [Observability](/v2/en/deployment/observability)

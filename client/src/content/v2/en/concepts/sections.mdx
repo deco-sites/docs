@@ -1,0 +1,133 @@
+---
+title: "Sections"
+description: "React components the CMS can place on a page."
+icon: "Component"
+---
+
+import Callout from "../../../../components/ui/Callout.astro";
+
+A **section** is a React component the CMS can render on a page. Its props are the JSON Schema admin uses for editing.
+
+## TL;DR
+
+- Drop a `.tsx` file under `src/sections/`.
+- Export a default React component and a `Props` interface.
+- The framework scans, generates a registry, derives JSON Schema from `Props`, and admin shows an editor automatically.
+
+## Anatomy
+
+```tsx
+// src/sections/Hero/HeroBanner.tsx
+export interface Props {
+  title: string;
+  /** @description Subtitle shown below the title */
+  subtitle?: string;
+  cta?: { label: string; href: string };
+}
+
+export default function HeroBanner({ title, subtitle, cta }: Props) {
+  return (
+    <section class="hero">
+      <h1>{title}</h1>
+      {subtitle && <p>{subtitle}</p>}
+      {cta && <a href={cta.href}>{cta.label}</a>}
+    </section>
+  );
+}
+```
+
+That's a complete section. The CMS will:
+
+1. Pick this file up via the sections glob in `src/setup.ts`.
+2. Generate JSON Schema from `Props` (TSDoc `@description` becomes UI hints).
+3. Make the editor available in admin.
+4. Render the component when the page block references `site/sections/Hero/HeroBanner.tsx` via `__resolveType`.
+
+## Loaders attached to sections
+
+A section can declare a server-side loader by exporting a `loader` function:
+
+```tsx
+import type { LoaderProps } from "@decocms/start/types";
+
+export interface Props {
+  productSlug: string;
+}
+
+export const loader = async (props: Props, req: Request) => {
+  // fetch the product server-side, return enriched props
+  return { ...props, product: await fetchProduct(props.productSlug) };
+};
+
+export default function ProductTeaser({ product }: Props & { product: Product }) {
+  return <article>{product.name}</article>;
+}
+```
+
+The framework calls the loader during page resolution, caches via [cachedLoader](/v2/en/framework/caching), and passes the loader's return value to the component.
+
+For the deeper API, see [Loaders concept](/v2/en/concepts/loaders).
+
+## Widgets and props
+
+The TS → JSON Schema generator understands extra annotations from `@decocms/start/types/widgets`:
+
+```tsx
+import type { ImageWidget, RichText, Color } from "@decocms/start/types/widgets";
+
+export interface Props {
+  image: ImageWidget;       // admin shows an asset picker
+  body: RichText;           // admin shows a rich text editor
+  accent: Color;            // admin shows a color picker
+}
+```
+
+See [Framework: types](/v2/en/framework/sdk-utilities#types-and-widgets) for the full widget list.
+
+## Conventions
+
+`@decocms/start` applies a few automatic conventions to sections at register time. See [`applySectionConventions`](/Users/fernandofrizzatti/development/workspace/decocms/deco-start/src/cms/applySectionConventions.ts):
+
+- Sections are wrapped in an error boundary so a single broken section doesn't crash the page.
+- Below-the-fold sections are lazy-rendered (see [Deferred rendering](/v2/en/concepts/deferred-rendering)).
+- Section names from CMS `__resolveType` are normalized (no leading slash, no extension stripping).
+
+## Registering sections
+
+The site `setup.ts` glob-imports the entire `src/sections/` directory:
+
+```ts
+import { createSiteSetup } from "@decocms/start/setup";
+import blocks from "./server/cms/blocks.gen";
+
+createSiteSetup({
+  sections: import.meta.glob("./sections/**/*.tsx", { eager: true }),
+  blocks,
+  // ...
+});
+```
+
+You can also register sections explicitly via `registerSectionLoaders` from `@decocms/start/cms` if you need finer control. See [`casaevideo-storefront/src/setup.ts`](/Users/fernandofrizzatti/development/workspace/decocms/casaevideo-storefront/src/setup.ts) for a real example.
+
+## Layout sections
+
+Header, Footer, and Theme are special: they're shared across pages and re-resolved only when their block changes. Register them with `registerLayoutSections` so the framework caches them across requests.
+
+```ts
+import { registerLayoutSections } from "@decocms/start/cms";
+
+registerLayoutSections({
+  Header: () => import("~/sections/Header/Header"),
+  Footer: () => import("~/sections/Footer/Footer"),
+  Theme: () => import("~/sections/Theme/Theme"),
+});
+```
+
+Without this, the Header re-resolves on every page load and triggers redundant API calls.
+
+## See also
+
+- [Loaders](/v2/en/concepts/loaders)
+- [Blocks](/v2/en/concepts/blocks)
+- [Pages and routes](/v2/en/concepts/pages-and-routes)
+- [Deferred rendering](/v2/en/concepts/deferred-rendering)

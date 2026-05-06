@@ -1,0 +1,195 @@
+---
+title: "Middleware e matchers"
+description: "decoState, observability, healthMetrics, hydrationContext, validateSection, mais matchers built-in e PostHog."
+icon: "Filter"
+---
+
+import Callout from "../../../../components/ui/Callout.astro";
+
+Middleware e matchers são as duas formas como o framework injeta comportamento sem precisar de código de site. Esta página documenta o que vem na caixa.
+
+## Middleware
+
+`@decocms/start/middleware` exporta funções que rodam contra o request/response.
+
+### `decoState`
+
+Provê o `MeshContext`-style state que loaders e sections leem via `RequestContext.current`. Conecta automaticamente — não chame manualmente.
+
+### `observability`
+
+Liga tracing OpenTelemetry e Server-Timing. Habilitado por default.
+
+```ts
+import { observability } from "@decocms/start/middleware";
+```
+
+A maioria dos sites não toca; só envolva manualmente para customização avançada (custom span attributes etc.).
+
+### `healthMetrics`
+
+Expõe `/_health` (200 OK) e métricas básicas. Habilitado por default.
+
+### `hydrationContext`
+
+Coordena hidratação entre TanStack Router e React 19 Suspense. Crucial para evitar mismatches de hidratação em sections deferred. Embutido em `DecoPageRenderer`.
+
+### `validateSection`
+
+Garante que toda section que entra na renderização passa por error boundary e tem fallbacks. Auto-aplicado por `applySectionConventions` no setup. Não chame na mão.
+
+### Composição
+
+Middlewares se combinam. O framework já compõe na ordem certa em `createDecoWorkerEntry`; você raramente compõe manualmente.
+
+## Matchers built-in
+
+`@decocms/start/matchers/builtins` provê matchers prontos para A/B, segmentação e flags:
+
+| Matcher | Casa por |
+|---|---|
+| `MatchUserAgent` | Device do Cloudflare ou regex de UA |
+| `MatchDate` | Intervalo de datas (start/end ISO 8601) |
+| `MatchSite` | siteName atual |
+| `MatchEnvironment` | `env.ENVIRONMENT` (e.g. "staging") |
+| `MatchLocation` | Header `cf-ipcountry` (país/região) |
+| `MatchSession` | Atributo de sessão (logado, com carrinho etc.) |
+| `MatchRandom` | Bucket aleatório sticky com sessionKey |
+| `MatchFeatureFlag` | Flag PostHog (delegada para o matcher PostHog) |
+
+Registre tudo de uma vez:
+
+```ts
+import { registerBuiltinMatchers } from "@decocms/start/matchers/builtins";
+
+registerBuiltinMatchers({
+  customMatchers: {
+    // matchers próprios do site
+    MatchHasCart: matchHasCart,
+  },
+});
+```
+
+Após o registro, aparecem nos pickers do admin pelo nome.
+
+## `MatchRandom` (A/B sticky)
+
+O primitivo mais usado para A/B:
+
+```json
+{
+  "__resolveType": "$live/matchers/MatchRandom.ts",
+  "percentage": 50,
+  "sessionKey": "ab_hero_v2"
+}
+```
+
+- `percentage` — 0-100, porcentagem alocada para "true".
+- `sessionKey` — identificador único do experimento. O primeiro request da sessão recebe um veredito; requests seguintes na mesma sessão honram o veredito.
+
+A persistência da sessão usa cookies; setado uma vez, expira em 30 dias por default.
+
+## Matcher PostHog
+
+`@decocms/start/matchers/posthog` integra com flags do PostHog:
+
+```ts
+import { matchPosthog } from "@decocms/start/matchers/posthog";
+```
+
+Setup:
+
+1. Crie um block do app PostHog no admin (`__resolveType: "deco-posthog"` ou similar) com a config da chave de API.
+2. Registre o matcher: `registerBuiltinMatchers({ ... })` o pega via `customMatchers: { MatchPosthog: matchPosthog }`.
+
+O matcher posta no edge endpoint do PostHog em request time, então respeita as definições de flag do PostHog (alvos por usuário, rollouts %).
+
+### Sticky sessions
+
+Por padrão, `matchPosthog` lê o ID `distinct` do PostHog do cookie. Sem cookie, gera um por request. Para sticky entre sessões, garanta que o cookie do PostHog é setado pelo seu snippet PostHog client-side ou via `setPosthogCookie` (`@decocms/apps/posthog`).
+
+### Por ambiente
+
+Use uma chave de projeto PostHog diferente por ambiente:
+
+```ts
+// no app PostHog block:
+{ apiKey: env.ENVIRONMENT === "production" ? "phc_prod" : "phc_staging" }
+```
+
+Isso evita poluir analytics de produção com tráfego de staging.
+
+## Matchers custom
+
+Um matcher é um arquivo no estilo de section em `src/matchers/`:
+
+```ts
+// src/matchers/MatchHasCart.ts
+import type { MatcherFn } from "@decocms/start/types";
+
+export interface Props {
+  inverse?: boolean;
+}
+
+const matcher: MatcherFn<Props> = ({ request }, { inverse = false }) => {
+  const hasCart = request.headers.get("cookie")?.includes("checkout.vtex.com__orderFormId");
+  return inverse ? !hasCart : Boolean(hasCart);
+};
+
+export default matcher;
+```
+
+A interface `Props` vira JSON Schema para o admin (igual sections).
+
+Registre via `customMatchers` em `registerBuiltinMatchers`:
+
+```ts
+registerBuiltinMatchers({
+  customMatchers: {
+    MatchHasCart: matchHasCart,
+  },
+});
+```
+
+## Tracing de matchers
+
+Toda chamada de matcher pega um span. Em `wrangler tail` aparece como:
+
+```
+matcher.MatchUserAgent  status=true  duration=2ms
+matcher.MatchRandom     status=false duration=1ms
+```
+
+Inestimável quando um experimento de A/B não está fazendo o que você espera.
+
+## Padrões de matcher composto
+
+Multivariate blocks compõem matchers em decisões em árvore:
+
+```json
+{
+  "__resolveType": "$live/matchers/MultivariateBlock.ts",
+  "variants": [
+    {
+      "matcher": {
+        "__resolveType": "$live/matchers/And.ts",
+        "matchers": [
+          { "__resolveType": "$live/matchers/MatchUserAgent.ts", "device": "mobile" },
+          { "__resolveType": "$live/matchers/MatchHasCart.ts" }
+        ]
+      },
+      "block": { "__resolveType": "..." }
+    },
+    { "block": { "__resolveType": "..." } }
+  ]
+}
+```
+
+`$live/matchers/And.ts` e `$live/matchers/Or.ts` vêm na caixa.
+
+## Veja também
+
+- [Matchers e flags (conceito)](/v2/pt/concepts/matchers-and-flags)
+- [Setup](/v2/pt/framework/setup)
+- [A/B testing e redirects](/v2/pt/deployment/ab-testing-and-redirects)
+- [Observability](/v2/pt/deployment/observability)

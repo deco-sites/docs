@@ -1,0 +1,121 @@
+---
+title: "Framework overview"
+description: "Map of the @decocms/start surface area — what lives where."
+icon: "Map"
+---
+
+import Callout from "../../../../components/ui/Callout.astro";
+
+This page is the index of `@decocms/start`. Each section links to a deeper reference. If you're unsure where to look, scan this page first.
+
+## What's in the box
+
+`@decocms/start` is the framework layer. It exposes:
+
+- A **worker entry wrapper** (`createDecoWorkerEntry`) that runs admin routes, edge cache, and static asset bypass before the framework gets the request.
+- A **CMS bridge** that resolves blocks into rendered React trees.
+- An **admin protocol** implementation (`/live/_meta`, `/.decofile`, `/deco/render`, `/deco/invoke`).
+- A **section/loader registry** with TS → JSON Schema generation.
+- A **Vite plugin** that handles the `blocks.gen` JSON fast-path and chunk hints.
+- A small **SDK** (caching, invoke, instrumented fetch, scripts, signals, cookies, etc.).
+- **Code generation scripts** (`generate-blocks`, `generate-schema`, `generate-invoke`, `migrate`, `tailwind-lint`).
+- **Three CLI binaries** (`deco-migrate`, `deco-post-cleanup`, `deco-htmx-analyze`).
+
+## Source tree
+
+```
+deco-start/src/
+├── admin/        # Admin protocol handlers, schema composition, preview shell
+├── apps/         # autoconfigApps + setupApps (CMS app wiring)
+├── cms/          # blocks.loader, registry, resolveDecoPage, sectionLoaders
+├── daemon/       # Local dev tunnel + auth + watcher (advanced)
+├── hooks/        # DecoPageRenderer, LazySection, LiveControls, NavigationProgress
+├── matchers/     # Built-in matchers + PostHog
+├── middleware/   # decoState, observability, healthMetrics, hydrationContext
+├── routes/       # cmsRouteConfig, cmsHomeRouteConfig, withSiteGlobals
+├── sdk/          # Worker entry, caching, invoke, fetch, scripts, signals, etc.
+├── types/        # FnContext, App, Section, widgets
+├── vite/         # decoVitePlugin (Vite plugin)
+└── setup.ts      # createSiteSetup (one-call site bootstrap)
+```
+
+Every directory has a corresponding reference page below.
+
+## Reference pages
+
+| Page | Covers |
+|---|---|
+| [Worker entry](/v2/en/framework/worker-entry) | `createDecoWorkerEntry`, A/B testing, redirects, proxy handler, segment builder |
+| [Vite plugin](/v2/en/framework/vite-plugin) | `decoVitePlugin`, chunking gotchas, blocks.gen fast-path |
+| [Setup](/v2/en/framework/setup) | `createSiteSetup`, sections glob, blocks, matchers, platform init |
+| [Routes](/v2/en/framework/routes) | `cmsRouteConfig`, `cmsHomeRouteConfig`, `loadCmsPage`, `loadDeferredSection`, `withSiteGlobals` |
+| [Hooks](/v2/en/framework/hooks) | `DecoPageRenderer`, `LazySection`, `LiveControls`, `NavigationProgress`, `useDevice`, `useHydrated` |
+| [Caching](/v2/en/framework/caching) | Edge profiles, `cacheHeaders`, `cachedLoader`, `mergeCacheControl` |
+| [Invoke](/v2/en/framework/invoke) | `createInvoke`, `invoke`, batch invoke, generated client |
+| [Middleware & matchers](/v2/en/framework/middleware-and-matchers) | `decoState`, observability, hydration context, validate section, builtins, PostHog |
+| [SDK utilities](/v2/en/framework/sdk-utilities) | Everything else under `sdk/*` and the codegen scripts |
+
+## Package exports overview
+
+`@decocms/start` exposes ~60 entry points. The most-used:
+
+| Import | What it is |
+|---|---|
+| `@decocms/start` | Barrel: re-exports `cms`, `admin`, `hooks`, `middleware`, `types` |
+| `@decocms/start/setup` | `createSiteSetup` |
+| `@decocms/start/cms` | Block loading, section/loader registry, resolveDecoPage |
+| `@decocms/start/admin` | Admin protocol handlers |
+| `@decocms/start/hooks` | `DecoPageRenderer`, `LazySection`, etc. |
+| `@decocms/start/routes` | `cmsRouteConfig`, `loadCmsPage`, etc. |
+| `@decocms/start/middleware` | Observability, decoState, hydration context |
+| `@decocms/start/sdk` | Caching, invoke, fetch, scripts, signals (barrel) |
+| `@decocms/start/sdk/workerEntry` | `createDecoWorkerEntry` |
+| `@decocms/start/sdk/cachedLoader` | `createCachedLoader` |
+| `@decocms/start/vite` | `decoVitePlugin()` |
+| `@decocms/start/types` | `FnContext`, `Section`, `App` |
+| `@decocms/start/types/widgets` | Widget types: `ImageWidget`, `RichText`, `Color`, etc. |
+| `@decocms/start/matchers/builtins` | `MatchUserAgent`, `MatchDate`, etc. |
+| `@decocms/start/matchers/posthog` | PostHog matcher |
+
+The full table is at [Package exports reference](/v2/en/reference/package-exports).
+
+<Callout type="warning">
+**Subpath vs. barrel imports.** Several SDK utilities have their own subpath export (`@decocms/start/sdk/cachedLoader`, `@decocms/start/sdk/encoding`, `@decocms/start/sdk/http`, etc.) that are NOT re-exported from the `@decocms/start/sdk` barrel. Always use the subpath for these. The reference table flags which are barrel-only vs. subpath-only.
+</Callout>
+
+## Three-layer architecture (as a reminder)
+
+```
+Site repo                ← Components, sections, routes, styles, contexts
+  ↑ depends on
+@decocms/apps            ← Commerce: VTEX, Shopify, Resend, types, SDK
+  ↑ depends on
+@decocms/start           ← Framework: this package
+  ↑ runs on
+TanStack Start + React 19 + Cloudflare Workers
+```
+
+Things `@decocms/start` deliberately does **not** ship:
+
+- Preact references or compatibility shims.
+- Site-specific section maps.
+- Commerce API calls (those live in `@decocms/apps`).
+- UI components (those live in your site).
+
+If you find yourself wanting one of these, reconsider — usually there's a layered solution.
+
+## When you contribute
+
+Reading the source is encouraged. Two starting points:
+
+- **`CLAUDE.md`** at the repo root has the canonical architectural decisions.
+- **`MIGRATION_TOOLING_PLAN.md`** has the append-only record of how the migration story has evolved.
+
+Both live at [`@decocms/start`](https://github.com/decocms/deco-start).
+
+## See also
+
+- [Stack overview](/v2/en/getting-started/stack-overview)
+- [Project structure](/v2/en/getting-started/project-structure)
+- [Setup](/v2/en/framework/setup)
+- [Worker entry](/v2/en/framework/worker-entry)

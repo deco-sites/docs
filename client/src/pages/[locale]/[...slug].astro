@@ -4,14 +4,20 @@ import { ui, languages } from "../../i18n/ui";
 import DocsLayout from "../../layouts/DocsLayout.astro";
 import { getCollection } from "astro:content";
 import RenderDocument from "../../components/ui/RenderDocument.astro";
+import { getVersion } from "../../config/versions";
+
+// v1 (current default) lives at the root: /{locale}/{...slug}
+// Content for this route is in client/src/content/v1/{locale}/...
 
 const lang = Astro.params.locale;
 const t = useTranslations(lang as keyof typeof ui);
 
 export async function getStaticPaths() {
   const allDocs = await getCollection("docs");
+  const v1Docs = allDocs.filter((doc) => doc.id.startsWith("v1/"));
 
   return [
+    // Bare /{locale} (no slug) — handled below by redirect to v1 root.
     ...Object.keys(languages).map((locale) => ({
       params: { locale },
       props: { doc: null },
@@ -23,10 +29,11 @@ export async function getStaticPaths() {
         props: { doc: null },
       },
     ]),
-    ...allDocs.map((doc) => {
-      const locale = doc.id.split("/")[0];
-      const slug = doc.id.split("/").slice(1).join("/");
-
+    ...v1Docs.map((doc) => {
+      const parts = doc.id.split("/");
+      // doc.id = v1/{locale}/{slug...}
+      const locale = parts[1];
+      const slug = parts.slice(2).join("/");
       return {
         params: { locale, slug },
         props: { doc },
@@ -37,18 +44,19 @@ export async function getStaticPaths() {
 
 const { doc } = Astro.props;
 const slug = Astro.params.slug;
+const version = getVersion("v1")!;
 
 // Legacy redirects
 if (slug === "getting-started/context-engineers") {
   return Astro.redirect(`/${lang}/getting-started/developers`);
 }
 
-// Redirect to getting-started/overview if no document is found (i.e., when visiting /en)
+// Redirect to version root if no document is found (e.g. when visiting /en)
 if (!doc) {
-  return Astro.redirect(`/${lang}/getting-started/overview`);
+  return Astro.redirect(`/${lang}/${version.root}`);
 }
 ---
 
-<DocsLayout title={doc.data.title} doc={doc}>
+<DocsLayout title={doc.data.title} doc={doc} version="v1">
   <RenderDocument doc={doc} />
 </DocsLayout>

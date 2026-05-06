@@ -1,0 +1,191 @@
+---
+title: "Estratégia de cache"
+description: "Profiles built-in + setCacheProfile, registerCachePattern, staleTime no nível de rota."
+icon: "Database"
+---
+
+import Callout from "../../../../components/ui/Callout.astro";
+
+Cache em produção é onde a v2 fica rápida. Esta página é o playbook: profiles default, como overridar e quais padrões valem para cada tipo de página.
+
+## Camadas que importam
+
+```
+Browser cache      ←  max-age
+Cloudflare cache   ←  s-maxage (via Cache API)
+Worker memory      ←  cachedLoader (LRU+SWR)
+TanStack Router    ←  staleTime / gcTime (client)
+```
+
+Toda página passa pelos quatro. Tunne em camadas onde mais importa.
+
+## Profiles built-in (rápido)
+
+| Profile | Padrões | maxAge | s-maxage | SWR |
+|---|---|---|---|---|
+| `home` | `/` | 60s | 300s | 1d |
+| `pdp` | `/p/*` | 60s | 300s | 1d |
+| `plp` | `/c/*`, `/b/*` | 60s | 300s | 1d |
+| `search` | `/s` | 0 | 60s | 1h |
+| `bypass` | `/cart`, `/checkout`, `/api/*`, `/deco/*` | 0 | 0 | 0 |
+| `static` | `*.{js,css,png,...}` | 1y | 1y | — |
+| `default` | (catch-all) | 60s | 300s | 1d |
+
+`SWR` é Stale-While-Revalidate — quanto tempo o edge serve stale enquanto refresca em background.
+
+## Por que esses números
+
+- **PDP/PLP em 60/300**: usuários veem mudanças de preço ou estoque dentro de 5 min. Conteúdo está cacheado o suficiente para servir 95% dos requests do edge.
+- **Home em 60/300**: igual. Hero raramente muda; quando muda, edição no admin invalida via ETag.
+- **Busca em 0/60**: queries são alto-cardinalidade; client cache curto reduz chamadas IS sem inflar o edge.
+- **Carrinho/checkout em 0/0**: por usuário; nunca cacheia.
+- **Static em 1ano**: assets bundled tem hash; nome muda em cada deploy.
+
+Estão deliberadamente conservadores. Quando você confiar na invalidação por ETag (admin edita → ETag muda → cache busta), pode ir mais agressivo.
+
+## Override global
+
+### `setCacheProfile`
+
+Substitua um profile inteiro:
+
+```ts
+import { setCacheProfile } from "@decocms/start/sdk/cacheHeaders";
+
+setCacheProfile("pdp", {
+  maxAge: 30,
+  sMaxAge: 600,
+  staleWhileRevalidate: 86400,
+});
+```
+
+Faça em `setup.ts` ou em arquivo `cache-config.ts` separado importado de `setup.ts`.
+
+### `registerCachePattern`
+
+Adicione padrão custom:
+
+```ts
+import { registerCachePattern } from "@decocms/start/sdk/cacheHeaders";
+
+registerCachePattern("/coupons", "bypass");
+registerCachePattern(/^\/landing\/.*/, "home");
+registerCachePattern("/sitemap.xml", { maxAge: 0, sMaxAge: 86400 });
+```
+
+Padrões batem na ordem de registro; primeiro match ganha.
+
+Veja [`cache-config.ts` do Casa&Vídeo](/Users/fernandofrizzatti/development/workspace/decocms/casaevideo-storefront/src/cache-config.ts) para overrides em larga escala em loja real.
+
+## Override por rota
+
+Use a opção `headers` em `cmsRouteConfig`:
+
+```tsx
+const config = cmsRouteConfig({
+  siteName: "minha-loja",
+  headers: () => cacheHeaders({ maxAge: 60, sMaxAge: 600 }),
+});
+```
+
+Útil para uma página da home com regras diferentes (e.g. landing de campanha que precisa de cache mais curto).
+
+## Override por loader
+
+`cachedLoader` aceita TTL próprio:
+
+```ts
+const cachedProduct = createCachedLoader({
+  key: ({ slug }) => `product:${slug}`,
+  ttl: 60_000,
+  staleTtl: 5 * 60_000,
+  loader: async ({ slug }) => fetchProduct(slug),
+});
+```
+
+Esses TTLs vivem no Worker memory (não no edge). Loader cache reduz chamadas upstream; edge cache reduz CPU do Worker. Use os dois para max efeito.
+
+## TanStack Router staleTime
+
+```tsx
+const config = cmsRouteConfig({
+  siteName: "minha-loja",
+  staleTime: 30_000,
+  gcTime: 5 * 60_000,
+});
+```
+
+`staleTime` mantém dados frescos no client por X ms (sem refetch em re-mount). `gcTime` é quanto tempo dados ficam em cache depois que nenhum componente os usa.
+
+Para troca de variant na PDP, `staleTime` evita re-fetch quando usuário troca SKU. Junto com `replaceState` em vez de `navigate`, troca de variant fica instantânea.
+
+Veja [skill `deco-variant-selection-perf`](https://github.com/decocms/deco-start/tree/main/.agents/skills) para o padrão.
+
+## Layout caching
+
+Sections de layout (Header, Footer, Theme) cacheiam separado da page principal:
+
+```ts
+import { registerLayoutSections } from "@decocms/start/cms";
+
+registerLayoutSections({
+  Header: () => import("~/sections/Header/Header"),
+  Footer: () => import("~/sections/Footer/Footer"),
+  Theme: () => import("~/sections/Theme/Theme"),
+});
+```
+
+Sem isso, Header re-resolve em cada page load e dispara chamada de "shelves de products no header" para VTEX em cada hop de URL. Veja [skill `deco-cms-layout-caching`](https://github.com/decocms/deco-start/tree/main/.agents/skills) para a investigação.
+
+## Endpoint de purge
+
+Force invalidação para rota específica:
+
+```bash
+curl https://minha-loja.com/algum/path?__deco_purge_cache=<sua-key>
+```
+
+A key vem da config `cachePurgeKey` em `createDecoWorkerEntry`. Em produção use string aleatória forte.
+
+Use isso em workflows de deploy para warmup rotas críticas após push.
+
+## Diagnóstico
+
+Cache de borda Cloudflare emite `cf-cache-status`:
+
+| Valor | Significado |
+|---|---|
+| `HIT` | Servido do edge cache |
+| `MISS` | Cache vazio; fetched do origin |
+| `BYPASS` | Cache pulou (e.g. POST, cookie de auth) |
+| `EXPIRED` | Stale; revalidando |
+| `REVALIDATED` | Refresh upstream completou |
+
+Inspect com `curl -I` ou em devtools tab Network.
+
+`@decocms/start` adiciona `x-deco-cache: profile=pdp;ttl=300;state=fresh` para profile + TTL aplicado.
+
+## Cardinalidade vs hit rate
+
+Todo segmento (device, country, regionId VTEX, A/B variant) multiplica entradas de cache. 4 devices × 5 países × 100 regionIds × 2 variants = 4000 cache entries por URL.
+
+Tradeoff: mais segmentação = HIT rate mais baixo + cache footprint maior. Comece minimal (e.g. só device + country) e adicione segmentos só quando dados mostrarem que valem.
+
+## Profiles "ataque"
+
+Para sites em campanha promocional ativa onde estoque muda a cada minuto, considere:
+
+```ts
+setCacheProfile("pdp", { maxAge: 0, sMaxAge: 30, staleWhileRevalidate: 60 });
+```
+
+Mais agressivo. Aceita 30s de pricing stale, 60s de SWR. Reduz cardinalidade de cache e mantém HIT rate alto.
+
+Faça quando você tiver o tracing para confirmar que sua origem aguenta a carga elevada.
+
+## Veja também
+
+- [Caching (framework)](/v2/pt/framework/caching)
+- [Worker entry](/v2/pt/framework/worker-entry)
+- [Loaders](/v2/pt/concepts/loaders)
+- [Estudo de caso Casa&Vídeo](/v2/pt/case-studies/casaevideo)

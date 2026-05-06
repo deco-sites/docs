@@ -1,0 +1,150 @@
+---
+title: "Commerce overview"
+description: "@decocms/apps — VTEX, Shopify, and Resend integrations for v2 storefronts."
+icon: "ShoppingBag"
+---
+
+import Callout from "../../../../components/ui/Callout.astro";
+
+`@decocms/apps` is the commerce layer. It sits on top of `@decocms/start` and ships VTEX and Shopify integrations, a Resend email integration, and a shared schema.org-aligned commerce surface (types, SDK, components).
+
+## What's in the box
+
+| Area | Path | What it does |
+|---|---|---|
+| **VTEX** | `@decocms/apps/vtex/*` | Loaders, actions, inline loaders, hooks, middleware, client |
+| **Shopify** | `@decocms/apps/shopify/*` | Loaders, actions, GraphQL client, transforms |
+| **Resend** | `@decocms/apps/resend/*` | Email send action via Resend API |
+| **Shared** | `@decocms/apps/commerce/*` | schema.org types, `useOffer`, `formatPrice`, `Image`, `JsonLd` |
+| **Website** | `@decocms/apps/website/*` | SEO config, fonts, secrets, basic UI bits |
+| **Registry** | `@decocms/apps/registry` | Lists installable apps for `autoconfigApps` |
+
+## Configure flow
+
+Apps are configured **via CMS blocks** (decofile entries), not via code constants. The pattern:
+
+1. The site's decofile contains a block like `{ "__resolveType": "deco-vtex", "account": "mystore" }`.
+2. At setup time, `autoconfigApps()` reads the block and calls each app's `configure()` function.
+3. `configure()` resolves secrets (e.g. VTEX `appKey`/`appToken`), builds a runtime config, registers loaders/actions/middleware.
+
+```ts
+// src/setup.ts
+import { autoconfigApps } from "@decocms/start/apps/autoconfig";
+
+createSiteSetup({
+  // ...
+  initPlatform: () => autoconfigApps(),
+});
+```
+
+`autoconfigApps()` reads `@decocms/apps/registry` and matches `blockKey`s in your decofile to the right `configure()` function.
+
+## The registry
+
+```34:56:/Users/fernandofrizzatti/development/workspace/decocms/apps-start/registry.ts
+export const APP_REGISTRY: AppRegistry = [
+	{
+		blockKey: "deco-shopify",
+		module: () => import("./shopify/mod"),
+		// ...
+	},
+	{
+		blockKey: "deco-vtex",
+		module: () => import("./vtex/mod"),
+		// ...
+	},
+	{
+		blockKey: "deco-resend",
+		module: () => import("./resend/mod"),
+		// ...
+	},
+];
+```
+
+Three default-installable apps. Add more by extending the registry (advanced — most sites don't).
+
+## Manual configuration (alternative to autoconfig)
+
+If you'd rather configure explicitly:
+
+```ts
+import * as vtexApp from "@decocms/apps/vtex/mod";
+
+const vtex = await vtexApp.configure(
+  {
+    account: "mystore",
+    appKey: { secret: "VTEX_APP_KEY" },
+    appToken: { secret: "VTEX_APP_TOKEN" },
+    salesChannel: "1",
+  },
+  resolveSecret,
+);
+
+// vtex.middleware → composable middleware
+// vtex.manifest → loaders/actions registry
+```
+
+This is what `autoconfigApps()` does for you internally; you only call it manually for tests or for highly customized setups.
+
+## Peer dependencies
+
+```json
+{
+  "@decocms/start": ">=0.19.0",
+  "@tanstack/react-query": ">=5",
+  "react": ">=18",
+  "react-dom": ">=18"
+}
+```
+
+Note that the published peer floor for React is 18 — but the v2 stack assumes React 19.
+
+## Layered responsibilities
+
+| Concern | Where it lives |
+|---|---|
+| HTTP client (`vtexFetch`, GraphQL client) | `@decocms/apps/<vendor>/client.ts` |
+| Server-side data fetch (loaders) | `@decocms/apps/<vendor>/loaders/*` |
+| Server-side mutations (actions) | `@decocms/apps/<vendor>/actions/*` |
+| CMS-shaped page loaders (PDP, PLP, shelf) | `@decocms/apps/<vendor>/inline-loaders/*` |
+| TanStack Query hooks | `@decocms/apps/<vendor>/hooks/*` |
+| Middleware (cookies, segment, cache key) | `@decocms/apps/<vendor>/middleware.ts` |
+| Type-only commerce shapes | `@decocms/apps/commerce/types` |
+| Browser/SSR helpers | `@decocms/apps/commerce/sdk/*` |
+| Shared UI | `@decocms/apps/commerce/components/*` |
+
+## Reference pages
+
+### VTEX (full surface)
+
+- [VTEX overview](/v2/en/commerce/vtex-overview)
+- [VTEX loaders and actions](/v2/en/commerce/vtex-loaders-and-actions)
+- [VTEX inline loaders](/v2/en/commerce/vtex-inline-loaders)
+- [VTEX hooks](/v2/en/commerce/vtex-hooks)
+- [VTEX client and middleware](/v2/en/commerce/vtex-client-and-middleware)
+- [VTEX gotchas](/v2/en/commerce/vtex-gotchas)
+
+### Shopify
+
+- [Shopify](/v2/en/commerce/shopify)
+
+### Email
+
+- [Resend](/v2/en/commerce/resend)
+
+### Shared
+
+- [Shared commerce surface](/v2/en/commerce/shared)
+
+## Open issue: README drift
+
+<Callout type="warning">
+**`@decocms/apps/vtex/invoke` does not exist.** The library's README references this subpath, but it's not in `package.json` `exports`. Use the `/deco/invoke/...` HTTP routes (handled automatically by your generated `invoke.gen.ts`) and the `createUseCart` / `createUseUser` / `createUseWishlist` factories from `@decocms/apps/vtex/hooks` instead. See [VTEX hooks](/v2/en/commerce/vtex-hooks) for the canonical pattern.
+</Callout>
+
+## See also
+
+- [Stack overview](/v2/en/getting-started/stack-overview)
+- [Setup](/v2/en/framework/setup)
+- [Apps system (apps autoconfig)](/v2/en/framework/sdk-utilities)
+- [VTEX overview](/v2/en/commerce/vtex-overview)

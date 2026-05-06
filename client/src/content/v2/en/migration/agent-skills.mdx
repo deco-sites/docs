@@ -1,0 +1,117 @@
+---
+title: "Agent skills"
+description: "Use Claude Code, Cursor, Codex, or any AI coding tool to drive the migration."
+icon: "Bot"
+---
+
+import Callout from "../../../../components/ui/Callout.astro";
+
+`@decocms/start` ships an Agent Skill — a structured prompt + reference set — designed for AI coding tools (Claude Code, Cursor, Codex, etc.). Once installed, you can tell the agent *"migrate this project to TanStack Start"* and it handles the long tail of manual fixes.
+
+## Why a skill (not just a prompt)
+
+A bare prompt sends the agent into the codebase blind. A skill gives the agent:
+
+- The full **playbook** with phase ordering.
+- **Reference templates** for every generated file (`vite.config.ts`, `wrangler.jsonc`, `setup.ts`, `worker-entry.ts`, root route).
+- **Documented gotchas** — 18+ documented edge cases the script alone can't handle.
+- **Decision rules** for tradeoffs the script doesn't take a position on (which sections to defer, which islands need `"use client"` vs hoisting, etc.).
+
+The skill knows what's automated, what's manual, and where to read for context.
+
+## Installation
+
+```bash
+npx skills add decocms/deco-start
+```
+
+This installs the skill into your editor's local skill registry. Supported editors:
+
+- **Claude Code** (`~/.claude/skills/`)
+- **Cursor** (`~/.cursor/skills/`)
+- **Codex** (`~/.codex/skills/`)
+- Any tool that reads the Agent Skill convention
+
+You can also invoke the skill from any of these tools without prior installation if they support remote skill loading.
+
+## Usage
+
+Once the skill is installed, open your v1 storefront in the editor and prompt:
+
+> migrate this project to TanStack Start
+
+The agent will:
+
+1. Run `deco-migrate --dry-run` first and read the report.
+2. Confirm the source layout is classic (or guide you through restructuring).
+3. Execute the migration script.
+4. Walk through every entry in `MIGRATION_REPORT.md` and either fix it or ask you to.
+5. Run `tsc --noEmit` and `vite build` and resolve errors interactively.
+6. Show you a summary diff before committing.
+
+## What the skill is good at
+
+- **Mechanical fixes** — anything regex-able (imports, JSX attrs, Tailwind tokens).
+- **Pattern recognition** — spotting `useScript(fn)` calls, identifying islands that should hoist vs. become client components.
+- **Cross-referencing** — checking your code against the [reference storefronts](/v2/en/case-studies/overview) for canonical patterns.
+- **Documentation lookup** — when it doesn't know something, it reads `@decocms/start`'s docs first instead of guessing.
+
+## What the skill is not good at
+
+- **Business logic decisions.** If your v1 site has a custom checkout flow, the skill can port the syntax but you need to verify the semantics.
+- **Performance tuning.** Choosing the right `foldThreshold` or cache profile is product-judgement work; the skill doesn't have your traffic data.
+- **Runtime debugging beyond compile-clean.** Cart not adding items? PDP showing the wrong variant? You'll need to debug yourself; the skill can help you instrument but can't see your VTEX account.
+
+## What's in the skill
+
+The skill bundle (lives at [`@decocms/start/.agents/skills/deco-to-tanstack-migration/`](https://github.com/decocms/deco-start/tree/main/.agents/skills/deco-to-tanstack-migration)) contains:
+
+- **`SKILL.md`** — the entry point the agent reads first.
+- **`templates/`** — reference files the agent copies and customizes:
+  - `vite-config.md`
+  - `wrangler-config.md`
+  - `setup-ts.md`
+  - `worker-entry.md`
+  - `package-json.md`
+  - `router.md`
+  - `root-route.md`
+- **`references/`** — deep-dives on specific gotchas:
+  - `gotchas.md`
+  - `hydration.md`
+  - `async-rendering.md`
+  - `commerce.md`
+  - `htmx-migration.md`
+  - `migrations.md`
+
+When the agent encounters something out of the ordinary, it looks up the relevant reference doc instead of hallucinating.
+
+## A second skill: `deco-migrate-script`
+
+There's also a dedicated skill for working on the migration script itself:
+
+```bash
+npx skills add decocms/deco-migrate-script
+```
+
+This is for **framework contributors** who want to extend the migration script — adding new transform rules, new scaffold templates, etc. End users don't need it.
+
+## Tips for getting the most out of the skill
+
+- **Commit your v1 work first.** The skill makes large, sweeping changes. Have a clean baseline to revert to.
+- **Run on a branch.** Don't migrate `main`. Push the branch and review the diff.
+- **Don't pre-fix things.** Run the skill on the unmodified v1 codebase. If you've already half-migrated, the skill will be confused by the partial state.
+- **Ask follow-up questions.** When the agent makes a decision, ask why. The skill includes the reasoning.
+- **Validate with the checklist.** After the skill says "done", run through [the migration checklist](/v2/en/migration/checklist) yourself.
+
+## Skill drift
+
+<Callout type="info">
+The skill ships **with the framework**. New `@decocms/start` versions may include skill updates. Re-run `npx skills add decocms/deco-start` after upgrading the framework on your project (or before starting a fresh migration on a new project).
+</Callout>
+
+## See also
+
+- [Migration overview](/v2/en/migration/overview)
+- [Migration playbook](/v2/en/migration/playbook)
+- [Migrate script](/v2/en/migration/migrate-script)
+- [Migration checklist](/v2/en/migration/checklist)

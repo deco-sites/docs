@@ -1,0 +1,226 @@
+---
+title: "Shopify"
+description: "configure(), loaders, actions, requisito de cookie de carrinho, paridade faltando de hooks."
+icon: "Bag"
+---
+
+import Callout from "../../../../components/ui/Callout.astro";
+
+Suporte Shopify cobre Storefront API com loaders e actions canônicos. Profundidade fica abaixo de VTEX hoje (sem hooks helper completos), mas o core funciona.
+
+## Install
+
+Mesmo pacote `@decocms/apps`. Os subpaths são `@decocms/apps/shopify/*`.
+
+## Configure block
+
+`.deco/blocks/deco-shopify.json`:
+
+```json
+{
+  "__resolveType": "deco-shopify",
+  "storeName": "minhaloja",
+  "storefrontAccessToken": { "__resolveType": "secret/key" },
+  "publicUrl": "https://www.minhaloja.com.br",
+  "languageCode": "PT",
+  "countryCode": "BR"
+}
+```
+
+| Campo | Função |
+|---|---|
+| `storeName` | Subdomínio Shopify (`minhaloja.myshopify.com`) |
+| `storefrontAccessToken` | Token da Shopify Storefront API |
+| `publicUrl` | URL pública (preserva cookies em proxies) |
+| `languageCode` / `countryCode` | Localização Storefront |
+
+## Wiring no setup
+
+```ts
+import { initShopifyFromBlocks } from "@decocms/apps/shopify/client";
+import { createShopifyCommerceLoaders } from "@decocms/apps/shopify/commerceLoaders";
+
+createSiteSetup({
+  // ...
+  initPlatform: () => initShopifyFromBlocks(),
+  getCommerceLoaders: () => createShopifyCommerceLoaders(),
+});
+```
+
+## Loaders disponíveis
+
+### `shopify/loaders/ProductDetailsPage.ts`
+
+```ts
+{ slug: string }
+```
+
+Devolve `ProductDetailsPage | null`.
+
+### `shopify/loaders/ProductListingPage.ts`
+
+```ts
+{
+  collection?: string;       // handle da coleção
+  count?: number;            // produtos por página
+  sort?: string;
+  page?: number;
+}
+```
+
+### `shopify/loaders/SearchPage.ts`
+
+```ts
+{ query?: string; count?: number; page?: number }
+```
+
+### `shopify/loaders/ProductList.ts`
+
+```ts
+{
+  collection?: string;
+  count?: number;
+  query?: string;
+}
+```
+
+### `shopify/loaders/Cart.ts`
+
+```ts
+{}
+```
+
+Devolve `Cart`. **Requer cookie de carrinho.** Veja gotcha abaixo.
+
+### `shopify/loaders/Account.ts`
+
+```ts
+{}
+```
+
+Devolve `User | null` baseado no token de auth do customer.
+
+## Actions disponíveis
+
+### `shopify/actions/cart/addItems.ts`
+
+```ts
+{ items: { id: string; quantity: number }[] }
+```
+
+### `shopify/actions/cart/updateItems.ts`
+
+```ts
+{ lines: { id: string; quantity: number }[] }
+```
+
+### `shopify/actions/cart/removeItems.ts`
+
+```ts
+{ ids: string[] }
+```
+
+### `shopify/actions/cart/discountCodesUpdate.ts`
+
+```ts
+{ codes: string[] }
+```
+
+### `shopify/actions/customer/login.ts`
+
+```ts
+{ email: string; password: string }
+```
+
+### `shopify/actions/customer/register.ts`
+
+```ts
+{ email: string; password: string; firstName?: string; lastName?: string }
+```
+
+## Cliente
+
+```ts
+import { shopifyFetch, setShopifyFetch } from "@decocms/apps/shopify/client";
+
+const result = await shopifyFetch(graphqlQuery, variables);
+```
+
+`shopifyFetch` cuida de:
+- Construção do header Storefront API.
+- Execução de query GraphQL.
+- Retry em rate limits.
+- Tracing OpenTelemetry.
+
+Substitua via `setShopifyFetch(createInstrumentedFetch("shopify"))` para custom instrumentação.
+
+## Gotcha — cookie de carrinho
+
+Diferente de VTEX (que usa orderForm cookie auto-gerenciado), Shopify exige que **você** mantenha o `cartId` em cookie:
+
+```ts
+import { getCart } from "@decocms/apps/shopify/loaders";
+
+export const loader = async (props, request) => {
+  const responseHeaders = new Headers();
+  const cart = await getCart({ request, responseHeaders });
+  return new Response(JSON.stringify(cart), { headers: responseHeaders });
+};
+```
+
+`responseHeaders` é onde `getCart` seta o cookie `shopify_cart_id`. Esquecer significa cliente nunca persiste carrinho — adiciona item, refresh, vazio.
+
+`@decocms/apps/shopify/middleware/cart` provê `withCartCookie` que cuida quando você usa loaders inline.
+
+## Hooks faltando
+
+A v2 ainda não tem helpers Shopify equivalentes a `useCart`, `useUser`, `useWishlist` no nível de paridade do VTEX. Lojas Shopify atualmente usam `useQuery`/`useMutation` do TanStack diretamente:
+
+```tsx
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { invoke } from "~/server/cms/invoke.gen";
+
+function useShopifyCart() {
+  const qc = useQueryClient();
+  const { data: cart } = useQuery({
+    queryKey: ["shopify", "cart"],
+    queryFn: () => invoke["shopify/loaders/Cart.ts"]({}),
+  });
+  const addItems = useMutation({
+    mutationFn: (items) => invoke["shopify/actions/cart/addItems.ts"]({ items }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["shopify", "cart"] }),
+  });
+  return { cart, addItems: addItems.mutate };
+}
+```
+
+Hooks helper estão no roadmap. Se você precisar agora, abra issue ou contribua.
+
+## Tipos
+
+```ts
+import type { Product, ProductDetailsPage, Cart } from "@decocms/apps/shopify/types";
+```
+
+Mapeiam para tipos schema.org compartilhados em `@decocms/apps/commerce/types`.
+
+## Pegadinhas
+
+### `myshopify.com` vs domínio custom
+
+Shopify Storefront API quer `{store}.myshopify.com`. Storefront público é normalmente `www.minhaloja.com`. Mantenha config separadas — `storeName` é o subdomínio interno; `publicUrl` é o domínio público.
+
+### Limites de rate
+
+Storefront API é generoso (1000 calls/min/IP) mas spike test pode atingir. Cache agressivamente via `vtexFetchWithCache`-style wrapper se sites grandes.
+
+### Shape de variants
+
+Variants Shopify são produtos separados na API mas a maioria das UI quer apresentar agrupados. Use `transformShopifyProduct` em [`@decocms/apps/shopify/sdk/transform.ts`](/Users/fernandofrizzatti/development/workspace/decocms/apps-start/src/shopify/sdk/transform.ts).
+
+## Veja também
+
+- [Visão geral de commerce](/v2/pt/commerce/overview)
+- [Shared](/v2/pt/commerce/shared)
+- [Invoke](/v2/pt/framework/invoke)
+- [Reference de exports de commerce](/v2/pt/reference/commerce-exports)

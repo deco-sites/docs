@@ -1,0 +1,154 @@
+---
+title: "VTEX overview"
+description: "Configure the VTEX app: account, secrets, sales channel, install steps."
+icon: "Store"
+---
+
+import Callout from "../../../../components/ui/Callout.astro";
+
+The VTEX integration in `@decocms/apps/vtex` covers Intelligent Search, Catalog, Checkout (orderForm), Sessions, Profile, Wishlist, and the customer-facing UI hooks. This page is the entry point — read [VTEX loaders and actions](/v2/en/commerce/vtex-loaders-and-actions) and [VTEX hooks](/v2/en/commerce/vtex-hooks) for the full surface.
+
+## What you need
+
+- A VTEX account name (e.g. `mystore` for `mystore.myvtex.com`).
+- An **App Key** + **App Token** with the right permissions ([VTEX guide](https://help.vtex.com/en/tutorial/creating-appkeys-and-apptokens-to-authenticate-integrations--5lZjACbHTjkqCq8vSnZ4PR)).
+- A sales channel (default `"1"`).
+- Optional: a `publicUrl` for canonical link generation, a `country` and `locale` for IS regionalization.
+
+## Configuration block
+
+In `.deco/blocks/`, create a `deco-vtex` block:
+
+```json
+{
+  "__resolveType": "deco-vtex",
+  "account": "mystore",
+  "appKey": { "__resolveType": "secret", "name": "VTEX_APP_KEY" },
+  "appToken": { "__resolveType": "secret", "name": "VTEX_APP_TOKEN" },
+  "salesChannel": "1",
+  "locale": "pt-BR",
+  "publicUrl": "https://mystore.com",
+  "country": "BR"
+}
+```
+
+The `secret` resolver reads from your environment / Wrangler secrets. Set them with:
+
+```bash
+wrangler secret put VTEX_APP_KEY
+wrangler secret put VTEX_APP_TOKEN
+```
+
+## Wiring at setup time
+
+Two pieces:
+
+### 1. Initialize the global config
+
+```ts
+// src/setup.ts
+import { initVtexFromBlocks } from "@decocms/apps/vtex/client";
+
+createSiteSetup({
+  // ...
+  initPlatform: () => initVtexFromBlocks(),
+});
+```
+
+`initVtexFromBlocks()` reads your `deco-vtex` block from the loaded decofile and calls `configureVtex(config)` so subsequent loaders pick up the right account/secrets. (If you use `autoconfigApps()` instead, this happens automatically — see [Commerce overview](/v2/en/commerce/overview).)
+
+### 2. Register the inline-loader manifest
+
+```ts
+import { createVtexCommerceLoaders } from "@decocms/apps/vtex/commerceLoaders";
+import { registerCommerceLoaders } from "@decocms/start/cms";
+
+const commerceLoaders = createVtexCommerceLoaders();
+registerCommerceLoaders(commerceLoaders);
+```
+
+This wires CMS `__resolveType` keys (e.g. `vtex/loaders/intelligentSearch/productDetailsPage.ts`) to their inline-loader implementations. See [VTEX inline loaders](/v2/en/commerce/vtex-inline-loaders).
+
+### 3. Replace the VTEX fetch with an instrumented one (recommended)
+
+```ts
+import { setVtexFetch } from "@decocms/apps/vtex/client";
+import { createInstrumentedFetch } from "@decocms/start/sdk/instrumentedFetch";
+
+setVtexFetch(createInstrumentedFetch("vtex"));
+```
+
+This adds OpenTelemetry tracing, metrics, and Server-Timing entries to every VTEX call.
+
+For region-aware behavior (where the `vtex_segment` cookie must propagate to upstream calls), wrap further. See [Casa&Video's region-aware fetch](/v2/en/case-studies/casaevideo) for a real pattern.
+
+## Middleware
+
+VTEX needs request-level middleware to extract context (segment, auth), set cache control, and propagate cookies. Compose into your TanStack middleware:
+
+```ts
+import { createMiddleware } from "@tanstack/react-start";
+import {
+  extractVtexContext,
+  vtexCacheControl,
+  propagateISCookies,
+} from "@decocms/apps/vtex/middleware";
+
+export const myMiddleware = createMiddleware().middleware([
+  extractVtexContext,
+  vtexCacheControl,
+  propagateISCookies,
+]);
+```
+
+The framework also exposes `vtexCacheKeySuffix` for use in `buildSegment` on `createDecoWorkerEntry`. See [VTEX client and middleware](/v2/en/commerce/vtex-client-and-middleware).
+
+## What you get
+
+After configuration:
+
+- **Server loaders** under `vtex/loaders/*` and `vtex/actions/*`.
+- **CMS-shaped inline loaders** under `vtex/inline-loaders/*` (PDP, PLP, shelf, search).
+- **Client hooks**: `useCart`, `useUser`, `useWishlist`, `useAutocomplete`.
+- **Auto-configured middleware**: cookie/segment propagation, cache control, regional handling.
+- **Schema entries** in admin so editors can pick VTEX loaders from dropdowns.
+
+## Quick smoke tests
+
+After setup, verify the integration with these calls:
+
+```bash
+# product list (Intelligent Search)
+curl -X POST https://my-store.com/deco/invoke \
+  -H "Content-Type: application/json" \
+  -d '{ "__resolveType": "vtex/loaders/catalog.ts" }'
+
+# cart loader
+curl -X POST https://my-store.com/deco/invoke \
+  -H "Content-Type: application/json" \
+  -d '{ "__resolveType": "vtex/loaders/cart.ts" }'
+```
+
+Both should return JSON with VTEX-shaped data (or an empty cart).
+
+## Common configuration mistakes
+
+<Callout type="warning">
+**Forgetting `salesChannel`.** Default is `"1"`. Some VTEX accounts use multiple sales channels (e.g. B2B vs B2C); product availability and pricing depend on the right channel. If your PDP shows "out of stock" but the product is in stock in admin, check `salesChannel`.
+</Callout>
+
+<Callout type="warning">
+**Missing region propagation.** VTEX uses the `vtex_segment` cookie to convey region (CEP-driven). If your storefront calls VTEX without forwarding this cookie, the server-side render shows a default region while the client-side hydration shows the user's region — a hydration mismatch waiting to happen. See [Casa&Video case study](/v2/en/case-studies/casaevideo) for the canonical fix.
+</Callout>
+
+<Callout type="warning">
+**Wrong `expectedOrderFormSections`.** The cart action (`getOrCreateCart`) and the `useCart` hook must request the same set of `orderForm` sections. The canonical list lives in [`vtex/actions/checkout.ts` `DEFAULT_EXPECTED_SECTIONS`](/Users/fernandofrizzatti/development/workspace/decocms/apps-start/vtex/actions/checkout.ts). If you customize the server list, update the hook list to match — or you'll get cart updates that the UI ignores.
+</Callout>
+
+## See also
+
+- [VTEX loaders and actions](/v2/en/commerce/vtex-loaders-and-actions)
+- [VTEX inline loaders](/v2/en/commerce/vtex-inline-loaders)
+- [VTEX hooks](/v2/en/commerce/vtex-hooks)
+- [VTEX client and middleware](/v2/en/commerce/vtex-client-and-middleware)
+- [VTEX gotchas](/v2/en/commerce/vtex-gotchas)

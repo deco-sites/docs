@@ -1,0 +1,191 @@
+---
+title: "VTEX — client e middleware"
+description: "Família vtexFetch, intelligentSearch, fetchCache, extractVtexContext, propagateISCookies, vtexCacheKeySuffix."
+icon: "Network"
+---
+
+import Callout from "../../../../components/ui/Callout.astro";
+
+A camada de client é a parte da integração VTEX que conversa com APIs upstream. Esta página cobre os helpers que loaders e actions usam por baixo.
+
+## A família `vtexFetch`
+
+```ts
+import {
+  vtexFetch,
+  vtexFetchWithCookies,
+  vtexFetchWithCache,
+  setVtexFetch,
+} from "@decocms/apps/vtex/client";
+```
+
+### `vtexFetch`
+
+Wrapper instrumentado em volta do `fetch` para APIs VTEX:
+
+```ts
+const res = await vtexFetch("/api/catalog_system/pub/products/search/...", {
+  method: "GET",
+  headers: { "Content-Type": "application/json" },
+});
+```
+
+Comportamento:
+- Resolve URL relativa contra a base account VTEX (`https://{account}.vtexcommercestable.com.br`).
+- Adiciona `X-VTEX-API-AppKey` / `X-VTEX-API-AppToken` se for endpoint admin.
+- Retry com backoff em 429 e 5xx.
+- Emite spans OpenTelemetry com a label `vtex`.
+
+### `vtexFetchWithCookies`
+
+Mesmo que `vtexFetch`, mas explicitamente forwarda cookies do request entrante:
+
+```ts
+const res = await vtexFetchWithCookies(url, init, request);
+```
+
+`request` é o request do cliente entrante. O wrapper extrai cookies relevantes (`vtex_segment`, `VtexRCMacc`, `checkout.vtex.com`) e os passa upstream. Sem isso, VTEX devolve preço/estoque do segmento default.
+
+### `vtexFetchWithCache`
+
+`vtexFetch` mais cache SWR:
+
+```ts
+const products = await vtexFetchWithCache(url, init, { ttl: 60_000 });
+```
+
+Devolve da memória (LRU por isolate de Worker) ou faz fetch + cache.
+
+Na maior parte das vezes você não chama direto — loaders inline já embrulham com cache. Use `vtexFetchWithCache` ao escrever loader custom que precisa do mesmo padrão.
+
+### `setVtexFetch`
+
+Substitui a implementação interna de fetch (use para instrumentar):
+
+```ts
+import { createInstrumentedFetch } from "@decocms/start/sdk/instrumentedFetch";
+import { setVtexFetch } from "@decocms/apps/vtex/client";
+
+setVtexFetch(createInstrumentedFetch("vtex"));
+```
+
+Faça uma vez no `setup.ts`. Vira tracing OpenTelemetry de toda chamada VTEX.
+
+## Cliente Intelligent Search
+
+`@decocms/apps/vtex/sdk/intelligentSearch` provê acesso de baixo nível aos endpoints IS:
+
+```ts
+import { intelligentSearch } from "@decocms/apps/vtex/sdk/intelligentSearch";
+
+const result = await intelligentSearch({
+  query: "tênis",
+  count: 12,
+  sort: "score:desc",
+  filters: { brand: "asics" },
+});
+```
+
+Cuida de:
+- Construção do header `X-VTEX-Account` para multi-tenancy.
+- Encoding correto da query string (especial: `filters`, `selectedFacets`).
+- Cookie passthrough quando rodando dentro de `RequestContext`.
+
+Loaders usam internamente; raramente direto.
+
+## Fetch cache
+
+`@decocms/apps/vtex/sdk/vtex-fetch-cache` é a camada que `vtexFetchWithCache` envolve:
+
+```ts
+import {
+  fetchWithCache,
+  vtexCachedFetch,
+} from "@decocms/apps/vtex/sdk/vtex-fetch-cache";
+```
+
+Comportamento:
+- LRU por isolate de Worker, default 1000 entradas.
+- TTL por status HTTP: 2xx cacheia pelo TTL completo; 4xx 1/10; 5xx não cacheia.
+- Dedup in-flight: chamadas concorrentes com a mesma chave esperam uma resposta upstream.
+
+Ported de `@decocms/runtime` v1 — a mesma estratégia de cache que sites de produção rodaram por anos.
+
+## `extractVtexContext`
+
+```ts
+import { extractVtexContext } from "@decocms/apps/vtex/middleware";
+
+const ctx = extractVtexContext(request);
+// → { account, salesChannel, segment, regionId, orderFormId }
+```
+
+Lê a config do site + cookies do request e devolve um objeto VTEX-context-aware. Útil para construção custom de cache key ou bifurcação por região.
+
+## `propagateISCookies`
+
+Quando você termina uma chamada IS, VTEX pode setar `vtex_segment` ou cookies relacionados na resposta. Para que isso reflita no browser:
+
+```ts
+import { propagateISCookies } from "@decocms/apps/vtex/middleware";
+
+const upstream = await intelligentSearch(query);
+propagateISCookies(upstream, response);
+```
+
+`response` é o `Response` que você devolve ao cliente. O helper lê `Set-Cookie` da resposta upstream e copia para a sua resposta.
+
+Essencial — sem isso, sessões expiram silenciosamente e os usuários perdem segmento.
+
+## `vtexCacheKeySuffix`
+
+Built-in `buildSegment` para `createDecoWorkerEntry`:
+
+```ts
+import { vtexCacheKeySuffix } from "@decocms/apps/vtex/middleware";
+
+const decoWorker = createDecoWorkerEntry(serverEntry, {
+  admin: { /* ... */ },
+  buildSegment: vtexCacheKeySuffix,
+});
+```
+
+Devolve `{ segment, regionId, salesChannel }` — entram na cache key do edge cache, então segmentos diferentes pegam respostas cacheadas diferentes.
+
+Sem isso, todo segmento VTEX serve a mesma página cacheada e usuários veem preços errados. Use a menos que você tenha razão muito boa para não usar.
+
+## Ordem do middleware
+
+Quando você customiza, a ordem é:
+
+```
+Request
+  → extractVtexContext        (lê cookies, popula context)
+  → vtexFetchWithCookies      (forward upstream com cookies)
+  → propagateISCookies        (forward Set-Cookie de volta)
+Response
+```
+
+`@decocms/apps/vtex/middleware` aplica em ordem certa quando você usa as APIs default. Customização significa preservar essa ordem.
+
+## Fetch regional
+
+Padrão para sites multi-região: chamar VTEX com região atualizada do request:
+
+```ts
+import { configure } from "@decocms/apps/vtex/client";
+
+const country = request.headers.get("cf-ipcountry");
+const account = country === "BR" ? "loja-br" : "loja-us";
+
+configure({ account, salesChannel: country === "BR" ? "1" : "2" });
+```
+
+Casa&Vídeo usa essa abordagem com região default + override por CEP. Veja [`setup-vtex-fetch.ts`](/Users/fernandofrizzatti/development/workspace/decocms/casaevideo-storefront/src/setup/setup-vtex-fetch.ts).
+
+## Veja também
+
+- [VTEX overview](/v2/pt/commerce/vtex-overview)
+- [VTEX gotchas](/v2/pt/commerce/vtex-gotchas)
+- [Caching](/v2/pt/framework/caching)
+- [Worker entry](/v2/pt/framework/worker-entry)

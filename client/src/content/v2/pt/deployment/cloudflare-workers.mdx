@@ -1,0 +1,226 @@
+---
+title: "Cloudflare Workers"
+description: "Wrangler.jsonc essencial, flags de compatibilidade, bindings KV, secrets."
+icon: "Cloud"
+---
+
+import Callout from "../../../../components/ui/Callout.astro";
+
+Toda loja v2 deploya como um Cloudflare Worker. Esta página cobre o config wrangler — o suficiente para subir uma loja e nada mais. Para tunning de cache, A/B e observabilidade, veja as páginas dedicadas.
+
+## Wrangler mínimo
+
+`wrangler.jsonc`:
+
+```jsonc
+{
+  "name": "minha-loja",
+  "main": "./src/worker-entry.ts",
+  "compatibility_date": "2026-02-14",
+  "compatibility_flags": [
+    "nodejs_compat",
+    "no_handle_cross_request_promise_resolution"
+  ],
+  "assets": {
+    "directory": "./dist/client"
+  }
+}
+```
+
+| Campo | Função |
+|---|---|
+| `name` | Nome do Worker (sufixo do subdomínio `*.workers.dev`) |
+| `main` | Entry — sempre `./src/worker-entry.ts` |
+| `compatibility_date` | Comportamento do runtime; defina para data atual |
+| `compatibility_flags` | Veja abaixo |
+| `assets.directory` | Onde Vite emite estáticos do client |
+
+## Compatibility flags
+
+### `nodejs_compat`
+
+Habilita APIs Node em Workers (`node:async_hooks`, `node:buffer`, `node:fs` em modo limitado). Necessária porque `@decocms/start` usa `AsyncLocalStorage` para `RequestContext`.
+
+### `no_handle_cross_request_promise_resolution`
+
+Necessária para sections deferred renderizarem corretamente em modo dev sob plugin Vite Cloudflare. Sem ela, chamadas a `loadDeferredSection` que acontecem após a resposta inicial podem lançar `I/O across requests`.
+
+Em produção (sem plugin Vite, dispatcher real Workers) ainda é o flag correto — não tem efeito a menos que o cenário ocorra.
+
+## Bindings
+
+### KV
+
+A/B testing e redirects armazenados precisam de KV:
+
+```jsonc
+{
+  "kv_namespaces": [
+    {
+      "binding": "SITES_KV",
+      "id": "abc123..."
+    }
+  ]
+}
+```
+
+Crie via:
+
+```bash
+npx wrangler kv:namespace create SITES_KV
+```
+
+Pegue o `id` retornado e cole em `wrangler.jsonc`. Em código, acesse via `env.SITES_KV`.
+
+### R2 (opcional)
+
+Para uploads de imagem ou armazenamento de assets:
+
+```jsonc
+{
+  "r2_buckets": [
+    { "binding": "ASSETS", "bucket_name": "minha-loja-assets" }
+  ]
+}
+```
+
+### D1 (opcional)
+
+Para sites com necessidades de DB SQL primeiro (analytics, opt-ins de newsletter):
+
+```jsonc
+{
+  "d1_databases": [
+    { "binding": "DB", "database_name": "minha-loja-db", "database_id": "xyz789..." }
+  ]
+}
+```
+
+### Variáveis de ambiente
+
+```jsonc
+{
+  "vars": {
+    "ENVIRONMENT": "production",
+    "PUBLIC_URL": "https://www.minha-loja.com"
+  }
+}
+```
+
+`vars` são públicos (em logs do Worker, no devtools). Para credentials, use secrets.
+
+### Secrets
+
+```bash
+npx wrangler secret put VTEX_APP_KEY
+npx wrangler secret put VTEX_APP_TOKEN
+npx wrangler secret put RESEND_API_KEY
+```
+
+Acesse via `env.VTEX_APP_KEY` em loaders. Não logue valores; o Worker runtime os redacta em logs por default.
+
+## Build & deploy
+
+```bash
+npm run build       # roda vite build
+npx wrangler deploy
+```
+
+`vite build` produz:
+
+- `dist/server/` — bundle do Worker (`worker-entry.ts` e dependências).
+- `dist/client/` — assets estáticos (CSS, JS, imagens).
+
+`wrangler deploy` enviar ambos para Cloudflare. Primeiro deploy demora; subsequentes (deploy de smart-bundling) só uploadam diffs.
+
+## Domínio custom
+
+No dashboard Cloudflare, adicione um custom domain ao Worker. Para minha-loja.com → seu-worker.workers.dev:
+
+1. Adicione `minha-loja.com` à conta Cloudflare.
+2. Vá em Workers & Pages → seu Worker → Triggers → Custom Domains.
+3. Adicione `www.minha-loja.com` (e/ou apex).
+4. Cloudflare provisiona certificado e roteia tráfego.
+
+## Routes (alternativa a custom domain)
+
+Para integrar com infraestrutura existente:
+
+```jsonc
+{
+  "routes": [
+    "minha-loja.com/*",
+    "www.minha-loja.com/*"
+  ]
+}
+```
+
+Mais flexível mas exige Cloudflare na frente do tráfego.
+
+## Workers AI / Vectorize / Queues
+
+Bindings opcionais — não necessários para loja default. Se sua loja usa AI features, adicione conforme o binding type. Veja [Cloudflare Workers docs](https://developers.cloudflare.com/workers/runtime-apis/bindings/).
+
+## Limites a saber
+
+- **Tamanho do Worker**: 10 MB no plano free, 25 MB no Bundled. Lojas v2 ficam tipicamente em 5-15 MB.
+- **CPU time por request**: 30s (Bundled) ou 50ms (Free). Lojas precisam de Bundled.
+- **Subrequests**: 50 por request (Free), 1000 (Bundled). Loaders complexos podem se aproximar; cacheie.
+- **Memória**: 128 MB. Não chega perto a menos que você buffered tudo.
+- **Cold start**: 0-50ms tipicamente.
+
+## Bundling
+
+`@decocms/start` é grande (~3 MB). `@decocms/apps` adiciona ~2 MB. `blocks.gen.json` adiciona 2-12 MB. No total: 7-17 MB por Worker.
+
+O plano Bundled (default novo Workers) suporta bundles até 25 MB. Plano free é 10 MB e provavelmente não cabe — atualize.
+
+Veja [`vite-plugin`](/v2/pt/framework/vite-plugin) para por que você não deve quebrar isso em chunks.
+
+## Múltiplos ambientes
+
+```jsonc
+{
+  "env": {
+    "staging": {
+      "name": "minha-loja-staging",
+      "vars": { "ENVIRONMENT": "staging" },
+      "kv_namespaces": [{ "binding": "SITES_KV", "id": "staging-id" }]
+    },
+    "production": {
+      "name": "minha-loja",
+      "vars": { "ENVIRONMENT": "production" },
+      "kv_namespaces": [{ "binding": "SITES_KV", "id": "prod-id" }]
+    }
+  }
+}
+```
+
+Deploy:
+
+```bash
+npx wrangler deploy --env staging
+npx wrangler deploy --env production
+```
+
+## Tail logs
+
+```bash
+npx wrangler tail --format pretty
+```
+
+Mostra requests em tempo real com timing, console.log e exceptions. Inestimável para debugar.
+
+Filtre por status ou IP:
+
+```bash
+npx wrangler tail --status error
+npx wrangler tail --ip 192.0.2.42
+```
+
+## Veja também
+
+- [Worker entry](/v2/pt/framework/worker-entry)
+- [Estratégia de cache](/v2/pt/deployment/caching-strategy)
+- [A/B testing e redirects](/v2/pt/deployment/ab-testing-and-redirects)
+- [Observability](/v2/pt/deployment/observability)

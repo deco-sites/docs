@@ -1,0 +1,261 @@
+---
+title: "VTEX loaders and actions"
+description: "Server-side data fetch and mutation API for VTEX."
+icon: "Database"
+---
+
+import Callout from "../../../../components/ui/Callout.astro";
+
+`@decocms/apps/vtex/loaders/*` and `@decocms/apps/vtex/actions/*` are the server-side surface for VTEX. Loaders read; actions mutate. Both run inside the `RequestContext` with cookie propagation, instrumented fetch, and tracing.
+
+## Loaders
+
+Imported individually or via the barrel `@decocms/apps/vtex/loaders`:
+
+```ts
+import { searchProducts, getCart, getUser } from "@decocms/apps/vtex/loaders";
+```
+
+### `address`
+
+| Function | Purpose |
+|---|---|
+| `getAddressByPostalCode(zip)` | Resolve an address from a CEP/postal code |
+| `getUserAddresses(authCookie)` | Fetch the logged-in customer's address book |
+
+### `autocomplete`
+
+| Function | Purpose |
+|---|---|
+| `autocompleteSearch({ query })` | IS autocomplete + product search; returns `{ searches, products }` |
+
+### `brands`
+
+| Function | Purpose |
+|---|---|
+| `listBrands()` | All brands in the catalog |
+| `getBrandById(id)` | Single brand |
+
+### `cart`
+
+| Function | Purpose |
+|---|---|
+| `getCart(orderFormId?, opts?)` | Fetch the orderForm with `DEFAULT_EXPECTED_SECTIONS` |
+
+### `catalog`
+
+| Function | Purpose |
+|---|---|
+| `searchProducts(props)` | Catalog product search |
+| `getProductByIdOrSku(idOrSku)` | Lookup by VTEX product ID or SKU ref |
+| `getProductVariations(productId)` | Variant list for a parent product |
+| `getProductSpecification(productId)` | Specifications array |
+| `getCrossSelling(productId, kind)` | Recommendations (similar, view-also, accessories) |
+| `getCategoryTree({ depth? })` | Full category tree |
+| `getBrands()` | All brands (alternate path) |
+| `getPageType(path)` | Page type detection (Department/Category/Brand/Product) |
+| `getFacets(query, map)` | Facet breakdown for a query |
+
+### `collections`
+
+| Function | Purpose |
+|---|---|
+| `getCollections()` | List of catalog collections |
+
+### `legacy`
+
+Bridge functions for legacy Catalog/IS:
+
+| Function | Purpose |
+|---|---|
+| `legacyProductDetailsPage` | Legacy PDP shape |
+| `legacyProductList` | Legacy product list |
+| `legacyProductListingPage` | Legacy PLP shape |
+| `legacySuggestions` | Legacy autocomplete |
+
+### `logistics`
+
+| Function | Purpose |
+|---|---|
+| `listSalesChannels()` | All available sales channels |
+| `listPickupPoints()` | Pickup point catalog |
+| `listStockByStore(skuId)` | Per-store stock |
+
+### `navbar`
+
+| Function | Purpose |
+|---|---|
+| `getNavbar()` | `SiteNavigationElement[]` from VTEX catalog |
+
+### `orders`
+
+| Function | Purpose |
+|---|---|
+| `getOrderById(orderId)` | Single order |
+| `listOrders(authCookie, page)` | Paged customer orders |
+| `getOrderPlaced(orderId)` | Order summary (post-checkout receipt) |
+
+### `pageType`
+
+| Function | Purpose |
+|---|---|
+| `resolvePageType(urlPath)` | `{ pageType, kind }` for a URL — drives PDP/PLP routing |
+
+### `payment`
+
+| Function | Purpose |
+|---|---|
+| `getPaymentSystems()` | Active payment methods |
+| `getUserPayments(authCookie)` | Saved cards / methods for the customer |
+
+### `profile`
+
+Profile reads via VTEX MasterData; details vary per implementation.
+
+### `promotion`
+
+| Function | Purpose |
+|---|---|
+| `getPromotionById(id)` | Promotion details |
+
+### `search`
+
+| Function | Purpose |
+|---|---|
+| `getTopSearches()` | Trending search terms |
+| `validateProductSearch(term)` | Check if a term has results |
+| `getProductIdByTerm(term)` | First-match product ID |
+
+### `session`
+
+| Function | Purpose |
+|---|---|
+| `getSession(items, authCookie)` | VTEX `/api/sessions` (REST) |
+| `getUserSessions()` | VTEX IO GraphQL session details |
+
+### `user`
+
+| Function | Purpose |
+|---|---|
+| `getUser(authCookie)` | `Person \| null` for the logged-in customer |
+
+### `wishlist` & `wishlistProducts`
+
+| Function | Purpose |
+|---|---|
+| `getWishlist()` | Wishlist SKU list (GraphQL) |
+| `wishlistProducts(skus)` | Product details for wishlist items |
+
+### `workflow`
+
+| Function | Purpose |
+|---|---|
+| `workflowProduct(id)` | Workflow-oriented single product |
+| `workflowProducts(props)` | Workflow product collection |
+
+## Actions
+
+Imported via the barrel:
+
+```ts
+import {
+  getOrCreateCart,
+  addItemsToCart,
+  classicSignIn,
+  notifyMe,
+} from "@decocms/apps/vtex/actions";
+```
+
+`analytics/sendEvent` is a separate subpath: `@decocms/apps/vtex/actions/analytics/sendEvent`.
+
+### `checkout` (cart)
+
+| Function | Purpose |
+|---|---|
+| `getOrCreateCart()` | Create or fetch the user's cart (orderForm) |
+| `addItemsToCart({ items })` | Add SKUs |
+| `updateCartItems({ items })` | Update quantities, remove (qty 0) |
+| `addCoupons({ coupon })` | Apply a coupon |
+| `removeCoupons()` | Remove all coupons |
+| `simulate({ items, country, postalCode })` | Shipping/price simulation |
+| `getInstallments()` | Installment options |
+| `getShippingByPostalCode({ postalCode })` | Shipping calculation |
+| `addAttachment(...)`, `addOffering(...)`, `addProfileToOrderForm(...)` | Various orderForm mutations |
+
+All return an `OrderForm`. They use **`vtexFetchWithCookies`** to ensure cookies round-trip correctly.
+
+### `auth`
+
+| Function | Purpose |
+|---|---|
+| `startAuthentication()` | Begin auth flow |
+| `classicSignIn({ email, password })` | Email + password |
+| `accessKeySignIn({ email, accessKey })` | Email + magic link code |
+| `logout()` | Log out |
+| `refreshToken()` | Token refresh |
+| `recoverPassword({ email })` | Password recovery |
+
+### `session`
+
+| Function | Purpose |
+|---|---|
+| `createSession()` | Bootstrap a session cookie |
+| `editSession({ items })` | Update session attributes (country, postal code) |
+| `deleteSession()` | Tear down |
+
+### `profile` & `address`
+
+CRUD for the customer profile and address book. `*FromRequest` variants pull cookie/auth from the inbound request automatically.
+
+### `wishlist`
+
+| Function | Purpose |
+|---|---|
+| `addItem({ productId, sku })` | Add to wishlist |
+| `removeItem({ id })` | Remove from wishlist |
+
+### `masterData`
+
+CRUD for VTEX MasterData documents (search, get, save, delete, attach files).
+
+### `newsletter`
+
+| Function | Purpose |
+|---|---|
+| `subscribe({ email })` / similar | Newsletter opt-in flows |
+
+### `orders`
+
+| Function | Purpose |
+|---|---|
+| `cancelOrder({ orderId, reason })` | Cancel an order |
+
+### `misc`
+
+Catch-all module: `notifyMe` (back-in-stock notifications), reviews, payment token deletes, and a few small utilities. See [`vtex/actions/misc.ts`](/Users/fernandofrizzatti/development/workspace/decocms/apps-start/vtex/actions/misc.ts) for the full list.
+
+### `analytics/sendEvent`
+
+```ts
+import sendEvent from "@decocms/apps/vtex/actions/analytics/sendEvent";
+```
+
+POSTs to VTEX analytics endpoints from the server side (so cookies and request context are correct). Use sparingly — most analytics is fine to send client-side.
+
+## Cookie semantics
+
+Many actions (especially checkout, auth, session) use `vtexFetchWithCookies` from [`vtex/client.ts`](/Users/fernandofrizzatti/development/workspace/decocms/apps-start/vtex/client.ts):
+
+- Forwards inbound request cookies to upstream VTEX.
+- Merges upstream `Set-Cookie` onto the response so the browser receives session/cart cookies.
+- **Strips** `vtex_is_session` / `vtex_is_anonymous` so middleware controls IS cookies (avoids cache key explosion).
+
+If you write your own cart-related action, use `vtexFetchWithCookies`, not raw `vtexFetch`.
+
+## See also
+
+- [VTEX overview](/v2/en/commerce/vtex-overview)
+- [VTEX inline loaders](/v2/en/commerce/vtex-inline-loaders)
+- [VTEX hooks](/v2/en/commerce/vtex-hooks)
+- [VTEX gotchas](/v2/en/commerce/vtex-gotchas)
+- [Loaders (concept)](/v2/en/concepts/loaders)

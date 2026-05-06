@@ -1,0 +1,167 @@
+---
+title: "Le biscuit"
+description: "The spine reference: closest-to-defaults setup, ideal starting template for new storefronts."
+icon: "Cookie"
+---
+
+import Callout from "../../../../components/ui/Callout.astro";
+
+[Le biscuit](https://www.lebiscuit.com.br) is a Brazilian home goods retailer. Their v2 storefront sits between Casa&Video (kitchen-sink) and Bagaggio (lean) — production-ready but using the framework's defaults wherever possible. It's the cleanest reference to clone when starting a new project.
+
+**Repo path**: [`/Users/fernandofrizzatti/development/workspace/decocms/lebiscuit-tanstack`](/Users/fernandofrizzatti/development/workspace/decocms/lebiscuit-tanstack)
+
+## Stack profile
+
+| | Le biscuit |
+|---|---|
+| `@decocms/start` | ^2.28.1 (newest of the three) |
+| `@decocms/apps` | ^1.11.1 |
+| Sections | 107 |
+| Components | 254 |
+| `blocks.gen.json` size | ~6.8 MB |
+| Extras | Sentry, Firebase, `@tanstack/react-router-devtools` in deps |
+
+Comparable surface to Casa&Video, on a slightly newer minor of `@decocms/start`.
+
+## What's the same as Casa&Video
+
+Le biscuit shares Casa's pattern for:
+
+- **Region-aware VTEX fetch** — `vtex_segment` injection into outbound calls.
+- **`registerBuiltinMatchers`** with site-specific custom matchers.
+- **`withABTesting` + `SITES_KV`** for worker-level A/B.
+- **VTEX checkout proxy** via `createVtexCheckoutProxy`.
+- **`DecoRootLayout`** as the root shell.
+
+If you've read [Casa&Video case study](/v2/en/case-studies/casaevideo), the bones are familiar.
+
+## What's different from Casa&Video
+
+### No `setAsyncRenderingConfig`
+
+```ts
+// no setAsyncRenderingConfig call in setup.ts
+```
+
+Le biscuit relies on the framework's default async rendering behavior (no fold threshold, no `respectCmsLazy`). Sections render eagerly unless explicitly marked lazy.
+
+**Implication**: their initial paint is slower than Casa's per-section, but more deterministic. If you're starting fresh, copy Casa's `setAsyncRenderingConfig` block.
+
+### No `configureWebsite`
+
+```ts
+// no configureWebsite({ seo }) call
+```
+
+Le biscuit handles SEO inside their root layout / sections rather than via the framework's site-config helper. Both are valid; `configureWebsite` is more discoverable for editors using admin.
+
+### Cache config closer to defaults
+
+Le biscuit's `cache-config.ts` is closer to the framework's defaults. They override less than Casa.
+
+**Implication**: easier to reason about cache behavior, but you give up some perf headroom. Tune as your traffic grows.
+
+### Generate:loaders with explicit excludes (not decofile-pruned)
+
+Same long `--exclude` list pattern as Casa&Video, **not** the decofile-prune pattern Bagaggio uses. Means more loaders ship in `loaders.gen.ts` than strictly needed.
+
+**Implication**: bundle is bigger than it needs to be. If you copy Le biscuit, consider switching to Bagaggio's `--decofile-dir` approach.
+
+## Wiring files
+
+### `vite.config.ts`
+
+The minimum-viable Vite config — fewer custom server options than Casa, no esbuild console.log purging:
+
+- Cloudflare plugin with SSR env.
+- TanStack Start with `server: { entry: "server" }`.
+- React with `babel-plugin-react-compiler` targeting React 19.
+- Tailwind v4.
+- `decoVitePlugin()`.
+- `~` → `/src` alias.
+- Long dedupe list for deco/tanstack/react.
+- Server: only `allowedHosts: [".decocdn.com"]` and proxy.
+
+A clean read for understanding the canonical Vite shape — see [`lebiscuit-tanstack/vite.config.ts`](/Users/fernandofrizzatti/development/workspace/decocms/lebiscuit-tanstack/vite.config.ts).
+
+### `wrangler.jsonc`
+
+The minimum:
+
+```jsonc
+{
+  "name": "lebiscuit",
+  "main": "./src/worker-entry.ts",
+  "compatibility_date": "2026-02-14",
+  "compatibility_flags": ["nodejs_compat", "no_handle_cross_request_promise_resolution"],
+  "kv_namespaces": [{ "binding": "SITES_KV", "id": "..." }],
+  "observability": { "logs": { "enabled": true } }
+}
+```
+
+`SITES_KV` is bound (used by `withABTesting`).
+
+### `setup.ts`
+
+The same pattern as Casa, minus the async rendering config and `configureWebsite`. See [`lebiscuit-tanstack/src/setup.ts`](/Users/fernandofrizzatti/development/workspace/decocms/lebiscuit-tanstack/src/setup.ts).
+
+### `worker-entry.ts`
+
+Same composition as Casa: `import "./setup"` first, `createDecoWorkerEntry`, `withABTesting`, redirect-aware `preHandler`, VTEX checkout proxy. See [`lebiscuit-tanstack/src/worker-entry.ts`](/Users/fernandofrizzatti/development/workspace/decocms/lebiscuit-tanstack/src/worker-entry.ts).
+
+## Why use Le biscuit as a starting point
+
+- **Closest to framework defaults** — fewer pre-decisions to undo.
+- **Fully wired commerce + A/B + observability** — you're not starting from zero.
+- **Latest `@decocms/start`** — picks up recent bug fixes and features.
+- **Production-tested** — real traffic, real edge cases handled.
+
+The pragmatic clone-and-customize path:
+
+```bash
+git clone https://github.com/deco-sites/lebiscuit-tanstack my-store
+cd my-store
+rm -rf .git node_modules .deco/blocks
+git init
+# Update siteName, branding, etc.
+npm install
+```
+
+Then bring your own:
+- `.deco/blocks/` (your CMS content).
+- `src/sections/` (your branded sections).
+- `src/components/` (your UI primitives).
+- `wrangler.jsonc` `name` and KV ID.
+- VTEX/Shopify config block.
+- Brand colors, fonts.
+
+## When NOT to use Le biscuit
+
+- **Tiny sites** — too much infrastructure (A/B, regional fetch, Sentry) for a small store.
+- **Shopify-first** — Le biscuit is VTEX. The Shopify wiring would need to be added.
+- **Non-Brazilian context** — assumes BRL, pt-BR, CEP-driven regions.
+
+For tiny sites, copy Bagaggio. For Shopify, you'll need to mix loaders manually.
+
+## What to take from Le biscuit
+
+- **The spine** — Vite config, setup.ts shape, worker entry composition.
+- **Region-aware fetch** if you have regional commerce.
+- **A/B + KV** if you're running canary deploys.
+- **`DecoRootLayout`** with site-specific head additions.
+
+## What you'll want to add (vs. Le biscuit defaults)
+
+- **`setAsyncRenderingConfig`** with a tuned fold threshold (steal from Casa).
+- **`configureWebsite({ seo })`** for editor-managed SEO.
+- **Decofile-pruned loaders** (steal from Bagaggio).
+- **Tighter cache profiles** (steal from Casa where applicable).
+
+The "steal from each" pattern is how the next reference storefront gets built.
+
+## See also
+
+- [Case studies overview](/v2/en/case-studies/overview)
+- [Casa&Video](/v2/en/case-studies/casaevideo)
+- [Bagaggio](/v2/en/case-studies/baggagio)
+- [Start fresh](/v2/en/getting-started/start-fresh)

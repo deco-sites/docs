@@ -1,0 +1,65 @@
+---
+title: "Visão geral"
+description: "deco.cx v2 — a plataforma reescrita em TanStack Start, React 19 e Cloudflare Workers."
+icon: "Rocket"
+---
+
+import Callout from "../../../../components/ui/Callout.astro";
+
+deco.cx v2 é a plataforma reconstruída em **TanStack Start**, **React 19** e **Cloudflare Workers**. O CMS, o modelo de seções, os matchers, o protocolo do admin e a memória muscular que você tem do v1 continuam — o que muda é o runtime, a camada de renderização e a ergonomia de desenvolvimento.
+
+<Callout type="warning">
+A v2 está **pronta para produção, mas ainda em maturação**. Lojas de referência (Casa&Vídeo, Bagaggio, Le biscuit) já rodam nela. Se você opera uma loja v1 em produção, pode migrar agora ou esperar pelo GA — as duas opções são válidas.
+</Callout>
+
+## Duas portas de entrada
+
+A documentação v2 tem duas portas. Escolha a que combina com a sua situação.
+
+### Começar do zero
+
+Você ainda não tem uma loja, ou quer aprender v2 de forma isolada antes de mexer em produção. Comece com um site mínimo, conecte ao CMS e faça deploy no Cloudflare.
+
+**Leia:** [Começar do zero →](/v2/pt/getting-started/start-fresh)
+
+### Migrar do v1
+
+Você tem uma loja Fresh/Deno/Preact em produção e quer portar para o TanStack Start sem reescrever do zero. Existe um script automatizado e um Agent Skill para ferramentas de IA que cobrem a maior parte do trabalho.
+
+**Leia:** [Migrar do v1 →](/v2/pt/getting-started/migrate-from-v1)
+
+## O que mudou
+
+| | v1 (Fresh) | v2 (TanStack Start) |
+|---|---|---|
+| **Runtime** | Deno Deploy | Cloudflare Workers |
+| **Framework** | Fresh + Preact | TanStack Start + React 19 |
+| **Renderização** | Islands | Server Components + hidratação seletiva |
+| **Estado** | `@preact/signals` | `@tanstack/store` + React |
+| **Build** | esbuild via Deno | Vite + React Compiler |
+| **Protocolo CMS** | Mesmo `_meta` / `decofile` / `render` / `invoke` | Mesmo |
+| **Sections / Blocks / Loaders** | `defineSection` etc. | Mesmo modelo conceitual, com sabor React |
+
+O CMS, o formato do decofile, o shell do admin e o conteúdo em `.deco/blocks/*.json` são **totalmente compatíveis**. O conteúdo de uma loja v1 é o conteúdo de uma loja v2.
+
+## O que continua igual
+
+- O **modelo mental**: páginas são feitas de seções; seções são componentes React com props tipadas; blocks são instâncias JSON dessas props.
+- O **admin**: `admin.deco.cx` conversa com a sua loja do mesmo jeito — `_meta`, `decofile`, `render`, `invoke`.
+- O **conteúdo**: seu diretório `.deco/blocks/` funciona como está.
+- As **integrações de commerce**: VTEX e Shopify agora moram em [`@decocms/apps`](/v2/pt/commerce/overview), mas a superfície de loaders / actions / hooks é familiar.
+
+## Como esta documentação está organizada
+
+- **[Getting started](/v2/pt/getting-started/overview)** — caminhos de instalação, estrutura do projeto, a stack a 30.000 pés.
+- **[Conceitos](/v2/pt/concepts/sections)** — o modelo mental: sections, loaders, blocks, rotas, deferred rendering.
+- **[Referência do framework](/v2/pt/framework/overview)** — superfície da API de `@decocms/start` página por página.
+- **[Referência de commerce](/v2/pt/commerce/overview)** — `@decocms/apps`: VTEX, Shopify, Resend, tipos compartilhados.
+- **[Deployment](/v2/pt/deployment/cloudflare-workers)** — Workers, cache, A/B, observabilidade.
+- **[Migração](/v2/pt/migration/overview)** — playbook v1 → v2, script automatizado, ajustes manuais.
+- **[Estudos de caso](/v2/pt/case-studies/overview)** — três lojas reais em produção.
+- **[Apêndice de referência](/v2/pt/reference/package-exports)** — tabelas exaustivas de exports e um glossário.
+
+## Encontrou um buraco?
+
+Documentação envelhece. Se um exemplo de código não roda ou um caminho está errado, abra uma issue no [repositório dos docs](https://github.com/deco-sites/docs). Toda página cita caminhos de arquivo concretos nas bibliotecas — essas citações são a verdade canônica.

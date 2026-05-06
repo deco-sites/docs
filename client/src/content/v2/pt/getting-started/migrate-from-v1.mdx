@@ -1,0 +1,80 @@
+---
+title: "Migrar do v1"
+description: "Mover uma loja deco.cx Fresh/Deno para TanStack Start."
+icon: "ArrowRightLeft"
+---
+
+import Callout from "../../../../components/ui/Callout.astro";
+
+Se você tem uma loja v1 em produção, não precisa reescrever. Existe um script automatizado que cobre ~80% do trabalho mecânico, mais um Agent Skill para ferramentas de IA que dá conta do resto.
+
+Esta página é a **árvore de decisão** — o playbook de verdade vive em [Migração →](/v2/pt/migration/overview).
+
+## Quando migrar?
+
+| Migre **agora** se… | **Espere** se… |
+|---|---|
+| Você está investindo em novas features e quer React + ecossistema mais amplo | Você está em feature freeze antes de uma data de pico |
+| Está esbarrando em limites de concorrência ou cold-start no Deno Deploy | Depende de islands ou padrões específicos do Preact ainda não portados |
+| Quer cache de borda first-class no Cloudflare | Seu time está no meio de um redesign e não absorve mudança de stack |
+| Seu time já escreve React no dia a dia e a fricção do Preact é real | Você está bem no v1 e não tem motivo forte |
+
+Não há prazo. v1 segue recebendo manutenção.
+
+## O que é automático vs manual
+
+**Automatizado pelo `deco-migrate`:**
+- Reescrita de imports (Preact → React, `$fresh/*` → TanStack, `@deco/deco/*` → `@decocms/start/*`).
+- Scaffolding de Vite + Wrangler.
+- Geração do worker entry e do setup file.
+- Correções Tailwind v3 → v4.
+- Remoção de `islands/`, rotas Fresh antigas, `deno.json`, `static/` (movido para `public/`).
+
+**Ajustes manuais (o script sinaliza):**
+- Implementações de hooks de plataforma (overrides customizados de `useCart`, `useUser`, `useWishlist`).
+- Padrões `useScript(fn)` que não hidratam mais limpo — troque por `inlineScript` ou mova para `"use client"`.
+- Scripts de terceiros no `<head>` que causam CLS.
+- Quaisquer shims em `compat/` que seu time tenha criado.
+- Lógica de worker específica do site (proxies custom, harness de A/B).
+
+## Os três caminhos
+
+### Caminho A — Rodar o script direto
+
+```bash
+# de dentro do diretório da loja v1
+npx -p @decocms/start deco-migrate
+```
+
+Roda a migração em 7 fases no próprio lugar e gera um `MIGRATION_REPORT.md` com os TODOs manuais. Veja [Referência do script de migração](/v2/pt/migration/migrate-script).
+
+### Caminho B — Usar o Agent Skill
+
+Se você usa Claude Code, Cursor ou Codex, instale o skill de migração e deixe o agente conduzir:
+
+```bash
+npx skills add decocms/deco-start
+```
+
+No editor: *"migre este projeto para TanStack Start"*. O skill sabe o que é automático e o que não é, e percorre os ajustes manuais junto com você. Veja [Agent skills](/v2/pt/migration/agent-skills).
+
+### Caminho C — Port manual
+
+Para lojas pequenas (< 30 sections) ou times que querem controle total, clone [`lebiscuit-tanstack`](https://github.com/deco-sites/lebiscuit-tanstack) e leve seu `src/sections/`, `src/components/` e `.deco/blocks/` para lá.
+
+## Como saber que terminou
+
+Use o [checklist pós-migração](/v2/pt/migration/checklist) para validar:
+
+- `tsc --noEmit` limpo.
+- `vite build` sem warnings de import faltando.
+- `wrangler deploy --dry-run` passando.
+- Site renderiza a home local sem erros no console.
+- Todas as sections aparecem no admin via `/live/_meta`.
+
+## Veja também
+
+- [Visão geral da migração](/v2/pt/migration/overview)
+- [Playbook de migração](/v2/pt/migration/playbook)
+- [Script de migração](/v2/pt/migration/migrate-script)
+- [Checklist de migração](/v2/pt/migration/checklist)

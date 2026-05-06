@@ -25,6 +25,8 @@ interface SearchModalProps {
   locale: string;
   translations: Record<string, string>;
   variant?: "sidebar" | "mobile";
+  /** URL prefix of the current docs version (e.g. "" for v1, "/v2" for v2). */
+  versionPrefix?: string;
 }
 
 let pagefindInstance: {
@@ -96,7 +98,12 @@ function breadcrumbFromUrl(url: string): string {
 
 const DEBOUNCE_MS = 150;
 
-export function SearchModal({ locale, translations, variant = "sidebar" }: SearchModalProps) {
+export function SearchModal({
+  locale,
+  translations,
+  variant = "sidebar",
+  versionPrefix = "",
+}: SearchModalProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -217,8 +224,11 @@ export function SearchModal({ locale, translations, variant = "sidebar" }: Searc
       // Build result groups (parent page + its sub-results)
       const groups: { parent: SearchResult; children: SearchResult[] }[] = [];
 
+      const localePrefix = `${versionPrefix}/${locale}/`;
       for (const data of dataResults) {
-        if (!data.url.startsWith(`/${locale}/`)) continue;
+        // Scope results to the current version + locale.
+        // v1: localePrefix = "/en/"; v2: localePrefix = "/v2/en/".
+        if (!data.url.startsWith(localePrefix)) continue;
 
         const parent: SearchResult = {
           url: data.url,
@@ -264,7 +274,7 @@ export function SearchModal({ locale, translations, variant = "sidebar" }: Searc
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [query, open, locale]);
+  }, [query, open, locale, versionPrefix]);
 
   // Keyboard navigation inside modal
   function handleModalKeyDown(e: React.KeyboardEvent) {

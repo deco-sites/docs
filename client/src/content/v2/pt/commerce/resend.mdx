@@ -1,0 +1,156 @@
+---
+title: "Resend"
+description: "Configure, sendEmail, handler de invoke."
+icon: "Mail"
+---
+
+import Callout from "../../../../components/ui/Callout.astro";
+
+A integração Resend é mínima: configure com sua API key, depois envie emails do server. Pensada para emails transacionais (confirmação de pedido, reset de senha, alertas) — não para marketing em massa.
+
+## Install
+
+Já está em `@decocms/apps`.
+
+## Configure
+
+`.deco/blocks/deco-resend.json`:
+
+```json
+{
+  "__resolveType": "deco-resend",
+  "apiKey": { "__resolveType": "secret/key" },
+  "from": "Loja <no-reply@minha-loja.com>",
+  "replyTo": "suporte@minha-loja.com"
+}
+```
+
+`from` deve ser um endereço em domínio verificado no Resend.
+
+## Wiring
+
+```ts
+import { initResendFromBlocks } from "@decocms/apps/resend/client";
+
+createSiteSetup({
+  // ...
+  initPlatform: () => {
+    initVtexFromBlocks();
+    initResendFromBlocks();
+  },
+});
+```
+
+Se sua loja usa multiple init helpers, encadeie em `initPlatform`.
+
+## Enviando email
+
+```ts
+import { sendEmail } from "@decocms/apps/resend/sdk";
+
+await sendEmail({
+  to: "cliente@example.com",
+  subject: "Pedido confirmado",
+  html: "<h1>Obrigado!</h1>",
+});
+```
+
+A função:
+
+- Lê `apiKey`, `from`, `replyTo` do block configurado.
+- Posta para `https://api.resend.com/emails`.
+- Lança em status não-2xx.
+
+## Handler de invoke
+
+`@decocms/apps/resend/handlers/sendEmail.ts` é uma action invocável:
+
+```ts
+// do client (raro — geralmente server-side):
+await invoke["resend/actions/sendEmail.ts"]({
+  to: "...",
+  subject: "...",
+  html: "...",
+});
+```
+
+Use server-side em sua maioria — expor envio de email arbitrário ao client é vetor de spam.
+
+## Padrões
+
+### Email de confirmação de pedido
+
+```ts
+import { sendEmail } from "@decocms/apps/resend/sdk";
+import { renderOrderConfirmationHtml } from "~/emails/orderConfirmation";
+
+const handleOrder = async (order) => {
+  await persistOrder(order);
+  await sendEmail({
+    to: order.email,
+    subject: `Pedido #${order.id} confirmado`,
+    html: renderOrderConfirmationHtml(order),
+  });
+};
+```
+
+### Templates
+
+A integração não vem com sistema de template. Use `renderToString` do React para emails baseados em React, ou embuta strings de template com placeholders.
+
+```tsx
+import { renderToString } from "react-dom/server";
+
+function OrderEmail({ order }: { order: Order }) {
+  return (
+    <html>
+      <body>
+        <h1>Obrigado por comprar com a gente!</h1>
+        <p>Pedido #{order.id}</p>
+      </body>
+    </html>
+  );
+}
+
+const html = renderToString(<OrderEmail order={order} />);
+```
+
+### Domínio verificado obrigatório
+
+Resend exige domínio verificado para `from`. No dashboard Resend, adicione registros DNS, espere verificação. Sem isso, todos os emails ficam pendentes/falham.
+
+## Erros
+
+`sendEmail` lança em status não-2xx com a mensagem do Resend. Logue contra seu coletor de erro:
+
+```ts
+try {
+  await sendEmail({ ... });
+} catch (err) {
+  console.error("[resend]", err);
+  // não lance para o user — falha de email não deve quebrar o fluxo
+}
+```
+
+## Tracing
+
+Toda chamada de `sendEmail` pega seu próprio span via `createInstrumentedFetch("resend")` (o framework conecta automaticamente). Apareça em `wrangler tail` como `resend.send_email`.
+
+## Limites
+
+- **Plano free**: 100 emails/dia, 3.000/mês.
+- **Plano grátis**: 1 domínio verificado.
+- **Rate limit**: 10 req/sec; busts trocam para 429.
+
+Para volumes maiores, migre para plano pago Resend ou para outro provider (SES, Postmark) — wiring é o mesmo, só troca de URL/auth.
+
+## Sem hooks client-side
+
+Não há `useEmail` hook. Email é trabalho server-side; chame `sendEmail` ou actions invocáveis a partir de loaders/middleware/server functions.
+
+## Veja também
+
+- [Visão geral de commerce](/v2/pt/commerce/overview)
+- [Invoke](/v2/pt/framework/invoke)
+- [Worker entry](/v2/pt/framework/worker-entry)
+- [Reference de exports de commerce](/v2/pt/reference/commerce-exports)

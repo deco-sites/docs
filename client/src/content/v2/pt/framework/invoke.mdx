@@ -1,0 +1,151 @@
+---
+title: "Invoke"
+description: "createInvoke, invoke, batch invoke e o cliente tipado gerado para chamar loaders e actions do client."
+icon: "Send"
+---
+
+import Callout from "../../../../components/ui/Callout.astro";
+
+`/deco/invoke` é o endpoint que o browser usa para chamar loaders e actions server-side. `@decocms/start/sdk/invoke` provê o cliente — bruto e tipado — para que seu código React converse com ele sem montar URLs na mão.
+
+## Os três níveis
+
+| Nível | Como você usa | Quando |
+|---|---|---|
+| **Bruto** | `invoke(handler, props)` | Chamadas one-off; protótipos rápidos |
+| **Tipado** | `invoke.<resolveType>(props)` | Código de produção; autocomplete + checagem |
+| **Batch** | `invoke.batch({ a: ..., b: ... })` | Múltiplas chamadas em uma round trip |
+
+## Invoke bruto
+
+```ts
+import { invoke } from "@decocms/start/sdk/invoke";
+
+const result = await invoke("vtex/loaders/cart.ts", {});
+```
+
+Posta para `/deco/invoke` com:
+
+```json
+{ "__resolveType": "vtex/loaders/cart.ts", "props": {} }
+```
+
+Devolve o que o loader devolver.
+
+## Invoke tipado (cliente gerado)
+
+`scripts/generate-invoke.ts` em `@decocms/start` lê seu `loaders.gen.ts` e emite um `invoke.gen.ts` com cliente tipado:
+
+```ts
+// gerado
+export const invoke = {
+  "vtex/loaders/cart.ts": (props: CartProps) => Promise<Cart>,
+  "vtex/loaders/intelligentSearch/productList.ts": (props: ProductListProps) => Promise<Product[]>,
+  // ...
+};
+```
+
+Uso:
+
+```ts
+import { invoke } from "~/server/cms/invoke.gen";
+
+const cart = await invoke["vtex/loaders/cart.ts"]({});
+const products = await invoke["vtex/loaders/intelligentSearch/productList.ts"]({
+  query: "tênis",
+  count: 12,
+});
+```
+
+TypeScript valida `props` e o tipo de retorno. Refator do loader propaga sozinho.
+
+## Batch invoke
+
+Quando o browser precisa de várias coisas, batch para evitar round trips em série:
+
+```ts
+import { invoke } from "~/server/cms/invoke.gen";
+
+const { user, cart, wishlist } = await invoke.batch({
+  user: invoke.proxy["vtex/loaders/user.ts"]({}),
+  cart: invoke.proxy["vtex/loaders/cart.ts"]({}),
+  wishlist: invoke.proxy["vtex/loaders/wishlist/list.ts"]({}),
+});
+```
+
+`invoke.batch` posta uma única requisição com todas as três chamadas, o servidor as despacha em paralelo, e a resposta tem os três resultados.
+
+`invoke.proxy[...]` é o builder lazy que cria a chamada de batch sem rodar.
+
+## `createInvoke`
+
+Para construir o cliente em runtime (e.g. para multi-tenancy ou previews que apontam para hosts diferentes):
+
+```ts
+import { createInvoke } from "@decocms/start/sdk/invoke";
+
+const customInvoke = createInvoke({
+  endpoint: "https://staging.minha-loja.com/deco/invoke",
+});
+
+const cart = await customInvoke("vtex/loaders/cart.ts", {});
+```
+
+A maioria dos sites usa o `invoke` default e nunca toca em `createInvoke`.
+
+## `setInvokeLoaders`
+
+Conecta o registro de loaders no setup:
+
+```ts
+import { setInvokeLoaders } from "@decocms/start/sdk/invoke";
+import invokeLoaders from "./server/cms/invoke.gen";
+
+setInvokeLoaders(invokeLoaders);
+```
+
+Faça uma vez no `setup.ts`. Sem isso, `/deco/invoke` retorna 404 para tudo.
+
+## Quando usar invoke vs hooks
+
+`@decocms/apps/vtex/hooks` provê hooks prontos (`useCart`, `useUser`, `useWishlist`) que embrulham `invoke` com TanStack Query (cache + refetch + estados otimistas).
+
+Use **hooks** para padrões CRUD comuns — eles cuidam de tudo.
+
+Use **invoke direto** para:
+
+- One-shot de fetch sem necessidade de cache.
+- Chamadas que não casam com a forma `useCart`/`useUser` (chamar loader para uma view de admin custom).
+- Server actions (mutations) que já gerenciam estado.
+
+## Tracing
+
+Toda chamada de invoke pega seu próprio span OpenTelemetry com:
+
+- `__resolveType` como nome do span.
+- `props` como atributo do span (truncado para 1KB).
+- Tempo total e status do upstream.
+
+Aparece em `wrangler tail` e qualquer dashboard que você plugue.
+
+## Erros
+
+Quando um invoke falha:
+
+- 4xx → mensagem JSON do server: `{ error: "...", code: "..." }`.
+- 5xx → mensagem genérica para fora; detalhes vão para tracing/logs.
+
+`invoke()` lança em ambos. Embrulhe em try/catch ou deixe TanStack Query lidar via `error` do `useQuery`.
+
+## Padrões de segurança
+
+- **Não exponha invoke do client para loaders sensíveis** sem auth. O endpoint é público; checagens de auth ficam dentro do loader.
+- **Não use invoke para conteúdo público que pode SSR.** Render server-side via section loader é mais barato e melhor para SEO.
+- **Use POST sempre.** O framework rejeita GET para `/deco/invoke` (props no body, não na query).
+
+## Veja também
+
+- [Loaders](/v2/pt/concepts/loaders)
+- [Hooks](/v2/pt/framework/hooks)
+- [Hooks VTEX](/v2/pt/commerce/vtex-hooks)
+- [Estratégia de cache](/v2/pt/deployment/caching-strategy)

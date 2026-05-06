@@ -1,0 +1,224 @@
+---
+title: "A/B testing and redirects"
+description: "withABTesting + KV, loadRedirects from blocks, CSV-based redirect patterns."
+icon: "Split"
+---
+
+import Callout from "../../../../components/ui/Callout.astro";
+
+Two operational concerns that almost every storefront eventually hits: shipping a canary variant of the entire site to a slice of traffic, and handling thousands of legacy URL redirects. The framework supports both via `worker-entry.ts` patterns.
+
+## A/B at the worker level
+
+CMS matchers swap content within a page. `withABTesting` swaps **entire site versions** at the edge — useful for canary deploys, framework upgrades, or large UX experiments where in-page swaps aren't enough.
+
+```ts
+// src/worker-entry.ts
+import { withABTesting } from "@decocms/start/sdk/abTesting";
+
+export default withABTesting(decoWorker, {
+  kvBinding: "SITES_KV",
+  preHandler: (request, url) => {
+    // optional pre-handler before A/B kicks in
+    return null;
+  },
+});
+```
+
+### How it works
+
+1. **Variant assignment** — first request gets a sticky bucket via a session cookie + KV-stored bucket weights.
+2. **Per-variant Worker** — each variant maps to a specific Worker deployment (e.g. by version tag).
+3. **Route to variant** — assigned bucket determines which Worker handles the request.
+
+Variants live in KV under the `SITES_KV` binding:
+
+```
+ab:variants -> [
+  { name: "control", weight: 90, worker: "my-store-v2-stable" },
+  { name: "canary",  weight: 10, worker: "my-store-v2-canary" }
+]
+```
+
+### KV setup
+
+```bash
+wrangler kv:namespace create SITES_KV
+# add the returned id to wrangler.jsonc
+```
+
+```jsonc
+{
+  "kv_namespaces": [
+    { "binding": "SITES_KV", "id": "..." }
+  ]
+}
+```
+
+### Sticky sessions
+
+Once a user is bucketed, they stay in that bucket for the session via a `Set-Cookie`. This avoids the worst case where a user sees variant A on one click and variant B on the next — destroying any chance of measuring the experiment.
+
+### `preHandler`
+
+Runs **before** A/B logic. Useful for:
+
+- **Redirects** that should run in both variants (e.g. legacy URL forwarding).
+- **Auth** checks that gate the entire site.
+- **Health probes** (return 200 for `/`__health` without going through A/B).
+
+Casa&Video uses `preHandler` for CMS-driven redirects:
+
+```105:123:/Users/fernandofrizzatti/development/workspace/decocms/casaevideo-storefront/src/worker-entry.ts
+export default withABTesting(decoWorker, {
+  kvBinding: "SITES_KV",
+  preHandler: (request, url) => {
+    const redirect = matchRedirect(url.pathname, cmsRedirects);
+    if (redirect) {
+      const target = url.search ? `${redirect.to}${url.search}` : redirect.to;
+      return new Response(null, {
+        status: redirect.status,
+        headers: { Location: target },
+      });
+    }
+    return null;
+  },
+```
+
+When the pre-handler returns `null`, A/B continues. When it returns a `Response`, A/B is skipped and the response is returned directly.
+
+## Redirects
+
+Three patterns in increasing complexity:
+
+### 1. Per-block redirects from the CMS
+
+```ts
+import { loadBlocks } from "@decocms/start/cms";
+import { loadRedirects, matchRedirect } from "@decocms/start/sdk/redirects";
+
+const cmsRedirects = loadRedirects(loadBlocks());
+
+const proxyHandler = (request: Request, url: URL) => {
+  const redirect = matchRedirect(url.pathname, cmsRedirects);
+  if (redirect) {
+    const target = url.search ? `${redirect.to}${url.search}` : redirect.to;
+    return new Response(null, { status: redirect.status, headers: { Location: target } });
+  }
+  return null;
+};
+```
+
+`loadRedirects` walks `.deco/blocks/` looking for blocks shaped like:
+
+```json
+{
+  "__resolveType": "$live/redirects/Redirect.ts",
+  "from": "/old-path",
+  "to": "/new-path",
+  "status": 301
+}
+```
+
+CMS authors add redirects through admin; they take effect on the next deploy.
+
+This works fine for hundreds of redirects. Past ~1000, the in-memory map gets unwieldy.
+
+### 2. Inline CSV redirects (Bagaggio pattern)
+
+For migrations where you have thousands of legacy URLs, loading from a CSV in the worker is leaner:
+
+```33:67:/Users/fernandofrizzatti/development/workspace/decocms/baggagio-tanstack/src/worker-entry.ts
+// Import redirect.csv as a raw string at build time. The CMS site block
+// references `website/loaders/redirectsFromCsv.ts` with `from: "redirect.csv"`
+// but the framework's loadRedirects() only reads inline `redirects[]` arrays
+// from blocks — it doesn't fetch CSV files at runtime. Inlining the CSV
+// here gives us prod-equivalent 301/307 redirects on the worker.
+import redirectsCsv from "../redirect.csv?raw";
+
+function parseSemicolonRedirectsCsv(csv: string): Redirect[] {
+  const out: Redirect[] = [];
+  for (const raw of csv.split("\n")) {
+    const line = raw.trim();
+    if (!line || line.startsWith("#")) continue;
+    const parts = line.split(";").map((p) => p.trim());
+```
+
+Format:
+
+```csv
+# from;to;status
+/old-product;/products/new-product;301
+/legacy-category;/categories/new-category;307
+```
+
+The Vite `?raw` import inlines the CSV at build time. The worker parses it once at module load (zero runtime cost on requests). Add to the proxy handler:
+
+```ts
+import { addRedirects } from "@decocms/start/sdk/redirects";
+
+addRedirects(parseSemicolonRedirectsCsv(redirectsCsv));
+```
+
+`matchRedirect` then sees both CMS-defined and CSV-defined redirects.
+
+This is the canonical pattern for migration scenarios with thousands of URLs.
+
+### 3. KV-backed redirects (advanced)
+
+For cases where redirects change frequently and you don't want to re-deploy:
+
+```ts
+const proxyHandler = async (request: Request, url: URL, env: Env) => {
+  const target = await env.SITES_KV.get(`redirect:${url.pathname}`);
+  if (target) {
+    return new Response(null, { status: 301, headers: { Location: target } });
+  }
+  return null;
+};
+```
+
+KV reads add ~1ms per redirect check. For high-traffic paths, cache the result of `KV.get()` per URL in a `Map`.
+
+## Combining A/B with redirects
+
+The pattern in production: redirects in `preHandler`, A/B for everything else.
+
+```ts
+export default withABTesting(decoWorker, {
+  kvBinding: "SITES_KV",
+  preHandler: (request, url) => matchRedirect(url.pathname, allRedirects),
+});
+```
+
+Order matters. Redirects before A/B means a user hitting `/old-url` gets 301'd to `/new-url` regardless of which variant they're bucketed into. Redirects after A/B means each variant could have its own redirect table — usually overkill.
+
+## Observability for A/B
+
+Tag responses with the assigned variant:
+
+```ts
+const taggedResponse = new Response(response.body, response);
+taggedResponse.headers.set("x-deco-variant", assignedVariant);
+return taggedResponse;
+```
+
+Then in your analytics, segment events by `x-deco-variant` to compute conversion rate per variant.
+
+`wrangler tail --format pretty` shows the variant assignment in real time.
+
+## Things to verify
+
+- [ ] Sticky session works — same user gets the same variant on multiple requests.
+- [ ] Variant weights add up to 100.
+- [ ] Both variants resolve `/_health` (health probes shouldn't be bucketed).
+- [ ] Redirects work in both variants.
+- [ ] CMS-driven redirects update on next deploy.
+- [ ] CSV-driven redirects update on next deploy after the CSV change.
+
+## See also
+
+- [Worker entry](/v2/en/framework/worker-entry)
+- [Matchers and flags](/v2/en/concepts/matchers-and-flags)
+- [Casa&Video case study](/v2/en/case-studies/casaevideo)
+- [Bagaggio case study](/v2/en/case-studies/baggagio)

@@ -1,0 +1,146 @@
+---
+title: "Estrutura do projeto"
+description: "O que cada diretório e arquivo gerado faz numa loja v2."
+icon: "FolderTree"
+---
+
+import Callout from "../../../../components/ui/Callout.astro";
+
+Uma loja v2 tem uma superfície deliberadamente pequena. A maioria dos arquivos é gerada. Esta página percorre o layout que você vai ver depois de clonar uma loja de referência.
+
+## Layout de topo
+
+```
+minha-loja/
+├── .deco/
+│   └── blocks/                # Conteúdo do CMS em JSON (commitado)
+├── public/                    # Estáticos servidos como estão
+├── scripts/                   # Tooling específico do site
+├── src/
+│   ├── components/            # Primitivos React reaproveitados pelas sections
+│   ├── sections/              # Componentes React renderizáveis pelo CMS
+│   ├── routes/                # Rotas baseadas em arquivo do TanStack Router
+│   ├── server/                # Artefatos server-side (em sua maior parte gerados)
+│   ├── setup/                 # Helpers de setup (commerce loaders, cache config)
+│   ├── setup.ts               # Entry point de bootstrap do site
+│   ├── server.ts              # Server entry do TanStack Start
+│   ├── worker-entry.ts        # Entry do Cloudflare Worker (chama createDecoWorkerEntry)
+│   └── styles.css             # Entry point do Tailwind
+├── package.json
+├── tsconfig.json
+├── vite.config.ts
+└── wrangler.jsonc
+```
+
+Toda loja de referência — [casaevideo](/Users/fernandofrizzatti/development/workspace/decocms/casaevideo-storefront), [baggagio](/Users/fernandofrizzatti/development/workspace/decocms/baggagio-tanstack), [lebiscuit](/Users/fernandofrizzatti/development/workspace/decocms/lebiscuit-tanstack) — segue essa forma.
+
+## `.deco/blocks/`
+
+A fonte da verdade do CMS. Um arquivo JSON por block (página, instância de section, config de app, matcher). O admin sincroniza esse diretório; você commita.
+
+Um block tem este formato:
+
+```json
+{
+  "__resolveType": "site/sections/Hero/HeroBanner.tsx",
+  "title": "Bem-vinda",
+  "image": { "url": "https://..." }
+}
+```
+
+O campo `__resolveType` diz ao framework qual componente de section renderizar e qual loader (se houver) chamar.
+
+## `src/sections/`
+
+Uma "section" é um componente React que o CMS pode posicionar numa página. As props do componente são o JSON Schema que o admin usa para edição.
+
+```tsx
+// exemplo mínimo
+export interface Props {
+  title: string;
+  cta?: { label: string; href: string };
+}
+
+export default function Hero({ title, cta }: Props) {
+  return (
+    <section>
+      <h1>{title}</h1>
+      {cta && <a href={cta.href}>{cta.label}</a>}
+    </section>
+  );
+}
+```
+
+O pipeline de build escaneia essa pasta e emite um registro `sections.gen.ts`. Veja [Conceito de sections](/v2/pt/concepts/sections).
+
+## `src/routes/`
+
+Rotas baseadas em arquivo do TanStack Router. As duas rotas que toda loja precisa:
+
+- **[`src/routes/index.tsx`](/Users/fernandofrizzatti/development/workspace/decocms/lebiscuit-tanstack/src/routes/index.tsx)** — homepage; usa `cmsHomeRouteConfig`.
+- **[`src/routes/$.tsx`](/Users/fernandofrizzatti/development/workspace/decocms/lebiscuit-tanstack/src/routes/$.tsx)** — catch-all para URLs guiadas pelo CMS; usa `cmsRouteConfig`.
+
+Mais um `src/routes/__root.tsx` para o shell global, tipicamente.
+
+Você pode adicionar rotas customizadas ao lado da catch-all (por exemplo `/api/algo.tsx`) e elas têm precedência.
+
+## `src/server/cms/` (gerado)
+
+Vários arquivos, todos gerados por scripts em `@decocms/start`:
+
+| Arquivo | Gerado por | Função |
+|---|---|---|
+| `blocks.gen.ts` | `generate-blocks` | Reexporta o JSON abaixo |
+| `blocks.gen.json` | `generate-blocks` | Todos os `.deco/blocks/*.json` em um arquivo |
+| `meta.gen.json` | `generate-schema` | JSON Schema para o admin |
+| `sections.gen.ts` | `generate-sections` | Registro dos default exports |
+| `loaders.gen.ts` | `generate-loaders` | Manifesto de loaders (podado pelo decofile) |
+| `invoke.gen.ts` | `generate-invoke` | Cliente tipado de `/deco/invoke` |
+
+Não edite na mão. Rode os geradores quando mexer em sections ou blocks.
+
+<Callout type="warning">
+**`blocks.gen.json` pode ser grande** (o da Casa&Vídeo tem 11,6 MB). O Vite plugin troca o re-export `.ts` por um `JSON.parse` rápido do `.json` em load time. Não tente chunk manual de `@decocms/start` ou `@decocms/apps` — re-exports circulares quebram em load.
+</Callout>
+
+## `src/setup.ts`
+
+O bootstrap do site. Chama `createSiteSetup` de `@decocms/start/setup`, faz glob-import das sections, registra loaders, configura matchers e commerce. **Tem que ser importado primeiro** em `server.ts` e `worker-entry.ts` para que o registro exista antes do TanStack Start dividir as server functions.
+
+Veja [Referência de setup](/v2/pt/framework/setup) para a assinatura completa.
+
+## `src/worker-entry.ts`
+
+O entry do Cloudflare Worker. Embrulha o server entry do TanStack com `createDecoWorkerEntry` para que rotas de admin, purge de cache, bypass de assets estáticos e cache de borda aconteçam *antes* do framework receber o request. Veja [Referência do worker entry](/v2/pt/framework/worker-entry).
+
+## `vite.config.ts`
+
+A config de build. Habilita React Compiler, Tailwind v4, o plugin do Cloudflare e o `decoVitePlugin()`. A lista de dedupe evita cópias duplicadas de `react`, `@tanstack/*` e `@decocms/*` no bundle.
+
+Veja [Referência do Vite plugin](/v2/pt/framework/vite-plugin).
+
+## `wrangler.jsonc`
+
+A config de deploy do Cloudflare. O mínimo a saber:
+
+```jsonc
+{
+  "main": "./src/worker-entry.ts",
+  "compatibility_date": "2026-02-14",
+  "compatibility_flags": [
+    "nodejs_compat",
+    "no_handle_cross_request_promise_resolution"
+  ]
+}
+```
+
+A flag `no_handle_cross_request_promise_resolution` é necessária para o deferred section rendering funcionar em modo dev sob o plugin Vite do Cloudflare.
+
+Veja [Deployment no Cloudflare Workers](/v2/pt/deployment/cloudflare-workers).
+
+## Veja também
+
+- [Visão geral da stack](/v2/pt/getting-started/stack-overview)
+- [Referência de setup](/v2/pt/framework/setup)
+- [Referência do worker entry](/v2/pt/framework/worker-entry)
+- [Conceito de blocks](/v2/pt/concepts/blocks)

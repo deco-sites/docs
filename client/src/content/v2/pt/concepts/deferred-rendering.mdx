@@ -1,0 +1,130 @@
+---
+title: "Deferred rendering"
+description: "Sections abaixo da dobra hidratam ao rolar a página, não no carregamento inicial."
+icon: "Hourglass"
+---
+
+import Callout from "../../../../components/ui/Callout.astro";
+
+Deferred rendering é como a v2 mantém pequeno o payload inicial. Sections marcadas como deferred renderizam shells de placeholder no servidor e hidratam quando entram no viewport. O mecanismo é nativo do framework — você decide o que fazer deferred, não como.
+
+## Por que diferir
+
+Uma PLP ou PDP típica tem 8-15 sections. Se todo loader rodar imediatamente:
+
+- Cada loader faz 1+ chamadas para APIs upstream.
+- O tempo total de resposta vira o do loader mais lento.
+- O HTML incha com conteúdo que o usuário talvez nunca veja.
+
+Diferir sections abaixo da dobra colapsa isso: as primeiras 1-3 sections renderizam por completo, o resto renderiza skeletons e o trabalho pesado acontece depois do `load`.
+
+## Duas maneiras de diferir
+
+### 1. Automático — `foldThreshold`
+
+Defina um fold threshold no setup; sections além desse índice renderizam lazy:
+
+```ts
+// src/setup.ts
+import { setAsyncRenderingConfig } from "@decocms/start/cms";
+
+setAsyncRenderingConfig({
+  foldThreshold: 3,
+  respectCmsLazy: true,
+});
+```
+
+É o que [Casa&Vídeo faz](/Users/fernandofrizzatti/development/workspace/decocms/casaevideo-storefront/src/setup.ts) — as 3 primeiras sections eager, tudo abaixo defere.
+
+### 2. Controlado pelo CMS — `respectCmsLazy`
+
+Com `respectCmsLazy` ligado, o CMS pode marcar sections como lazy no editor. O autor decide por página quais sections estão acima da dobra.
+
+Em `.deco/blocks/`, a flag fica:
+
+```json
+{
+  "__resolveType": "$live/pages/Page.ts",
+  "sections": [
+    { "__resolveType": "site/sections/Hero/Hero.tsx", "alwaysEager": true },
+    { "__resolveType": "site/sections/Shelf/Shelf.tsx" }
+  ]
+}
+```
+
+Sections com `alwaysEager: true` ignoram o fold threshold.
+
+## O componente `LazySection`
+
+Por baixo, sections deferred são embrulhadas em `<LazySection>` de `@decocms/start/hooks`. Ele:
+
+1. Renderiza um placeholder `<LoadingFallback />` no server.
+2. Configura um `IntersectionObserver` no placeholder.
+3. Quando o placeholder entra no viewport, chama `loadDeferredSection({ pageId, sectionIndex })` (uma server function do TanStack Start).
+4. Substitui o placeholder pela section renderizada.
+
+Você normalmente não instancia `LazySection` na mão — `DecoPageRenderer` faz isso conforme a flag de lazy da section.
+
+## Loading fallbacks
+
+Cada section pode declarar seu próprio skeleton. Default: shimmer genérico. Sobrescreva via `LoadingFallback`:
+
+```tsx
+// src/sections/Shelf/Shelf.tsx
+export const LoadingFallback = () => (
+  <div class="grid grid-cols-4 gap-4 animate-pulse">
+    {[...Array(8)].map((_, i) => <div key={i} class="aspect-square bg-gray-200" />)}
+  </div>
+);
+
+export default function Shelf({ products }: Props) { /* ... */ }
+```
+
+O framework pega `LoadingFallback` automaticamente.
+
+## Detecção de bot
+
+Bots (Googlebot, Bingbot etc.) não disparam `IntersectionObserver`, então o framework detecta o user-agent e renderiza sections deferred eager para bots. SEO preservado.
+
+## Navegação SPA e re-fetch
+
+Quando o usuário navega entre páginas client-side (patch do TanStack Router), sections deferred já carregadas para a página anterior **não são reaproveitadas** — cada load de rota começa do zero. É intencional: estado por página é o modelo mental mais limpo.
+
+O framework dedup chamadas concorrentes a `loadDeferredSection`, então navegações rápidas não desperdiçam requests.
+
+## Pegadinhas em modo dev
+
+<Callout type="warning">
+**Modo dev do Vite Cloudflare e sections deferred.** O plugin Vite do Cloudflare força um único contexto de I/O por request. Chamadas a `loadDeferredSection` que acontecem após a resposta inicial podem lançar um erro "I/O across requests". As opções:
+
+1. Marque as sections afetadas com `alwaysEager: true` no dev local.
+2. Adicione `no_handle_cross_request_promise_resolution` em `wrangler.jsonc` `compatibility_flags`.
+
+Deploys em produção não têm esse problema. Veja [`ssr-optimization-framework.md`](/Users/fernandofrizzatti/development/workspace/decocms/casaevideo-storefront/docs/ssr-optimization-framework.md) do Casa&Vídeo para a investigação completa.
+</Callout>
+
+## Referência de configuração
+
+```ts
+setAsyncRenderingConfig({
+  foldThreshold: 3,           // sections [0..2] renderizam eager, [3..] diferem
+  respectCmsLazy: true,       // honra flag de lazy por section vinda do CMS
+  alwaysEagerKinds: [],       // nomes de section que sempre renderizam eager
+  intersectionMargin: "200px", // rootMargin do IntersectionObserver
+});
+```
+
+## Quando marcar uma section como `alwaysEager`
+
+- **Conteúdo SEO-crítico acima da dobra** — Hero, breadcrumbs, imagem principal do produto.
+- **Primeiro card de produto** em prateleiras onde você quer a imagem LCP pré-carregada.
+- **Triggers de drawer do carrinho** que precisam estar interativos imediatamente.
+
+Na dúvida, defira. O framework lida com bots corretamente, e sections eager desnecessariamente são a regressão de performance mais comum que vemos.
+
+## Veja também
+
+- [Sections](/v2/pt/concepts/sections)
+- [Referência de hooks](/v2/pt/framework/hooks)
+- [Estratégia de cache](/v2/pt/deployment/caching-strategy)
+- [Estudo de caso Casa&Vídeo](/v2/pt/case-studies/casaevideo)
