@@ -181,7 +181,7 @@ const account = country === "BR" ? "loja-br" : "loja-us";
 configure({ account, salesChannel: country === "BR" ? "1" : "2" });
 ```
 
-Casa&Vídeo usa essa abordagem com região default + override por CEP. Veja [`setup-vtex-fetch.ts`](/Users/fernandofrizzatti/development/workspace/decocms/casaevideo-storefront/src/setup/setup-vtex-fetch.ts).
+Um padrão comum é combinar essa abordagem com região default + override por CEP — chame `setVtexFetch(...)` em `setup.ts` passando seu wrapper customizado.
 
 ## Veja também
 

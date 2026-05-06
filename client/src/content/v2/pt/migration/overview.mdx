@@ -22,7 +22,7 @@ Este é o ponto de entrada da migração v1 → v2. O playbook completo está es
 |---|---|
 | Site médio, time confortável | Rodar `deco-migrate`, ajustar o que ele apontar, deployar. |
 | Site grande (100+ sections), muito VTEX | Rodar `deco-migrate` em `--dry-run`, revisar relatório, executar. Usar Agent Skill para ajustes manuais. |
-| Site pequeno, controle total | Port manual — clonar [`lebiscuit-tanstack`](https://github.com/deco-sites/lebiscuit-tanstack) e migrar sections na mão. |
+| Site pequeno, controle total | Port manual — partir da receita de [Começar do zero](/v2/pt/getting-started/start-fresh) e copiar suas sections, components e `.deco/blocks/`. |
 | Worker bem customizado (proxies, harness AB) | Rodar `deco-migrate`, depois portar a lógica custom do worker manualmente usando [Referência do worker entry](/v2/pt/framework/worker-entry). |
 
 Não há prazo. v1 segue mantida.
@@ -45,7 +45,7 @@ O script de migração mira a **major atual** de `@decocms/start` (^2.x) e `@dec
 }
 ```
 
-As lojas de referência estão fixadas nessas ou perto — veja [`lebiscuit-tanstack/package.json`](/Users/fernandofrizzatti/development/workspace/decocms/lebiscuit-tanstack/package.json).
+Fixe nessas versões (ou nas mais recentes publicadas no momento da migração).
 
 ## O que sobrevive à migração
 

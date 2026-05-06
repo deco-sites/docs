@@ -94,7 +94,7 @@ const handleMetaWithAuth: AdminHandler = async (request, env) => {
 
 Roda depois das rotas de admin e do check de cache, mas antes do server entry. Usado para proxies do site (checkout do commerce, encaminhamento de URLs legadas).
 
-[Le biscuit](/Users/fernandofrizzatti/development/workspace/decocms/lebiscuit-tanstack/src/worker-entry.ts) e [Casa&Vídeo](/Users/fernandofrizzatti/development/workspace/decocms/casaevideo-storefront/src/worker-entry.ts) usam para o proxy de checkout VTEX:
+Um uso comum é o proxy de checkout VTEX:
 
 ```ts
 import { createVtexCheckoutProxy } from "@decocms/apps/vtex/middleware";
@@ -110,7 +110,7 @@ const decoWorker = createDecoWorkerEntry(serverEntry, {
 });
 ```
 
-[Bagaggio](/Users/fernandofrizzatti/development/workspace/decocms/baggagio-tanstack/src/worker-entry.ts) usa o `proxyHandler` para redirects legados a partir de um CSV.
+Outro uso comum é redirects legados carregados de um arquivo CSV — veja [Carregamento de redirects](#carregamento-de-redirects) abaixo.
 
 ### `buildSegment`
 
@@ -175,7 +175,7 @@ const proxyHandler = (request: Request, url: URL) => {
 };
 ```
 
-Para sites com milhares de redirects legados, veja [o padrão CSV do Bagaggio](/v2/pt/case-studies/baggagio).
+Para sites com milhares de redirects legados vindos de uma URL scheme da era Fresh, o mesmo slot `proxyHandler` aceita lógica de lookup arbitrária. Faça bundle de um CSV via `import csv from "./redirects.csv?raw"`, parse uma vez no escopo do módulo e bata contra `url.pathname`.
 
 ## Tratamento de assets estáticos
 
@@ -203,4 +203,3 @@ O framework deliberadamente separa server entry (TanStack-owned) de worker entry
 - [Vite plugin](/v2/pt/framework/vite-plugin)
 - [Caching](/v2/pt/framework/caching)
 - [Deployment Cloudflare Workers](/v2/pt/deployment/cloudflare-workers)
-- [Estudo de caso Bagaggio](/v2/pt/case-studies/baggagio)

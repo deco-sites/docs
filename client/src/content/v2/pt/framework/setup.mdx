@@ -6,7 +6,7 @@ icon: "Wrench"
 
 import Callout from "../../../../components/ui/Callout.astro";
 
-`createSiteSetup` é a função única que faz bootstrap de uma loja v2. Registra suas sections, blocks, matchers e integrações de plataforma em um lugar. Toda loja de referência tem um `src/setup.ts` que chama ela.
+`createSiteSetup` é a função única que faz bootstrap de uma loja v2. Registra suas sections, blocks, matchers e integrações de plataforma em um lugar. Toda loja v2 tem um `src/setup.ts` que chama ela.
 
 ## Import
 
@@ -170,7 +170,7 @@ setVtexFetch(createInstrumentedFetch("vtex"));   // fetch instrumentado para VTE
 setInvokeLoaders(invokeLoaders);   // cliente tipado de invoke
 ```
 
-`applySectionConventions` e `registerLayoutSections` são quase sempre chamados. O resto depende do que seu site usa. Veja o [`setup.ts` do Casa&Vídeo](/Users/fernandofrizzatti/development/workspace/decocms/casaevideo-storefront/src/setup.ts) para o pacote completo, ou o [do Bagaggio](/Users/fernandofrizzatti/development/workspace/decocms/baggagio-tanstack/src/setup.ts) para o mínimo.
+`applySectionConventions` e `registerLayoutSections` são quase sempre chamados. O resto depende do que seu site usa — chame `registerCommerceLoaders` e `setVtexFetch` para VTEX, `setShopifyFetch` para Shopify, e por aí vai.
 
 ## Por que `setup.ts` precisa vir primeiro
 

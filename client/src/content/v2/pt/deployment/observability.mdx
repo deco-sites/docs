@@ -171,7 +171,7 @@ Sentry.init({
 
 `@sentry/cloudflare` é compatível com Workers. Exception capture acontece automaticamente quando handlers do Worker lançam.
 
-Casa&Vídeo usa Sentry; veja [`apps-start.config.ts`](/Users/fernandofrizzatti/development/workspace/decocms/casaevideo-storefront) para integração.
+Sentry não vem ligado por padrão — instale `@sentry/cloudflare` e chame o init dele a partir do `setup.ts` se quiser.
 
 ## Real User Monitoring (RUM)
 
@@ -224,4 +224,3 @@ configureObservability({
 - [Loaders](/v2/pt/concepts/loaders)
 - [Worker entry](/v2/pt/framework/worker-entry)
 - [Cloudflare Workers](/v2/pt/deployment/cloudflare-workers)
-- [Estudo de caso Casa&Vídeo](/v2/pt/case-studies/casaevideo)

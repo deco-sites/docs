@@ -47,7 +47,7 @@ After this, the framework can resolve any of the registered keys to its function
 | `vtex/loaders/categories/tree.ts` | Category tree (via `getCategoryTree`) |
 | `vtex/loaders/workflowProducts.ts` | Workflow-backed product grids |
 
-The full registration logic lives in [`vtex/commerceLoaders.ts`](/Users/fernandofrizzatti/development/workspace/decocms/apps-start/vtex/commerceLoaders.ts).
+The full registration logic lives in `vtex/commerceLoaders.ts`.
 
 ## Caching layer
 
@@ -68,9 +68,9 @@ The PDP inline loader composes several pieces:
 3. **`toProductPage` transform** — convert VTEX shape to schema.org `ProductDetailsPage`.
 4. **(Optional) variant enrichment** — fetch cross-product similars when the CMS asks.
 
-A real-world enrichment from Casa&Video:
+A real-world enrichment pattern:
 
-```29:52:/Users/fernandofrizzatti/development/workspace/decocms/casaevideo-storefront/src/setup/commerce-loaders.ts
+```ts
 // Wrap PDP to fetch similar products (color/voltage variants) when CMS
 // configures "similars: true". Without this, isSimilarTo is empty and
 // the variant selector won't show cross-product options (e.g. Cor: Verde/Preto).
@@ -98,7 +98,7 @@ PLP-side composition includes:
 
 ## SSR minicart
 
-[`vtex/inline-loaders/minicart.ts`](/Users/fernandofrizzatti/development/workspace/decocms/apps-start/vtex/inline-loaders/minicart.ts) is special:
+`vtex/inline-loaders/minicart.ts` is special:
 
 - Reads the `checkout.vtex.com__orderFormId` cookie from the request.
 - **If absent**, returns an empty minicart **without** creating an empty orderForm — important to avoid polluting VTEX with empty carts on every anonymous visit.
@@ -121,9 +121,9 @@ If a CMS author types a typo in the sort field, the page falls back to default o
 
 ## Pruning unused loaders (optional)
 
-By default, every inline loader appears in your generated `loaders.gen.ts`. For sites with thousands of unused loaders, this bloats the bundle. Bagaggio uses the `--decofile-dir` flag to prune:
+By default, every inline loader appears in your generated `loaders.gen.ts`. For sites with thousands of unused loaders, this bloats the bundle. Pass the `--decofile-dir` flag to prune the registry to only what the CMS actually references:
 
-```3:19:/Users/fernandofrizzatti/development/workspace/decocms/baggagio-tanstack/src/setup/commerce-loaders.ts
+```ts
  *   3. The auto-generated `siteLoaders` map (`server/cms/loaders.gen.ts`)
  *      which the build step prunes to only the `site/loaders/*` and
  *      `site/actions/*` keys actually referenced by the CMS decofile —
@@ -165,4 +165,3 @@ registerCommerceLoaders(customLoaders);
 - [VTEX loaders and actions](/v2/en/commerce/vtex-loaders-and-actions)
 - [VTEX gotchas](/v2/en/commerce/vtex-gotchas)
 - [Caching](/v2/en/framework/caching)
-- [Casa&Video case study](/v2/en/case-studies/casaevideo)

@@ -20,7 +20,7 @@ VTEX uses `vtex_segment` to convey region (CEP-driven), sales channel, and curre
 
 `vtexFetch` auto-forwards `vtex_segment` **only when the caller didn't supply a `cookie` header**. If you supply your own `cookie` in `init.headers`, you also have to include `vtex_segment` yourself.
 
-For legacy catalog calls (which don't pass through `vtexFetch`), wrap a custom region-aware fetch — see [Casa&Video pattern](/v2/en/commerce/vtex-client-and-middleware#region-aware-fetch-advanced).
+For legacy catalog calls (which don't pass through `vtexFetch`), wrap a custom region-aware fetch — see [Region-aware fetch](/v2/en/commerce/vtex-client-and-middleware#region-aware-fetch-advanced).
 
 ### IS session cookies (`vtex_is_session`, `vtex_is_anonymous`)
 
@@ -71,7 +71,7 @@ If your minicart shows stale data despite a successful add-to-cart, this is the 
 
 ## Region ID from segment
 
-Intelligent Search needs `regionId` for region-aware availability. The framework extracts it from the `vtex_segment` cookie via `extractRegionIdFromCookies` ([`vtex/client.ts`](/Users/fernandofrizzatti/development/workspace/decocms/apps-start/vtex/client.ts)).
+Intelligent Search needs `regionId` for region-aware availability. The framework extracts it from the `vtex_segment` cookie via `extractRegionIdFromCookies` (`vtex/client.ts`).
 
 If `vtex_segment` is missing, IS falls back to the account's default region — which may be different from the user's CEP. The fix: ensure your shipping calculator sets the segment cookie (via `editSession({ items: [{ key: "country", value: "BRA" }, { key: "postalCode", value: "01310-100" }] })`).
 
@@ -108,7 +108,7 @@ If you write custom cart code, replicate this guard. For client-side `useCart`, 
 
 ## Slug cache
 
-VTEX returns the same product under multiple slugs (canonical + variants). The framework's `slugCache` ([`vtex/utils/slugCache.ts`](/Users/fernandofrizzatti/development/workspace/decocms/apps-start/vtex/utils/slugCache.ts)) maps slug → canonical SKU so PDP loaders skip a round-trip when they've seen the slug before.
+VTEX returns the same product under multiple slugs (canonical + variants). The framework's `slugCache` (`vtex/utils/slugCache.ts`) maps slug → canonical SKU so PDP loaders skip a round-trip when they've seen the slug before.
 
 If a product's slug changes in admin, the cached entry can serve the old SKU until eviction. Workaround: bust the slug cache on publish (manual operations endpoint) or accept the eventual consistency.
 

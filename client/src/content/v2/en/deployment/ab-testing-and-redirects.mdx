@@ -67,9 +67,9 @@ Runs **before** A/B logic. Useful for:
 - **Auth** checks that gate the entire site.
 - **Health probes** (return 200 for `/`__health` without going through A/B).
 
-Casa&Video uses `preHandler` for CMS-driven redirects:
+A common pattern is using `preHandler` for CMS-driven redirects:
 
-```105:123:/Users/fernandofrizzatti/development/workspace/decocms/casaevideo-storefront/src/worker-entry.ts
+```ts
 export default withABTesting(decoWorker, {
   kvBinding: "SITES_KV",
   preHandler: (request, url) => {
@@ -124,11 +124,11 @@ CMS authors add redirects through admin; they take effect on the next deploy.
 
 This works fine for hundreds of redirects. Past ~1000, the in-memory map gets unwieldy.
 
-### 2. Inline CSV redirects (Bagaggio pattern)
+### 2. Inline CSV redirects
 
 For migrations where you have thousands of legacy URLs, loading from a CSV in the worker is leaner:
 
-```33:67:/Users/fernandofrizzatti/development/workspace/decocms/baggagio-tanstack/src/worker-entry.ts
+```ts
 // Import redirect.csv as a raw string at build time. The CMS site block
 // references `website/loaders/redirectsFromCsv.ts` with `from: "redirect.csv"`
 // but the framework's loadRedirects() only reads inline `redirects[]` arrays
@@ -220,5 +220,3 @@ Then in your analytics, segment events by `x-deco-variant` to compute conversion
 
 - [Worker entry](/v2/en/framework/worker-entry)
 - [Matchers and flags](/v2/en/concepts/matchers-and-flags)
-- [Casa&Video case study](/v2/en/case-studies/casaevideo)
-- [Bagaggio case study](/v2/en/case-studies/baggagio)

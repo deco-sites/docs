@@ -32,7 +32,7 @@ That's it. The script analyzes the source layout, scaffolds v2 files, transforms
 
 ## The seven phases
 
-Pulled from [`scripts/migrate.ts`](/Users/fernandofrizzatti/development/workspace/decocms/deco-start/scripts/migrate.ts):
+Pulled from `scripts/migrate.ts`:
 
 ```
 1. Analyze   — scan source, detect Preact/Fresh/Deco patterns
@@ -75,7 +75,7 @@ After a real run, the report has:
 - **`@decocms/start` boilerplate duplication** — places where the migrated code overlaps with framework-provided helpers (candidates for cleanup).
 - **Concrete next steps** — exact commands to run.
 
-A real example lives at [`baggagio-tanstack/MIGRATION_REPORT.md`](/Users/fernandofrizzatti/development/workspace/decocms/baggagio-tanstack/MIGRATION_REPORT.md).
+The report is checked into your repo at the path you ran the script in — keep it under version control so reviewers can audit what changed.
 
 ## Configuration file
 

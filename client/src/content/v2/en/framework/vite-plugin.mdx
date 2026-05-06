@@ -48,7 +48,7 @@ export default defineConfig({
 });
 ```
 
-That's the canonical baseline — every reference site uses this shape with minor cosmetic differences. See [`vite.config.ts` in lebiscuit-tanstack`](/Users/fernandofrizzatti/development/workspace/decocms/lebiscuit-tanstack/vite.config.ts) for a real one.
+That's the canonical baseline — production v2 storefronts use this shape with at most minor cosmetic differences.
 
 ## What the plugin does
 
@@ -64,7 +64,7 @@ Modules that only exist server-side (`@decocms/start/cms` registry internals, `n
 - The Vite chunker doesn't try to split a 10 MB file across chunks.
 - Module-init time is dominated by `JSON.parse`, which is the fastest option.
 
-This matters: Casa&Video's `blocks.gen.json` is 11 MB. Without the fast-path, cold starts spike.
+This matters: production storefronts routinely have multi-megabyte (sometimes >10 MB) `blocks.gen.json`. Without the fast-path, cold starts spike.
 
 ### 3. `meta.gen` client stub
 
@@ -72,7 +72,7 @@ This matters: Casa&Video's `blocks.gen.json` is 11 MB. Without the fast-path, co
 
 ### 4. Dev daemon
 
-In dev mode, the plugin starts the daemon (file watcher, JWT-authenticated tunnel to admin) so `admin.deco.cx` can talk to your local server. See [`@decocms/start/daemon`](/Users/fernandofrizzatti/development/workspace/decocms/deco-start/src/daemon/) for the underlying machinery.
+In dev mode, the plugin starts the daemon (file watcher, JWT-authenticated tunnel to admin) so `admin.deco.cx` can talk to your local server. See `@decocms/start/daemon` for the underlying machinery.
 
 ### 5. Chunk hints
 
@@ -120,7 +120,7 @@ This stubbing happens automatically. If you import server-only code in a compone
 
 ## Build order
 
-The recommended plugin order is what every reference site uses:
+The recommended plugin order is:
 
 ```
 1. cloudflare()            — sets up the Workers SSR environment

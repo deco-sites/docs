@@ -163,7 +163,7 @@ OK para até ~1000 redirects. Para larger, prefira CSV.
 
 Para 10.000+ redirects (típico de sites pré-migração com URLs legacy), `loadRedirects` é lento — todo decofile resolve. Use CSV em vez disso.
 
-[Bagaggio armazena redirects num CSV](/Users/fernandofrizzatti/development/workspace/decocms/baggagio-tanstack/src/middleware/redirects.ts):
+Um padrão comum é armazenar redirects num CSV:
 
 ```ts
 // src/middleware/redirects.ts
@@ -218,4 +218,3 @@ Use `301` para URLs legacy (preferido). Use `302` para redirects de campanha (`/
 - [Worker entry](/v2/pt/framework/worker-entry)
 - [Matchers e flags](/v2/pt/concepts/matchers-and-flags)
 - [Estratégia de cache](/v2/pt/deployment/caching-strategy)
-- [Estudo de caso Bagaggio](/v2/pt/case-studies/baggagio)
