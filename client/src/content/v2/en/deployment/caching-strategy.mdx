@@ -1,0 +1,239 @@
+---
+title: "Caching strategy"
+description: "Built-in profiles, setCacheProfile, registerCachePattern, route-level staleTime, cache purge."
+icon: "Database"
+---
+
+import Callout from "../../../../components/ui/Callout.astro";
+
+The framework has reasonable defaults. This page is about the knobs you turn when defaults aren't enough — tuning per-profile TTLs, mapping custom URLs to profiles, route-level cache, and operational concerns like cache purge.
+
+## The three caches
+
+```
+1. Cloudflare edge cache (caches.default)   ← biggest impact, longest TTL
+2. Browser cache (Cache-Control headers)    ← user-side, shortest TTL
+3. TanStack Router loader cache (per-tab)   ← in-memory, navigation
+```
+
+Each has its own knobs. Coordinate them or you'll spend afternoons debugging why one cache layer is showing stale data while another is fresh.
+
+## Edge cache profiles
+
+`@decocms/start/sdk/cacheHeaders` ships these defaults:
+
+| Profile | URL pattern | edge `s-maxage` | edge SWR | browser `max-age` |
+|---|---|---|---|---|
+| `static` | `/` | 1 day | 7 days | 5 min |
+| `product` | `*/p` | 5 min | 30 min | 60 s |
+| `search` | `/s`, `?q=` | 60 s | 5 min | (no-store) |
+| `private` | `/cart`, `/checkout` | (none) | (none) | `private, no-store` |
+| `listing` | everything else | 2 min | 30 min | 60 s |
+
+These are starting points, not gospel. Tune to your traffic patterns.
+
+## `setCacheProfile`
+
+Override a profile's TTLs:
+
+```ts
+// src/cache-config.ts
+import { setCacheProfile } from "@decocms/start/sdk/cacheHeaders";
+
+setCacheProfile("static", {
+  edge: { fresh: 1800, swr: 7200, sie: 43200 },
+  browser: { fresh: 300, swr: 3600, sie: 14400 },
+  client: { staleTime: 600_000, gcTime: 3_600_000 },
+});
+
+setCacheProfile("listing", {
+  edge: { fresh: 300, swr: 1800, sie: 7200 },
+  // ...
+});
+```
+
+[Casa&Video does this](/Users/fernandofrizzatti/development/workspace/decocms/casaevideo-storefront/src/cache-config.ts) — looser TTLs for static-shaped routes, tighter for search.
+
+Import the file from `setup.ts` so the overrides apply before the framework reads the config:
+
+```ts
+// src/setup.ts
+import "./cache-config";
+import { createSiteSetup } from "@decocms/start/setup";
+// ...
+```
+
+### `fresh` vs `swr` vs `sie`
+
+- **`fresh`** — how long the cached response is treated as fresh (no revalidate).
+- **`swr` (stale-while-revalidate)** — how long the cached response can serve while a background revalidation runs.
+- **`sie` (stale-if-error)** — how long the cached response can serve if the upstream is down.
+
+Total useful life of a cache entry = `fresh + swr + sie`. After that, evicted.
+
+For commerce: `fresh` short, `swr` long. Users get instant responses; data stays fresh in the background; rare upstream errors don't show users a broken page.
+
+## `registerCachePattern`
+
+Add a new URL pattern → profile mapping without overwriting built-ins:
+
+```ts
+import { registerCachePattern } from "@decocms/start/sdk/cacheHeaders";
+
+registerCachePattern({
+  test: (pathname) => pathname === "/sitemap.xml",
+  profile: "static",
+});
+
+registerCachePattern({
+  test: (pathname) => pathname.startsWith("/api/feed/"),
+  profile: "search",   // tight TTL for high-churn feeds
+});
+```
+
+Earlier-registered patterns win. The default catch-all (`listing`) only applies if nothing else matches.
+
+[Bagaggio uses this](/Users/fernandofrizzatti/development/workspace/decocms/baggagio-tanstack/src/cache-config.ts) for the sitemap; their other defaults are inherited.
+
+## Route-level cache (TanStack Router)
+
+The TanStack Router loader cache is a per-tab in-memory cache. Tune via `staleTime` and `gcTime` on `cmsRouteConfig`:
+
+```ts
+cmsRouteConfig({
+  siteName: "my-store",
+  staleTime: 30_000,       // ms; loader data fresh for this long
+  gcTime: 5 * 60_000,      // ms; data evicted after this long
+})
+```
+
+| Use | `staleTime` recommendation |
+|---|---|
+| Dev mode (always fresh) | `0` |
+| Home page (rarely changes) | `60_000` (1 min) or longer |
+| PDP (price-sensitive) | `30_000` (30s) |
+| PLP (filter-heavy) | `15_000` |
+| Cart / Account | `0` (never stale) |
+
+`gcTime` should generally be `5-10x staleTime` so back-button navigation is instant.
+
+## `mergeCacheControl`
+
+When multiple middleware each set `Cache-Control`, you need a deterministic merger:
+
+```ts
+import { mergeCacheControl } from "@decocms/start/sdk/mergeCacheControl";
+
+const merged = mergeCacheControl([
+  "public, max-age=300, s-maxage=600",
+  "private, max-age=60",
+]);
+// → "private, max-age=60, s-maxage=600"
+```
+
+The merger:
+- Takes the **shortest** `max-age` and `s-maxage`.
+- Takes the **most restrictive** privacy directive (`private` beats `public`).
+- Honors `no-store` (kills caching).
+
+Use this if you have layers (CMS + commerce middleware + custom middleware) each contributing their own headers.
+
+## Cache purge
+
+The framework provides a purge probe:
+
+```
+GET /any-url?__deco_purge_cache=<key>
+```
+
+Where `<key>` matches `cachePurgeKey` you passed to `createDecoWorkerEntry`. The probe purges the matching cached entries.
+
+Set the key in `wrangler.jsonc`:
+
+```jsonc
+{
+  "vars": {
+    "CACHE_PURGE_KEY": "<long random secret>"
+  }
+}
+```
+
+And in your worker entry:
+
+```ts
+const decoWorker = createDecoWorkerEntry(serverEntry, {
+  // ...
+  cachePurgeKey: env.CACHE_PURGE_KEY,
+});
+```
+
+### When to purge
+
+- **On CMS publish** — admin can call your purge endpoint after publishing changes.
+- **On feature flag change** — A/B variants serving stale.
+- **After bulk content updates** — sitemap regen, redirect table updates.
+
+Don't purge on every change — the cache is supposed to absorb churn. Purge when you've manually verified that stale data is being served.
+
+## Per-route cache headers
+
+For ad-hoc per-route control, set `headers` on the route config:
+
+```tsx
+const config = cmsRouteConfig({
+  siteName: "my-store",
+  headers: () => ({
+    "cache-control": "public, max-age=600, s-maxage=3600",
+  }),
+});
+```
+
+This overrides the profile-derived headers for that route.
+
+## Segments
+
+Segments are key-value pairs that mix into the cache key. Use them to vary cached responses by device, region, or user state:
+
+```ts
+const decoWorker = createDecoWorkerEntry(serverEntry, {
+  buildSegment: (request) => ({
+    device: detectDevice(request).type,
+    country: request.headers.get("cf-ipcountry") ?? "?",
+  }),
+});
+```
+
+Each unique segment combination produces a separate cached response. Be conservative — segmenting by `userId` produces N cache entries per page; segmenting by `device` produces 3.
+
+## What to cache vs. not
+
+| Cacheable | Not cacheable |
+|---|---|
+| Home, PDP, PLP, search, content pages | Cart, checkout, account |
+| Robots, sitemap | API endpoints with user-specific data |
+| Static assets | Anything with `Set-Cookie` |
+| `_meta`, `decofile` (admin reads these often) | Anything with PII |
+
+If a response carries a `Set-Cookie` header, the framework auto-bypasses cache.
+
+## Debugging cache HITs / MISSes
+
+Cloudflare adds `cf-cache-status: HIT/MISS/EXPIRED/REVALIDATED` to responses. Inspect with:
+
+```bash
+curl -I https://my-store.com/some-page | grep -i cache
+```
+
+In `wrangler tail`, every request shows the cache verdict. If you expect HIT and see MISS:
+
+1. Check the URL is segment-stable (no query param drift).
+2. Check no `Set-Cookie` header is being emitted.
+3. Check `Cache-Control` doesn't include `no-store`.
+4. Check the path matches a registered profile (or you've explicitly set `headers`).
+
+## See also
+
+- [Caching (framework reference)](/v2/en/framework/caching)
+- [Worker entry](/v2/en/framework/worker-entry)
+- [Loaders](/v2/en/concepts/loaders)
+- [Casa&Video case study](/v2/en/case-studies/casaevideo)

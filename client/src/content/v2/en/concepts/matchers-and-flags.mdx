@@ -1,0 +1,143 @@
+---
+title: "Matchers and flags"
+description: "Targeting, A/B testing, and feature flags via matcher blocks."
+icon: "GitBranch"
+---
+
+import Callout from "../../../../components/ui/Callout.astro";
+
+A **matcher** is a block that returns true or false based on the request, the user, or external state. Matchers are how v2 implements A/B testing, audience targeting, scheduled content, and feature flags.
+
+## Multivariate blocks
+
+The most common matcher use case is a multivariate block — a block that swaps based on a matcher's verdict:
+
+```json
+{
+  "__resolveType": "$live/matchers/MultivariateBlock.ts",
+  "variants": [
+    {
+      "matcher": { "__resolveType": "site/matchers/IsMobile.ts" },
+      "block": { "__resolveType": "site/sections/Hero/HeroMobile.tsx" }
+    },
+    {
+      "block": { "__resolveType": "site/sections/Hero/HeroDesktop.tsx" }
+    }
+  ]
+}
+```
+
+The framework walks variants top-to-bottom; the first matching variant wins; the last variant typically has no matcher (default).
+
+## Built-in matchers
+
+`@decocms/start/matchers/builtins` ships ready-to-use matchers:
+
+| Matcher | What it does |
+|---|---|
+| `MatchUserAgent` | Match Cloudflare device type or UA regex |
+| `MatchDate` | Match a date range |
+| `MatchSite` | Match the current `siteName` |
+| `MatchEnvironment` | Match `env.ENVIRONMENT` (e.g. "staging") |
+| `MatchLocation` | Match country/region from `cf-ipcountry` header |
+| `MatchSession` | Match a session attribute (logged-in, has-cart, etc.) |
+| `MatchRandom` | Random sticky bucket — the canonical A/B primitive |
+
+These appear in admin pickers automatically once `registerBuiltinMatchers()` runs in `setup.ts`:
+
+```ts
+import { registerBuiltinMatchers } from "@decocms/start/matchers/builtins";
+
+registerBuiltinMatchers({
+  customMatchers: {
+    // your site-specific matchers
+  },
+});
+```
+
+See [`casaevideo-storefront/src/setup.ts`](/Users/fernandofrizzatti/development/workspace/decocms/casaevideo-storefront/src/setup.ts) for a real registration.
+
+## PostHog matcher
+
+`@decocms/start/matchers/posthog` connects to PostHog feature flags:
+
+```ts
+import { matchPosthog } from "@decocms/start/matchers/posthog";
+```
+
+It supports:
+- **Sticky sessions** — same user gets the same variant across requests via PostHog's distinct ID + a session cookie.
+- **Multivariate flags** — boolean and string-valued PostHog flags.
+- **Environment-aware** — different PostHog projects per `ENVIRONMENT`.
+
+Configure via the PostHog app block in admin (`__resolveType: "deco-posthog"` if your site has it set up).
+
+## Custom matchers
+
+A matcher is just a section-shaped file under `src/matchers/`:
+
+```ts
+// src/matchers/MatchHasCart.ts
+import type { MatcherFn } from "@decocms/start/types";
+
+export interface Props {
+  inverse?: boolean;
+}
+
+const matcher: MatcherFn<Props> = ({ request }, { inverse = false }) => {
+  const hasCart = request.headers.get("cookie")?.includes("checkout.vtex.com__orderFormId");
+  return inverse ? !hasCart : Boolean(hasCart);
+};
+
+export default matcher;
+```
+
+It picks up the same TS → JSON Schema treatment as sections, so `Props` becomes the admin editor.
+
+## Worker-level A/B testing
+
+`@decocms/start/sdk/abTesting` exports `withABTesting`, a worker wrapper that runs A/B logic before the framework even sees the request — useful for comparing entire site versions.
+
+```ts
+// src/worker-entry.ts
+import { withABTesting } from "@decocms/start/sdk/abTesting";
+
+export default withABTesting(decoWorker, {
+  kvBinding: "SITES_KV",
+  preHandler: (request, url) => {
+    // optional pre-handler (redirects, etc.)
+    return null;
+  },
+});
+```
+
+Variants are stored in Workers KV under `SITES_KV`. See [A/B testing and redirects](/v2/en/deployment/ab-testing-and-redirects) for the deployment picture.
+
+<Callout type="info">
+**When to use which.** CMS matchers swap content within a page. `withABTesting` swaps entire codebases (e.g. canary deploys). Most stores use CMS matchers; large traffic shifts use the worker-level harness.
+</Callout>
+
+## Sticky sessions
+
+For A/B tests that must show the same variant on every page view, pair `MatchRandom` with a session cookie:
+
+```json
+{
+  "__resolveType": "$live/matchers/MatchRandom.ts",
+  "percentage": 50,
+  "sessionKey": "ab_hero_v2"
+}
+```
+
+The first request gets a verdict; subsequent requests within the session honor that verdict.
+
+## Tracing matchers
+
+Every matcher call is traced with OpenTelemetry. In `wrangler tail` you'll see spans like `matcher.MatchUserAgent` with the verdict and timing. This is invaluable when an A/B test isn't behaving the way you expect.
+
+## See also
+
+- [Blocks](/v2/en/concepts/blocks)
+- [Sections](/v2/en/concepts/sections)
+- [Worker entry](/v2/en/framework/worker-entry)
+- [A/B testing and redirects](/v2/en/deployment/ab-testing-and-redirects)

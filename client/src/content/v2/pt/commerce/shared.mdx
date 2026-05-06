@@ -1,0 +1,198 @@
+---
+title: "Utilities compartilhadas de commerce"
+description: "Tipos schema.org, useOffer, formatPrice, analytics, useVariantPossibilities, Image/Picture/JsonLd."
+icon: "Package"
+---
+
+import Callout from "../../../../components/ui/Callout.astro";
+
+`@decocms/apps` expõe utilities neutras à plataforma — tipos, helpers de formatação e componentes — em subpaths sob `commerce/`. Use sempre que possível: você fica trocando de provider para sempre.
+
+## Tipos
+
+```ts
+import type {
+  Product,
+  ProductDetailsPage,
+  ProductListingPage,
+  BreadcrumbList,
+  Offer,
+  AggregateOffer,
+  Cart,
+  CartItem,
+} from "@decocms/apps/commerce/types";
+```
+
+Alinhados ao schema.org. VTEX e Shopify mapeiam para essas formas em loaders.
+
+| Tipo | Função |
+|---|---|
+| `Product` | Item de catálogo (id, name, image, offers, additionalProperty) |
+| `ProductDetailsPage` | Página de produto com breadcrumbs + seo |
+| `ProductListingPage` | Página de listagem com produtos, filters, sortOptions, pageInfo |
+| `BreadcrumbList` | Trail navegacional |
+| `Offer` | Oferta de preço (price, listPrice, availability, priceSpecification) |
+| `AggregateOffer` | Oferta com lowPrice/highPrice em variantes |
+| `Cart` / `CartItem` | Estado do carrinho |
+
+## `useOffer`
+
+```ts
+import { useOffer } from "@decocms/apps/commerce/sdk/useOffer";
+
+const offer = useOffer(product.offers);
+// → { price, listPrice, seller, availability, hasDrawnOutOfStockLabel }
+```
+
+Hook que extrai o "main offer" de um produto — o que tem o melhor preço para o usuário corrente. Comportamento embutido:
+
+- Pega o seller default (ou usa `?seller=...` da URL).
+- Calcula porcentagem de desconto.
+- Sinaliza disponibilidade (`InStock`, `OutOfStock`).
+- Lida com listas de oferta vazias com tipos seguros.
+
+Usado em todo PDP card e prateleira de produto.
+
+## `formatPrice`
+
+```ts
+import { formatPrice } from "@decocms/apps/commerce/sdk/format";
+
+formatPrice(1234.56, "BRL", "pt-BR");
+// → "R$ 1.234,56"
+```
+
+Wrapper em volta de `Intl.NumberFormat` com defaults de currency / locale via env ou config do site.
+
+## `useVariantPossibilities`
+
+```ts
+import { useVariantPossibilities } from "@decocms/apps/commerce/sdk/useVariantPossibilities";
+
+const variants = useVariantPossibilities(product);
+// → mapa de eixo → [{ value, link, available }]
+```
+
+Para PDPs com múltiplas variantes (cor, tamanho), produz um mapa estruturado para renderizar UI de seletor. Lida com:
+
+- Variantes indisponíveis (mostradas riscadas).
+- Configuração com SKU pré-selecionado (`?skuId=...`).
+- Geração da URL do próximo variant via slug.
+
+## Componente `Image`
+
+```tsx
+import Image from "@decocms/apps/commerce/components/Image";
+
+<Image
+  src="https://..."
+  alt="Tênis"
+  width={400}
+  height={400}
+  loading="lazy"
+  decoding="async"
+/>
+```
+
+Wrapper em volta de `<img>` que automaticamente:
+
+- Adiciona `loading="lazy"` exceto na primeira imagem da página (heurística LCP).
+- Roteia através do CDN de imagem de `~/cdn.decocms.com/` para sizing responsivo.
+- Aplica `decoding="async"`.
+- Aceita `srcSet` para imagens responsivas.
+
+## Componente `Picture`
+
+```tsx
+import Picture from "@decocms/apps/commerce/components/Picture";
+
+<Picture src="https://..." alt="Tênis">
+  <Source media="(max-width: 768px)" src="https://.../mobile.jpg" />
+  <Source media="(min-width: 769px)" src="https://.../desktop.jpg" />
+</Picture>
+```
+
+`<picture>` com fallback. Para arte responsiva (mobile vs desktop usando crops diferentes).
+
+## `JsonLd`
+
+```tsx
+import { JsonLd } from "@decocms/apps/commerce/components/JsonLd";
+
+<JsonLd data={product} />
+<JsonLd data={breadcrumbList} />
+```
+
+Renderiza `<script type="application/ld+json">` com payload schema.org. Use em PDP e PLP para SEO.
+
+## Analytics
+
+```ts
+import {
+  sendEvent,
+  trackEvent,
+  initAnalytics,
+} from "@decocms/apps/commerce/sdk/analytics";
+```
+
+Wrapper estilo GTM. Empurra eventos para `window.dataLayer`:
+
+```ts
+sendEvent({
+  name: "view_item",
+  params: { item_id: product.id, item_name: product.name },
+});
+```
+
+`trackEvent` é o equivalente server-side; loga via instrumented fetch para sua coleta de eventos.
+
+`initAnalytics` aceita ID GTM, ID Meta Pixel etc. e instala os scripts. Tipicamente chamado do shell do root layout.
+
+## `useScript` patterns
+
+`@decocms/apps/commerce/components/Script` provê um wrapper para inserir scripts third-party com setup correto:
+
+```tsx
+import { Script } from "@decocms/apps/commerce/components/Script";
+
+<Script src="https://..." strategy="afterInteractive" />
+```
+
+Estratégias:
+
+- `beforeInteractive` — antes da hidratação (use com parcimônia).
+- `afterInteractive` — depois da hidratação (default; melhor para tags de analytics).
+- `lazyOnload` — em janela `load`.
+
+Reduz CLS frente a injeção crua de `<script>`. Veja [`cls-pending-issues.md`](/Users/fernandofrizzatti/development/workspace/decocms/casaevideo-storefront/docs/cls-pending-issues.md) do Casa&Vídeo para análise dos tradeoffs.
+
+## Helpers de Schema.org
+
+```ts
+import {
+  toBreadcrumbList,
+  toProduct,
+  toProductDetailsPage,
+} from "@decocms/apps/commerce/sdk/transform";
+```
+
+Funções de transformação que convertem responses brutos VTEX/Shopify para tipos schema.org. Loaders usam internamente; código de site raramente.
+
+## URL utilities
+
+```ts
+import {
+  getISCookies,
+  getRegionId,
+  buildProductUrl,
+} from "@decocms/apps/commerce/sdk/url";
+```
+
+Helpers para tarefas comuns de URL específicas de commerce — extrair regionId de cookies, construir URLs de PDP a partir de slugs.
+
+## Veja também
+
+- [Visão geral de commerce](/v2/pt/commerce/overview)
+- [VTEX inline loaders](/v2/pt/commerce/vtex-inline-loaders)
+- [VTEX hooks](/v2/pt/commerce/vtex-hooks)
+- [Reference de exports de commerce](/v2/pt/reference/commerce-exports)

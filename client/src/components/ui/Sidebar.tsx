@@ -4,6 +4,12 @@ import { Icon } from "../../components/atoms/Icon.tsx";
 import { LanguageSelector } from "./LanguageSelector.tsx";
 import { SearchModal } from "./SearchModal.tsx";
 import { ThemeToggle } from "./ThemeToggle.tsx";
+import { VersionSelector } from "./VersionSelector.tsx";
+import {
+  buildVersionUrl,
+  getVersion,
+  LATEST_VERSION,
+} from "../../config/versions.ts";
 
 interface DocData {
   title?: string;
@@ -31,6 +37,7 @@ interface SidebarProps {
   tree: FlatNode[];
   locale: string;
   translations: Record<string, string>;
+  version: string;
 }
 
 interface TreeItemProps {
@@ -40,6 +47,7 @@ interface TreeItemProps {
   onToggle: (folderId: string) => void;
   locale: string;
   translations: Record<string, string>;
+  version: string;
 }
 
 function TreeItem({
@@ -49,29 +57,27 @@ function TreeItem({
   onToggle,
   locale,
   translations,
+  version,
 }: TreeItemProps) {
   if (!isVisible) return null;
+
+  // doc.id = {version}/{locale}/{...slug} → skip first two parts
+  const versionConfig = getVersion(version) ?? LATEST_VERSION;
+  const docId = node.doc?.id;
+  const docPath = docId ? docId.split("/").slice(2).join("/") : null;
+  const slug = docPath ?? node.path.join("/");
+  const href =
+    node.type === "file" ? buildVersionUrl(versionConfig, locale, slug) : null;
 
   // Check if this item is active (current page) - client-side only
   const [active, setActive] = useState(false);
 
   useEffect(() => {
-    if (node.type !== "file") return;
+    if (node.type !== "file" || !href) return;
 
     const currentPath = globalThis.location.pathname;
-    const docId = node.doc?.id;
-    const docPath = docId ? docId.split("/").slice(1).join("/") : null;
-    const itemPath = `/${locale}/${docPath ?? node.path.join("/")}`;
-
-    setActive(currentPath === itemPath);
-  }, [node.type, node.path, locale, node.doc?.id]);
-
-  const docId = node.doc?.id;
-  const docPath = docId ? docId.split("/").slice(1).join("/") : null;
-  const href =
-    node.type === "file"
-      ? `/${locale}/${docPath ?? node.path.join("/")}`
-      : null;
+    setActive(currentPath === href);
+  }, [node.type, href]);
 
   return (
     <li>
@@ -156,7 +162,10 @@ function TreeItem({
           </button>
         ) : (
           <a
-            href={href ?? `/${locale}/${node.path.join("/")}`}
+            href={
+              href ??
+              buildVersionUrl(versionConfig, locale, node.path.join("/"))
+            }
             className="flex-1"
           >
             {node.doc?.data?.title || node.name}
@@ -173,6 +182,7 @@ interface TreeListProps {
   onToggle: (folderId: string) => void;
   locale: string;
   translations: Record<string, string>;
+  version: string;
 }
 
 function TreeList({
@@ -181,6 +191,7 @@ function TreeList({
   onToggle,
   locale,
   translations,
+  version,
 }: TreeListProps) {
   const isNodeVisible = (node: FlatNode): boolean => {
     if (node.depth === 0) return true;
@@ -235,6 +246,7 @@ function TreeList({
               onToggle={onToggle}
               locale={locale}
               translations={translations}
+              version={version}
             />
           </React.Fragment>
         );
@@ -245,7 +257,12 @@ function TreeList({
 
 const SIDEBAR_SCROLL_KEY = "sidebar-scroll-pos";
 
-export default function Sidebar({ tree, locale, translations }: SidebarProps) {
+export default function Sidebar({
+  tree,
+  locale,
+  translations,
+  version,
+}: SidebarProps) {
   const [treeState, setTreeState] = useState<Map<string, boolean>>(new Map());
   const scrollRef = useRef<HTMLDivElement>(null);
   const hasRestoredScroll = useRef(false);
@@ -338,7 +355,12 @@ export default function Sidebar({ tree, locale, translations }: SidebarProps) {
 
       {/* Search - hidden on mobile */}
       <div className="hidden lg:block px-4 lg:px-8 pb-2 shrink-0">
-        <SearchModal locale={locale} translations={translations} variant="sidebar" />
+        <SearchModal
+          locale={locale}
+          translations={translations}
+          variant="sidebar"
+          versionPrefix={(getVersion(version) ?? LATEST_VERSION).urlPrefix}
+        />
       </div>
 
       {/* Content */}
@@ -355,12 +377,19 @@ export default function Sidebar({ tree, locale, translations }: SidebarProps) {
           onToggle={handleFolderToggle}
           locale={locale}
           translations={translations}
+          version={version}
         />
       </div>
 
       {/* Footer */}
       <div className="px-4 lg:px-8 py-4 border-t border-border shrink-0">
         <div className="space-y-2">
+          <div>
+            <label className="block text-xs font-medium text-muted-foreground mb-1">
+              Version
+            </label>
+            <VersionSelector currentVersion={version} locale={locale} />
+          </div>
           <a
             href="https://discord.gg/deco-cx"
             className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-foreground hover:bg-muted hover:text-foreground transition-colors"

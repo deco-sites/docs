@@ -2,11 +2,17 @@
 import { getCollection } from "astro:content";
 import { ui } from "../../i18n/ui";
 import SidebarComponent from "./Sidebar.tsx";
+import { LATEST_VERSION } from "../../config/versions";
 
 const locale = Astro.params.locale;
+const version = (Astro.props.version as string) || LATEST_VERSION.id;
 
 const allDocs = await getCollection("docs");
-const docs = allDocs.filter((doc) => doc.id.split("/")[0] === locale);
+// doc.id is now {version}/{locale}/{...slug}
+const docs = allDocs.filter((doc) => {
+  const parts = doc.id.split("/");
+  return parts[0] === version && parts[1] === locale;
+});
 
 interface TreeNode {
   name: string;
@@ -21,7 +27,8 @@ function buildTree(docs: any[]): TreeNode[] {
   const root: TreeNode[] = [];
 
   docs.forEach((doc) => {
-    const pathParts = doc.id.split("/").slice(1);
+    // doc.id = {version}/{locale}/{...slug} → skip first two parts
+    const pathParts = doc.id.split("/").slice(2);
     let currentLevel = root;
 
     pathParts.forEach((part: string, index: number) => {
@@ -259,4 +266,5 @@ const flatTree = flattenTree(tree);
   tree={flatTree}
   locale={locale || "en"}
   translations={ui[locale as keyof typeof ui] || ui.en}
+  version={version}
 />

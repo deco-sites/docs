@@ -1,0 +1,150 @@
+---
+title: "@decocms/start exports"
+description: "Full export table for @decocms/start with barrel-vs-subpath warnings."
+icon: "Package"
+---
+
+import Callout from "../../../../components/ui/Callout.astro";
+
+The complete export table for `@decocms/start` (version `^2.28`). Generated from [`package.json`](/Users/fernandofrizzatti/development/workspace/decocms/deco-start/package.json) `exports` map.
+
+<Callout type="info">
+**Currency.** This page mirrors `package.json` `exports` verbatim. If a path is missing here, check the source `package.json` — it may have been added in a newer version.
+</Callout>
+
+## Top-level
+
+| Subpath | What it exports | Use it for |
+|---|---|---|
+| `@decocms/start` | Barrel: re-exports from `cms`, `admin`, `hooks`, `middleware`, `types` | Quick import of common items |
+| `@decocms/start/cms` | `loadBlocks`, `resolveDecoPage`, `registerSectionLoaders`, `registerLayoutSections`, `registerCommerceLoaders`, `setAsyncRenderingConfig`, `applySectionConventions`, `setInvokeLoaders` | CMS bridge |
+| `@decocms/start/admin` | `handleMeta`, `handleDecofile`, `handleRender`, `handleInvoke`, `getRenderShellConfig` | Admin protocol handlers |
+| `@decocms/start/hooks` | `DecoPageRenderer`, `DecoRootLayout`, `LazySection`, `LiveControls`, `NavigationProgress`, `RenderSection`, `SectionErrorFallback`, `StableOutlet`, `PreviewProviders`, `useDevice`, `useHydrated` | React UI integration |
+| `@decocms/start/types` | `Section`, `App`, `FnContext`, `SectionProps`, `LoaderProps`, `MatcherFn` | Shared types |
+| `@decocms/start/types/widgets` | `ImageWidget`, `RichText`, `Color`, `ButtonGroupWidget`, `HTMLWidget`, etc. | Widget types for section Props |
+| `@decocms/start/setup` | `createSiteSetup` | Site bootstrap |
+| `@decocms/start/routes` | `cmsRouteConfig`, `cmsHomeRouteConfig`, `loadCmsPage`, `loadDeferredSection`, `withSiteGlobals` | TanStack Router glue |
+| `@decocms/start/middleware` | `buildDecoState`, `liveness`, `observability`, `applyServerTiming`, `applyCorsHeaders` | Composable middleware |
+| `@decocms/start/middleware/healthMetrics` | `healthMetrics` | Health metrics middleware |
+| `@decocms/start/middleware/hydrationContext` | `hydrationContext` middleware | Per-request render context |
+| `@decocms/start/middleware/validateSection` | `validateSection` | Dev-mode section prop validation |
+
+## SDK (barrel)
+
+`@decocms/start/sdk` is a barrel that re-exports a subset of the SDK utilities. Several utilities have **only a subpath** export and are not available from the barrel — flagged below.
+
+| Item | Barrel | Subpath |
+|---|---|---|
+| `useScript`, `inlineScript` | ✓ | `@decocms/start/sdk/useScript` |
+| `signal` | — | `@decocms/start/sdk/signal` |
+| `clx` | ✓ | `@decocms/start/sdk/clx` |
+| `cn` | — | `@decocms/start/sdk/cn` |
+| `toBase64`, `fromBase64` | — | `@decocms/start/sdk/encoding` |
+| `httpClient` | — | `@decocms/start/sdk/http` |
+| `useSuggestions` | — | `@decocms/start/sdk/useSuggestions` |
+| `retry` | — | `@decocms/start/sdk/retry` |
+| `useId` | — | `@decocms/start/sdk/useId` |
+| `parseCookies`, `setCookieHeader` | ✓ | `@decocms/start/sdk/cookie` |
+| `passthroughCookies` | ✓ | `@decocms/start/sdk/cookiePassthrough` |
+| `mapProductToAnalyticsItem` | ✓ | `@decocms/start/sdk/analytics` |
+| `createCachedLoader` | — | `@decocms/start/sdk/cachedLoader` |
+| `measure`, `getTimings` | ✓ | `@decocms/start/sdk/serverTimings` |
+| `setCacheProfile`, `cacheHeaders`, `detectCacheProfile`, `registerCachePattern` | — | `@decocms/start/sdk/cacheHeaders` |
+| `djb2` | — | `@decocms/start/sdk/crypto` |
+| `invoke` | ✓ | `@decocms/start/sdk/invoke` |
+| `createInstrumentedFetch` | — | `@decocms/start/sdk/instrumentedFetch` |
+| `initTelemetry` | — | `@decocms/start/sdk/otel` |
+| `createDecoWorkerEntry` | — | `@decocms/start/sdk/workerEntry` |
+| `withABTesting` | — | `@decocms/start/sdk/abTesting` |
+| `loadRedirects`, `matchRedirect`, `addRedirects` | ✓ | `@decocms/start/sdk/redirects` |
+| `generateSitemap` | — | `@decocms/start/sdk/sitemap` |
+| `useDevice`, `detectDevice` | ✓ | `@decocms/start/sdk/useDevice` |
+| `useHydrated` | ✓ | `@decocms/start/sdk/useHydrated` |
+| `wrapCaughtErrors` | ✓ | `@decocms/start/sdk/wrapCaughtErrors` |
+| `buildCsp` | ✓ | `@decocms/start/sdk/csp` |
+| `canonicalUrl`, `normalizeUrl` | ✓ | `@decocms/start/sdk/urlUtils` |
+| `normalizeUrls` | ✓ | `@decocms/start/sdk/normalizeUrls` |
+| `mergeCacheControl` | ✓ | `@decocms/start/sdk/mergeCacheControl` |
+| `RequestContext` | ✓ | `@decocms/start/sdk/requestContext` |
+| `createInvoke` | — | `@decocms/start/sdk/createInvoke` |
+| `router` helpers | — | `@decocms/start/sdk/router` |
+| `setupApps` | — | `@decocms/start/sdk/setupApps` |
+
+<Callout type="warning">
+**Always prefer subpath imports for utilities that have one.** The barrel has historical re-exports that may evolve; subpaths are versioned individually.
+</Callout>
+
+## Apps
+
+| Subpath | What it exports |
+|---|---|
+| `@decocms/start/apps` | App registration helpers |
+| `@decocms/start/apps/autoconfig` | `autoconfigApps` |
+
+## Matchers
+
+| Subpath | What it exports |
+|---|---|
+| `@decocms/start/matchers/builtins` | `MatchUserAgent`, `MatchDate`, `MatchSite`, `MatchEnvironment`, `MatchLocation`, `MatchSession`, `MatchRandom`, `registerBuiltinMatchers` |
+| `@decocms/start/matchers/posthog` | `matchPosthog` |
+
+## Vite
+
+| Subpath | What it exports |
+|---|---|
+| `@decocms/start/vite` | `decoVitePlugin` (default) |
+
+## Daemon
+
+| Subpath | What it exports |
+|---|---|
+| `@decocms/start/daemon` | Local dev tunnel + admin auth (advanced) |
+
+## Scripts
+
+| Subpath | What it does |
+|---|---|
+| `@decocms/start/scripts/generate-blocks` | `.deco/blocks/*.json` → `blocks.gen.json` |
+| `@decocms/start/scripts/generate-schema` | section TS → `meta.gen.json` (JSON Schema) |
+| `@decocms/start/scripts/generate-invoke` | loader/action registry → typed `invoke.gen.ts` |
+| `@decocms/start/scripts/migrate` | Fresh → TanStack migration |
+| `@decocms/start/scripts/migrate-post-cleanup` | Post-migration cleanup of leftover boilerplate |
+| `@decocms/start/scripts/tailwind-lint` | Tailwind v3 → v4 lint/fix |
+
+Invoke via `npx tsx node_modules/@decocms/start/scripts/<name>.ts` or as binary:
+
+```bash
+npx -p @decocms/start deco-migrate
+npx -p @decocms/start deco-post-cleanup
+npx -p @decocms/start deco-htmx-analyze
+```
+
+## Peer dependencies
+
+```json
+{
+  "@microlabs/otel-cf-workers": ">=1.0.0-rc.0",   // optional
+  "@opentelemetry/api": ">=1.9.0",                 // optional
+  "@tanstack/react-query": ">=5.0.0",
+  "@tanstack/react-start": ">=1.0.0",
+  "@tanstack/store": ">=0.7.0",
+  "react": "^19.0.0",
+  "react-dom": "^19.0.0",
+  "vite": ">=6.0.0 || >=7.0.0 || >=8.0.0"
+}
+```
+
+## Bin
+
+| Binary | Script |
+|---|---|
+| `deco-migrate` | `./scripts/migrate.ts` |
+| `deco-post-cleanup` | `./scripts/migrate-post-cleanup.ts` |
+| `deco-htmx-analyze` | `./scripts/htmx-analyze.ts` |
+
+## See also
+
+- [Framework overview](/v2/en/framework/overview)
+- [SDK utilities](/v2/en/framework/sdk-utilities)
+- [Commerce exports](/v2/en/reference/commerce-exports)
+- [Glossary](/v2/en/reference/glossary)

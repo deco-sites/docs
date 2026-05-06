@@ -1,0 +1,170 @@
+---
+title: "VTEX — gotchas"
+description: "Cookies, sales channel, expectedOrderFormSections, regionId, sanitização IS, drift do README."
+icon: "AlertTriangle"
+---
+
+import Callout from "../../../../components/ui/Callout.astro";
+
+A integração VTEX cobre 90% dos casos automaticamente. Os 10% restantes são esses gotchas — coisas que mordem em produção e levam mais tempo de debug do que deveriam.
+
+## 1. Propagação de cookies
+
+VTEX rastreia segmento, regionId, sessão e orderForm via cookies. Se você usar `fetch` cru em vez de `vtexFetch`, esses cookies não vão upstream e:
+
+- Pricing erra (preço-padrão de canal de fora).
+- Estoque vem vazio (regionId perdido).
+- Carrinho zumbi (orderFormId não persiste — usuário adiciona item, refresh, item some).
+
+**Correção**: sempre use `vtexFetch` ou `vtexFetchWithCookies` em loaders. `@decocms/apps/vtex/middleware` cuida automaticamente quando você usa loaders inline.
+
+Cookies relevantes:
+
+| Cookie | Função |
+|---|---|
+| `vtex_segment` | Sales channel + region encoded |
+| `VtexRCMacc` | ID da conta (multi-tenant) |
+| `checkout.vtex.com__orderFormId` | Carrinho atual |
+| `VtexIdclientAutCookie` | Sessão de auth |
+
+## 2. Falhas silenciosas em sales channel
+
+`salesChannel` aceita string ou number. VTEX guarda como string mas alguns endpoints retornam number na resposta. Verifique tipo se você está bifurcando lógica em `salesChannel`.
+
+```ts
+// safe
+if (String(salesChannel) === "1") { /* ... */ }
+```
+
+Outra: alguns endpoints VTEX usam `sc` em vez de `salesChannel` na query string. `@decocms/apps` cuida; chamadas custom não.
+
+## 3. `expectedOrderFormSections` faltando
+
+Na hora de buscar carrinho, VTEX devolve só seções "leves" por default. Para conseguir tudo (items, totalizers, customData, marketingData):
+
+```json
+{
+  "expectedOrderFormSections": [
+    "items",
+    "totalizers",
+    "clientProfileData",
+    "shippingData",
+    "paymentData",
+    "marketingData",
+    "customData"
+  ]
+}
+```
+
+`@decocms/apps/vtex/loaders/cart.ts` envia o pacote completo por default. Customizações que sobrescrevem precisam preservar — esquecer é a causa mais comum de "carrinho não atualiza UI".
+
+## 4. RegionId não setado
+
+Sem regionId, VTEX devolve estoque do warehouse default (geralmente 0 para skus específicos de região). PDP mostra "out of stock" para produtos que estão em estoque na região do usuário.
+
+**Correção**: chame `vtex/actions/cart/changeRegion.ts` cedo (idealmente no init session) com o CEP do usuário. Lojas brasileiras geralmente tem componente de "informe seu CEP" no header.
+
+```ts
+const { changeRegion } = useCart();
+await changeRegion({ postalCode: "01310-100", country: "BRA" });
+```
+
+Sem regionId, o framework usa default config (`region: "1"` a menos que sobrescrito). Para multi-região, defina default regionId na config do site VTEX e sobrescreva por user.
+
+## 5. Sanitização de sort do Intelligent Search
+
+`sort` de IS é validado contra whitelist. Valores fora caem para `score:desc` silenciosamente. Causas comuns:
+
+- Migração de v1 com `sort=relevancia` (deveria ser `score:desc`).
+- Strings traduzidas de PT (`?ordenar=preco-menor` que ninguém atualizou).
+- Bots fuzzing URL params.
+
+Não fail no run; só deixe usuários confusos. Quando suspeitar, log o sort recebido vs o sort efetivo:
+
+```ts
+console.log("sort recebido:", input.sort, "→ sort efetivo:", sanitizeSort(input.sort));
+```
+
+Veja [`sortwhitelist.ts`](/Users/fernandofrizzatti/development/workspace/decocms/apps-start/src/vtex/utils/sortwhitelist.ts) para a lista exata.
+
+## 6. Drift do README sobre `/vtex/invoke`
+
+O README atual de `@decocms/apps` em alguns lugares fala em endpoint `/vtex/invoke`. **Não existe.** Use `/deco/invoke` (a mesma para toda plataforma).
+
+```ts
+// errado:
+await fetch("/vtex/invoke", { ... });
+
+// certo:
+import { invoke } from "~/server/cms/invoke.gen";
+await invoke["vtex/loaders/cart.ts"]({});
+```
+
+Esse drift está marcado para fix; até lá, eis o aviso oficial.
+
+## 7. Geração de cookie do Intelligent Search
+
+IS exige cookies próprios (`segmentToken`, `binding`) que VTEX seta na primeira chamada bem-sucedida. Se loader IS não chega ao client (e.g. erro upstream em SSR), cookies não são setados, próxima chamada falha de novo. Loop infinito.
+
+`@decocms/apps/vtex/middleware/cookies` lida com geração explicitamente — gera cookies localmente quando upstream não está disponível, depois reconcilia. Não desabilite a menos que saiba o que está fazendo.
+
+## 8. Cookies HttpOnly
+
+Alguns cookies VTEX são `HttpOnly` (não acessíveis via JS). Hooks que tentam ler do `document.cookie` falham no client.
+
+**Correção**: nunca leia cookies VTEX no client. Sempre roteie via `invoke` (para o server ler `request.headers.cookie`).
+
+## 9. Mismatch hidratação do carrinho
+
+Cenário: SSR vê cookie do orderForm, render `cart.items.length === 3`. Hidratação client-side faz fetch sem o cookie (3rd-party blocking, ITP), render `0`. UI "atualiza" para vazio.
+
+Mitigações:
+
+- `staleTime: 30_000` em `useCart` para impedir mudança de UI na primeira hidratação.
+- Em alvos não-Safari, considere `staleTime: 0` mais hidratar de useLoaderData.
+- Para Safari especificamente, considere alvo de `same-site=strict` no cookie (workaround de tracking).
+
+## 10. Cobertura de regiões VTEX
+
+API VTEX expõe shipping/inventory por regionId mas não devolve regionIds em listas — você tem que fetchar postalCode → regionId via `vtex/loaders/postalCode/regionId.ts`. Cacheie agressivamente; o endpoint é lento (200-500ms).
+
+## 11. `salesChannel` em URLs
+
+Algumas URLs VTEX inserem `?sc=N` automaticamente em redirects. Se você não whitelisted no `ignoreSearchParams` do route, vira parte da cache key e infla cardinalidade.
+
+**Correção**: `ignoreSearchParams: ["skuId", "sc"]` no `cmsRouteConfig`.
+
+## 12. `account` vs `accountName`
+
+VTEX docs alternam livremente. Em `@decocms/apps` é sempre `account`. Cheque seu config block — usar `accountName` causa falha silenciosa.
+
+## 13. Perda de sessão por opacidade de proxy
+
+Se seu site tem proxy de checkout custom (`proxyHandler` em worker entry), cuide para forward de `Set-Cookie` de volta para o cliente. `proxyHandler` que monta `new Response(body)` sem copiar headers perde o cookie.
+
+```ts
+const upstream = await fetch(checkoutUrl);
+return new Response(upstream.body, {
+  status: upstream.status,
+  headers: upstream.headers,   // crucial
+});
+```
+
+Veja [`vtex-checkout-proxy.ts`](/Users/fernandofrizzatti/development/workspace/decocms/lebiscuit-tanstack/src/middleware/vtex-checkout-proxy.ts) do Le biscuit para o padrão certo.
+
+## 14. Concorrência de write no orderForm
+
+Race entre adicionar dois items rapidamente: VTEX serializa updates no orderFormId, então um vence e o outro retorna o estado anterior. UI mostra primeira mutação.
+
+`useCart` mitiga retornando `cart` mais novo em sequência, mas se você invocar action diretamente, manualmente serialize ou tolere o último-write-wins.
+
+## 15. Strings de busca vazias
+
+`vtex/loaders/intelligentSearch/searchPage.ts` com `query=""` retorna `[]` em vez do default. Trate como caso especial — mostre página de "comece a procurar" em vez de "0 resultados".
+
+## Veja também
+
+- [VTEX overview](/v2/pt/commerce/vtex-overview)
+- [VTEX client e middleware](/v2/pt/commerce/vtex-client-and-middleware)
+- [Estudo de caso Casa&Vídeo](/v2/pt/case-studies/casaevideo)
+- [Estudo de caso Le biscuit](/v2/pt/case-studies/lebiscuit)

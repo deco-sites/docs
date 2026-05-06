@@ -1,0 +1,301 @@
+---
+title: "VTEX — loaders & actions"
+description: "Cookbook completo de loaders/* e actions/* com input/output."
+icon: "Database"
+---
+
+import Callout from "../../../../components/ui/Callout.astro";
+
+Esta página é o cookbook. Toda função do `@decocms/apps/vtex/loaders` e `@decocms/apps/vtex/actions`, com sua forma esperada e quando usar.
+
+## Loaders (leitura)
+
+### `vtex/loaders/intelligentSearch/productDetailsPage.ts`
+
+Devolve `ProductDetailsPage` para uma URL canônica de produto.
+
+```ts
+{
+  slug: string;          // identificador da URL do produto
+}
+```
+
+Devolve `ProductDetailsPage | null` (null se não encontrado).
+
+### `vtex/loaders/intelligentSearch/productListingPage.ts`
+
+Devolve `ProductListingPage` para PLP de categoria ou marca.
+
+```ts
+{
+  category?: string[];   // segmentos de path da categoria
+  collection?: string;   // ID da coleção
+  count?: number;        // produtos por página, default 24
+  sort?: string;         // chave whitelisted (price:asc, release:desc etc.)
+  filters?: Record<string, string>;
+  page?: number;
+}
+```
+
+Devolve `ProductListingPage | null`.
+
+### `vtex/loaders/intelligentSearch/searchPage.ts`
+
+Devolve `ProductListingPage` para query de busca.
+
+```ts
+{
+  query?: string;
+  count?: number;
+  sort?: string;
+  filters?: Record<string, string>;
+  page?: number;
+}
+```
+
+### `vtex/loaders/intelligentSearch/productList.ts`
+
+Devolve `Product[]` (sem o wrap PDP/PLP). Use para shelves, related products, recently viewed.
+
+```ts
+{
+  query?: string;
+  count?: number;        // default 12
+  sort?: string;
+  ids?: string[];        // SKU ou productId
+  collection?: string;
+}
+```
+
+### `vtex/loaders/intelligentSearch/suggestions.ts`
+
+Sugestões de autocomplete para uma query parcial.
+
+```ts
+{ query: string }
+```
+
+Devolve `{ products: Product[]; suggestions: string[] }`.
+
+### `vtex/loaders/intelligentSearch/topSearches.ts`
+
+Buscas top do dia (sem props).
+
+### `vtex/loaders/cart.ts`
+
+Devolve o orderForm corrente como `Cart`.
+
+```ts
+{}  // sem props; lê o cookie do orderForm
+```
+
+Devolve `Cart` (orderForm vazio se nenhum cookie).
+
+### `vtex/loaders/user.ts`
+
+Devolve o usuário logado.
+
+```ts
+{}
+```
+
+Devolve `User | null`.
+
+### `vtex/loaders/wishlist/list.ts`
+
+Devolve a wishlist do usuário.
+
+```ts
+{ count?: number }
+```
+
+Devolve `Product[]`.
+
+### `vtex/loaders/orders/list.ts`
+
+Lista de pedidos do usuário.
+
+```ts
+{ page?: number; perPage?: number }
+```
+
+Devolve `{ list: Order[]; pageInfo: PageInfo }`.
+
+### `vtex/loaders/legacy/productList.ts`
+
+Mesmo que IS productList, mas usa Catalog API legado. Use só se Intelligent Search não estiver configurado.
+
+### `vtex/loaders/legacy/categoryTree.ts`
+
+Árvore de categorias para nav.
+
+```ts
+{ depth?: number }
+```
+
+Devolve `Category[]` aninhadas.
+
+### `vtex/loaders/legacy/collections.ts`
+
+Lista de coleções.
+
+```ts
+{}
+```
+
+### `vtex/loaders/postalCode/regionId.ts`
+
+Resolve um CEP para regionId de VTEX (necessário para precisão de estoque/preço).
+
+```ts
+{ postalCode: string; country?: string }
+```
+
+Devolve `{ regionId: string; salesChannel: string } | null`.
+
+### `vtex/loaders/sellers/list.ts`
+
+Sellers ativos para o sales channel atual.
+
+```ts
+{ count?: number }
+```
+
+## Actions (mutações)
+
+### `vtex/actions/cart/addItems.ts`
+
+```ts
+{ items: { id: string; quantity: number; seller?: string }[] }
+```
+
+Devolve `Cart` atualizado.
+
+### `vtex/actions/cart/removeItems.ts`
+
+```ts
+{ index: number }   // posição no orderForm
+```
+
+### `vtex/actions/cart/updateItems.ts`
+
+```ts
+{ orderItems: { index: number; quantity: number }[] }
+```
+
+### `vtex/actions/cart/updateCoupon.ts`
+
+```ts
+{ text: string }
+```
+
+### `vtex/actions/cart/updateClientPreferences.ts`
+
+```ts
+{ locale?: string; optInNewsletter?: boolean }
+```
+
+### `vtex/actions/cart/updateProfile.ts`
+
+```ts
+{ email: string }
+```
+
+### `vtex/actions/cart/changeRegion.ts`
+
+```ts
+{ postalCode: string; country?: string }
+```
+
+Atualiza o orderForm com regionId.
+
+### `vtex/actions/wishlist/add.ts`
+
+```ts
+{ productId: string; sku?: string }
+```
+
+### `vtex/actions/wishlist/remove.ts`
+
+```ts
+{ id: string }
+```
+
+### `vtex/actions/user/signIn.ts`
+
+```ts
+{ email: string; password: string }
+```
+
+Devolve `{ ok: boolean; redirect?: string }`.
+
+### `vtex/actions/user/signUp.ts`
+
+```ts
+{ email: string; firstName: string; lastName: string; password: string }
+```
+
+### `vtex/actions/user/signOut.ts`
+
+```ts
+{}
+```
+
+### `vtex/actions/newsletter/subscribe.ts`
+
+```ts
+{ email: string; name?: string }
+```
+
+## Padrões
+
+### Chamada do client (preferida)
+
+```ts
+import { invoke } from "~/server/cms/invoke.gen";
+
+const cart = await invoke["vtex/actions/cart/addItems.ts"]({
+  items: [{ id: "12345", quantity: 1 }],
+});
+```
+
+Tipado e cuidado pelos hooks do TanStack Query (via `useCart` etc.).
+
+### CMS multistep
+
+Se o autor de conteúdo precisar configurar uma instância de loader (e.g. uma prateleira de produto na home), o CMS embrulha o `__resolveType` e props num block:
+
+```json
+{
+  "__resolveType": "vtex/loaders/intelligentSearch/productList.ts",
+  "query": "tênis",
+  "count": 12
+}
+```
+
+Section pega o resultado como uma prop:
+
+```tsx
+export interface Props {
+  loader: { __resolveType: string };
+}
+
+export const loader = (props: Props, _req, ctx) => ctx.invoke(props.loader);
+
+export default function Shelf({ products }: Props & { products: Product[] }) { /* ... */ }
+```
+
+## Pegadinha de sort whitelist
+
+O parâmetro `sort` em loaders IS é validado contra uma whitelist (`price:asc`, `price:desc`, `release:desc`, `name:asc`, `score:desc` etc.). Valores fora da whitelist resetam para o default do servidor.
+
+Causas comuns: passar `sort=relevancia` (deveria ser `score:desc`) de uma migração antiga.
+
+Veja [`sortwhitelist.ts`](/Users/fernandofrizzatti/development/workspace/decocms/apps-start/src/vtex/utils/sortwhitelist.ts) para a lista exata.
+
+## Veja também
+
+- [VTEX overview](/v2/pt/commerce/vtex-overview)
+- [VTEX inline loaders](/v2/pt/commerce/vtex-inline-loaders)
+- [VTEX hooks](/v2/pt/commerce/vtex-hooks)
+- [Invoke](/v2/pt/framework/invoke)

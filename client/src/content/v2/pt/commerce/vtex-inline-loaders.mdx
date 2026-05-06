@@ -1,0 +1,148 @@
+---
+title: "VTEX — inline loaders"
+description: "createVtexCommerceLoaders, formato amigável ao CMS, slugCache, sortwhitelist."
+icon: "Workflow"
+---
+
+import Callout from "../../../../components/ui/Callout.astro";
+
+"Inline loaders" são as funções que aparecem nos pickers do admin. Têm wrap de instância (props no JSON do block) e devolvem formas amigáveis ao CMS prontas para sections.
+
+## Onde vivem
+
+`@decocms/apps/vtex/commerceLoaders` exporta `createVtexCommerceLoaders()` — fábrica que devolve o registro inteiro:
+
+```ts
+import { createVtexCommerceLoaders } from "@decocms/apps/vtex/commerceLoaders";
+
+const loaders = createVtexCommerceLoaders();
+// → Record<string, LoaderFn>
+//   keys são os IDs __resolveType usados em .deco/blocks/
+```
+
+## Wiring
+
+Em `src/setup.ts`:
+
+```ts
+import { createSiteSetup } from "@decocms/start/setup";
+import { registerCommerceLoaders } from "@decocms/start/cms";
+import { createVtexCommerceLoaders } from "@decocms/apps/vtex/commerceLoaders";
+
+createSiteSetup({
+  // ...
+  getCommerceLoaders: () => createVtexCommerceLoaders(),
+});
+```
+
+`getCommerceLoaders` é um callback (não invocado direto) para que o framework controle o timing — registra depois do core do framework, antes da resolução de page.
+
+## Forma de saída amigável ao CMS
+
+Inline loaders devolvem formas amigáveis ao CMS — tipos schema.org enriquecidos com URLs canônicas, breadcrumbs e SEO.
+
+```ts
+{
+  product: Product,
+  breadcrumbList: BreadcrumbList,
+  seo: SEO,
+}
+```
+
+Sections aceitam essa forma como prop diretamente:
+
+```tsx
+export interface Props {
+  page: ProductDetailsPage;
+}
+
+export default function ProductDetail({ page }: Props) {
+  return (
+    <>
+      <Breadcrumbs items={page.breadcrumbList.itemListElement} />
+      <h1>{page.product.name}</h1>
+      <JsonLd data={page.product} />
+    </>
+  );
+}
+```
+
+## Slug cache
+
+`@decocms/apps/vtex/sdk/slugCache` resolve slugs para productIds via Catalog API. Cacheado para evitar custo round-trip por hop no pathname.
+
+```ts
+import { slugCache } from "@decocms/apps/vtex/sdk/slugCache";
+
+const productId = await slugCache.resolve("tenis-asics-gel-nimbus");
+```
+
+`createVtexCommerceLoaders` usa internamente quando o loader de PDP recebe um slug que precisa virar productId antes de chamar a API.
+
+Cache size default: 5000 entradas, TTL 1 hora. Override via env:
+
+```bash
+SLUG_CACHE_TTL=3600000 SLUG_CACHE_SIZE=10000
+```
+
+## Whitelist de sort
+
+`@decocms/apps/vtex/utils/sortwhitelist` aceita só esses valores:
+
+- `score:desc` (default)
+- `price:asc`
+- `price:desc`
+- `release:desc`
+- `name:asc`
+- `name:desc`
+
+Valores fora da whitelist são silenciosamente substituídos por `score:desc`. É uma feature anti-corrupção — usuários submetem qualquer string via URL e a API VTEX não reclama, então o framework drena.
+
+Migração v1: provavelmente seu site v1 normalizou strings de sort em algum nível. Cheque seus links de PLP e atualize qualquer referência hardcoded.
+
+## Customização: enriquecer um loader
+
+Padrão comum: o loader de PDP padrão devolve o produto, mas você quer enriquecer com variantes cross-product (e.g. cores como produtos separados em VTEX). Envolva:
+
+```ts
+import { createVtexCommerceLoaders } from "@decocms/apps/vtex/commerceLoaders";
+import { createCachedLoader } from "@decocms/start/sdk/cachedLoader";
+
+const baseLoaders = createVtexCommerceLoaders();
+const basePdp = baseLoaders["vtex/loaders/intelligentSearch/productDetailsPage.ts"];
+
+const enrichedPdp = createCachedLoader({
+  key: ({ slug }) => `pdp-enriched:${slug}`,
+  ttl: 60_000,
+  loader: async (props, req, ctx) => {
+    const page = await basePdp(props, req, ctx);
+    if (!page) return null;
+    const variants = await fetchCrossProductVariants(page.product.id);
+    return { ...page, product: { ...page.product, isVariantOf: variants } };
+  },
+});
+
+const customLoaders = {
+  ...baseLoaders,
+  "vtex/loaders/intelligentSearch/productDetailsPage.ts": enrichedPdp,
+};
+```
+
+Aí use `customLoaders` em `getCommerceLoaders`. Veja [`commerce-loaders.ts` do Casa&Vídeo](/Users/fernandofrizzatti/development/workspace/decocms/casaevideo-storefront/src/setup/commerce-loaders.ts) para um wrapper de produção real.
+
+## Loaders podados
+
+`generate-loaders.ts` aceita `--decofile-dir` para podar a `loaders.gen.ts` para apenas loaders que o CMS realmente referencia. Reduz tamanho do bundle.
+
+```bash
+node generate-loaders.ts --decofile-dir .deco/blocks
+```
+
+Bagaggio usa; Casa e Le biscuit não. A diferença é como tunar quando o tamanho do bundle vira gargalo.
+
+## Veja também
+
+- [VTEX loaders & actions](/v2/pt/commerce/vtex-loaders-and-actions)
+- [VTEX overview](/v2/pt/commerce/vtex-overview)
+- [Setup](/v2/pt/framework/setup)
+- [Caching](/v2/pt/framework/caching)

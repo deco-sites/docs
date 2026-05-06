@@ -1,0 +1,241 @@
+---
+title: "Observability"
+description: "OpenTelemetry tracing, instrumented fetch, server timings, health endpoints."
+icon: "Activity"
+---
+
+import Callout from "../../../../components/ui/Callout.astro";
+
+The framework auto-instruments every loader, matcher, section render, and admin call with OpenTelemetry. You get tracing for free — what you add is the export to your APM and the alerting on top.
+
+## What's auto-instrumented
+
+| Operation | Span name |
+|---|---|
+| Worker entry request | `worker.request` |
+| Admin route | `admin.<route>` |
+| Cache HIT/MISS | `cache.<verdict>` |
+| TanStack route loader | `route.loader.<route>` |
+| Section render | `section.<name>` |
+| Loader execution | `loader.<name>` |
+| Matcher evaluation | `matcher.<name>` |
+| Fetch via `instrumentedFetch` | `fetch.<label>` |
+| Invoke call | `invoke.<resolveType>` |
+
+Plus all the parent-child relationships, so a single page request produces a full waterfall.
+
+## Wiring OpenTelemetry
+
+Install the Cloudflare OTel package:
+
+```bash
+npm install @microlabs/otel-cf-workers @opentelemetry/api
+```
+
+Both are listed as **optional** peer deps of `@decocms/start` — install only if you want OTel export.
+
+Initialize in `worker-entry.ts`:
+
+```ts
+// src/worker-entry.ts
+import "./setup";
+import { instrument } from "@microlabs/otel-cf-workers";
+import { initTelemetry } from "@decocms/start/sdk/otel";
+
+const config = initTelemetry({
+  serviceName: "my-store",
+  exporter: {
+    url: "https://otel.your-apm.com/v1/traces",
+    headers: { authorization: "Bearer ${env.OTEL_TOKEN}" },
+  },
+});
+
+const decoWorker = createDecoWorkerEntry(serverEntry, {/* ... */});
+
+export default instrument(decoWorker, config);
+```
+
+After deploy, traces flow to your APM. Most APMs (Honeycomb, Grafana Tempo, New Relic, Datadog) accept OTLP HTTP directly.
+
+## Reading traces
+
+A typical PDP request looks like:
+
+```
+worker.request                                    320ms
+├─ admin.tryRoute                                   1ms (miss)
+├─ cache.MISS                                       0ms
+└─ route.loader./products/$slug                   315ms
+   ├─ resolveDecoPage                              30ms
+   ├─ section.Header                                5ms
+   │  └─ matcher.MatchUserAgent                     0ms
+   ├─ section.ProductDetail                       250ms
+   │  ├─ loader.vtex/loaders/.../productDetailsPage
+   │  │  ├─ fetch.vtex (catalog)                  120ms
+   │  │  └─ fetch.vtex (similars)                  60ms
+   ├─ section.RelatedProducts                       60ms (deferred — bot mode)
+   └─ section.Footer                                 5ms
+```
+
+Click into the slow spans to find the bottleneck. Most of the time, it's a slow upstream commerce API. Sometimes, it's an N+1 fetch pattern in a loader.
+
+## Server-Timing headers
+
+Add server timings to the response so they show in the browser's DevTools Network tab:
+
+```ts
+import { applyServerTiming } from "@decocms/start/middleware";
+import { measure } from "@decocms/start/sdk/serverTimings";
+
+const products = await measure("fetchProducts", () => fetchProducts());
+// ...
+return applyServerTiming(response, requestContext);
+```
+
+In DevTools (Network → Timing), you'll see entries like:
+
+```
+fetchProducts: 124ms
+db.query.products: 89ms
+```
+
+Useful for ad-hoc debugging without going to the APM.
+
+## Metrics
+
+OTel metrics from Workers ship to the same OTLP endpoint as traces. Default metrics:
+
+- Request count + duration (histograms).
+- Cache hit rate.
+- Loader latency (per loader).
+- Fetch latency (per upstream label).
+- Section render duration.
+
+To export to Prometheus instead, use a collector that converts OTLP → Prometheus.
+
+## `wrangler tail`
+
+For real-time logs without an APM:
+
+```bash
+wrangler tail --format pretty
+```
+
+Filter:
+
+```bash
+wrangler tail --status error
+wrangler tail --search "section.ProductDetail"
+```
+
+This is invaluable during incidents. Production errors appear within a few seconds of happening.
+
+## Health endpoints
+
+`@decocms/start/middleware` exposes `liveness` for Workers liveness probes:
+
+```ts
+import { liveness } from "@decocms/start/middleware";
+
+// inside worker entry, before the framework
+if (url.pathname === "/_health") return liveness(request);
+```
+
+Returns 200 with version + uptime JSON. Use as your liveness probe target.
+
+For deeper health (DB connectivity, upstream availability), build your own endpoint:
+
+```ts
+if (url.pathname === "/_health/deep") {
+  const checks = await Promise.all([
+    pingVtex(env),
+    pingShopify(env),
+  ]);
+  const healthy = checks.every(Boolean);
+  return new Response(JSON.stringify({ healthy, checks }), {
+    status: healthy ? 200 : 503,
+    headers: { "Content-Type": "application/json" },
+  });
+}
+```
+
+## Health metrics middleware
+
+`@decocms/start/middleware/healthMetrics` emits standard health metrics (request rate, error rate, p50/p95/p99 latency):
+
+```ts
+import { healthMetrics } from "@decocms/start/middleware/healthMetrics";
+
+createMiddleware().middleware([healthMetrics, /* others */]);
+```
+
+Tracks via OTel; queryable as histograms in your APM.
+
+## What to alert on
+
+| Alert | Threshold | Why |
+|---|---|---|
+| 5xx rate | >0.5% over 5 min | User-facing errors |
+| P95 response time | >1s for content routes | Slow page loads |
+| Cache hit rate | &lt;70% for cacheable URLs | Cache config drift |
+| Upstream fetch error rate | >2% | Commerce API issues |
+| Section error rate | >1% | Broken section in production |
+| Memory at request end | >100 MB | Possible memory leak |
+| Subrequest count | >40 | Approaching the 50 limit |
+
+Severity: 5xx and P95 are pages to humans; cache hit rate and section error rate are alerts to a channel.
+
+## Custom spans
+
+Wrap your own server logic for visibility:
+
+```ts
+import { trace } from "@opentelemetry/api";
+
+const tracer = trace.getTracer("my-store");
+
+const fetchOrders = async (userId: string) => {
+  const span = tracer.startSpan("fetchOrders");
+  try {
+    const orders = await db.query("SELECT * FROM orders WHERE user_id = ?", [userId]);
+    span.setAttribute("orders.count", orders.length);
+    return orders;
+  } finally {
+    span.end();
+  }
+};
+```
+
+Custom spans become part of the same waterfall as the framework's auto-instrumented spans.
+
+## RUM (Real User Monitoring)
+
+OTel from Workers doesn't capture client-side metrics (LCP, FID, CLS). For RUM, integrate a separate tool:
+
+- [Cloudflare Web Analytics](https://www.cloudflare.com/web-analytics/) (free, simple).
+- [Sentry Performance](https://sentry.io) (paid, integrates with the OTel APM).
+- A custom `<script>` reading `PerformanceObserver` and posting to `/api/rum`.
+
+Casa&Video's setup includes Sentry; Le biscuit and Bagaggio don't ship with one out of the box.
+
+## Cost considerations
+
+OTel exports add network egress + APM ingestion costs. For a high-traffic storefront:
+
+- **Sample heavily** — 5% sample is plenty for monitoring; 100% is for debugging windows.
+- **Drop noisy spans** — `cache.HIT` spans can be dropped at the collector.
+- **Rotate exporters** — if your APM is expensive, route traces to S3 batches and only spot-check.
+
+```ts
+initTelemetry({
+  // ...
+  sampleRate: 0.05,   // 5%
+});
+```
+
+## See also
+
+- [Caching strategy](/v2/en/deployment/caching-strategy)
+- [Worker entry](/v2/en/framework/worker-entry)
+- [Middleware & matchers](/v2/en/framework/middleware-and-matchers)
+- [SDK utilities](/v2/en/framework/sdk-utilities)

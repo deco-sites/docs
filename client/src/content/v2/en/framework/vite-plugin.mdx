@@ -1,0 +1,192 @@
+---
+title: "Vite plugin"
+description: "decoVitePlugin — required for every Deco site, handles the blocks.gen fast-path, server stubs, and dev daemon."
+icon: "Plug"
+---
+
+import Callout from "../../../../components/ui/Callout.astro";
+
+Every v2 site uses `decoVitePlugin()` in its Vite config. It's required — without it, large block bundles break, the client gets server-only code, and the dev daemon doesn't start.
+
+## Import
+
+```ts
+import decoVitePlugin from "@decocms/start/vite";
+```
+
+## Minimum usage
+
+```ts
+// vite.config.ts
+import { defineConfig } from "vite";
+import { cloudflare } from "@cloudflare/vite-plugin";
+import { tanstackStart } from "@tanstack/react-start/plugin/vite";
+import react from "@vitejs/plugin-react";
+import tailwindcss from "@tailwindcss/vite";
+import decoVitePlugin from "@decocms/start/vite";
+
+export default defineConfig({
+  plugins: [
+    cloudflare({ viteEnvironment: { name: "ssr" } }),
+    tanstackStart({ server: { entry: "server" } }),
+    react({ babel: { plugins: ["babel-plugin-react-compiler"] } }),
+    tailwindcss(),
+    decoVitePlugin(),
+  ],
+  resolve: {
+    alias: { "~": "/src" },
+    deduplicate: [
+      "react",
+      "react-dom",
+      "@tanstack/react-router",
+      "@tanstack/react-start",
+      "@tanstack/store",
+      "@decocms/start",
+      "@decocms/apps",
+    ],
+  },
+});
+```
+
+That's the canonical baseline — every reference site uses this shape with minor cosmetic differences. See [`vite.config.ts` in lebiscuit-tanstack`](/Users/fernandofrizzatti/development/workspace/decocms/lebiscuit-tanstack/vite.config.ts) for a real one.
+
+## What the plugin does
+
+### 1. Server-only stubs
+
+Modules that only exist server-side (`@decocms/start/cms` registry internals, `node:async_hooks`, `node:fs`) are stubbed on the client build. Without this, the client bundle would crash on import.
+
+### 2. `blocks.gen` JSON fast-path
+
+`src/server/cms/blocks.gen.ts` re-exports `src/server/cms/blocks.gen.json`. The plugin replaces the `.ts` import with `JSON.parse(<inlined string>)` so:
+
+- The JSON is parsed once, not walked through ES module imports.
+- The Vite chunker doesn't try to split a 10 MB file across chunks.
+- Module-init time is dominated by `JSON.parse`, which is the fastest option.
+
+This matters: Casa&Video's `blocks.gen.json` is 11 MB. Without the fast-path, cold starts spike.
+
+### 3. `meta.gen` client stub
+
+`meta.gen.json` is server-only (it's the JSON Schema admin reads). On the client build, the import is stubbed to an empty object. This prevents the schema from leaking into the client bundle.
+
+### 4. Dev daemon
+
+In dev mode, the plugin starts the daemon (file watcher, JWT-authenticated tunnel to admin) so `admin.deco.cx` can talk to your local server. See [`@decocms/start/daemon`](/Users/fernandofrizzatti/development/workspace/decocms/deco-start/src/daemon/) for the underlying machinery.
+
+### 5. Chunk hints
+
+The plugin instructs Vite **not** to split certain modules across chunks:
+
+- `@decocms/start` and `@decocms/apps` have circular re-exports between submodules. Splitting them causes load-order crashes.
+
+You don't need to configure this — the plugin emits the right `manualChunks` hints automatically.
+
+## Configuration options
+
+```ts
+decoVitePlugin({
+  // most users don't pass anything — defaults are correct
+  daemon?: boolean;             // disable dev daemon (default: enabled in dev)
+  blocksGenPath?: string;       // override blocks.gen location (default: src/server/cms/blocks.gen)
+});
+```
+
+In practice, the default options are what you want.
+
+## What you must NOT do
+
+<Callout type="warning">
+**Don't manually configure `manualChunks` for `@decocms/start` or `@decocms/apps`.**
+
+If you're tempted to split them for "smaller chunks", don't. The packages have intentional circular re-exports between subpath modules. Splitting them across chunks produces a runtime error like:
+
+> ReferenceError: Cannot access 'X' before initialization
+
+The plugin emits chunk hints that prevent this. Override them at your peril.
+</Callout>
+
+## Server vs. client environment
+
+The plugin works inside the Cloudflare Workers SSR environment (`viteEnvironment: { name: "ssr" }` on the Cloudflare plugin). Some imports are valid server-side but invalid in the client bundle:
+
+| Import | Server | Client |
+|---|---|---|
+| `node:async_hooks` | ✓ | stubbed to no-op |
+| `@decocms/start/cms` (registry internals) | ✓ | stubbed |
+| Anything reading `RequestContext.current` | ✓ | undefined |
+
+This stubbing happens automatically. If you import server-only code in a component, you'll get a "module not found" or "is undefined" error in the browser — that's the stub kicking in.
+
+## Build order
+
+The recommended plugin order is what every reference site uses:
+
+```
+1. cloudflare()            — sets up the Workers SSR environment
+2. tanstackStart()         — TanStack Start core
+3. react()                 — React + React Compiler
+4. tailwindcss()           — Tailwind v4
+5. decoVitePlugin()        — Deco framework (after the above)
+```
+
+Don't reorder. Some plugins depend on others having registered transformers first.
+
+## React Compiler
+
+React 19's compiler is enabled via `babel-plugin-react-compiler` in the React plugin config:
+
+```ts
+react({
+  babel: {
+    plugins: [
+      ["babel-plugin-react-compiler", { target: "19" }],
+    ],
+  },
+}),
+```
+
+The compiler eliminates the need for manual `useMemo` / `useCallback` / `memo`. Sites that have those wrappers from v1 can usually delete them after migration.
+
+## Dedupe list
+
+Why dedupe so many packages? Because TanStack, React, and `@decocms/*` all peer-depend on each other and minor version drift can cause two copies of `react` to load — at which point context providers stop working. The dedupe list says "always resolve these to the same physical file."
+
+```ts
+deduplicate: [
+  "react",
+  "react-dom",
+  "@tanstack/react-router",
+  "@tanstack/react-start",
+  "@tanstack/store",
+  "@decocms/start",
+  "@decocms/apps",
+],
+```
+
+If you add a peer dep that overlaps the framework's, add it to this list too.
+
+## Common errors
+
+### "Cannot access 'X' before initialization"
+
+You're splitting `@decocms/start` or `@decocms/apps` into chunks. Remove your `manualChunks` override.
+
+### "Module not found: `node:async_hooks`" on client
+
+You're importing server-only code in a component. Move it behind a `"use client"` boundary or only call it in a loader.
+
+### "Two copies of React detected"
+
+You have a peer dep that's bringing its own React. Add it to the `dedupe` list.
+
+### Daemon won't connect
+
+The dev daemon needs network access to admin. Behind a firewall, set `daemon: false` on the plugin and accept that admin live preview won't work locally.
+
+## See also
+
+- [Setup](/v2/en/framework/setup)
+- [Worker entry](/v2/en/framework/worker-entry)
+- [Project structure](/v2/en/getting-started/project-structure)
+- [Blocks](/v2/en/concepts/blocks)

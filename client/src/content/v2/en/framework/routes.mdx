@@ -1,0 +1,225 @@
+---
+title: "Routes"
+description: "cmsRouteConfig, cmsHomeRouteConfig, loadCmsPage, and friends — TanStack Router glue for CMS-driven URLs."
+icon: "Map"
+---
+
+import Callout from "../../../../components/ui/Callout.astro";
+
+`@decocms/start/routes` exposes the helpers that connect TanStack Router to the CMS resolver. You'll touch these in three files: `src/routes/$.tsx` (catch-all), `src/routes/index.tsx` (home), and occasionally `src/routes/__root.tsx` (global shell).
+
+## Import
+
+```ts
+import {
+  cmsRouteConfig,
+  cmsHomeRouteConfig,
+  loadCmsPage,
+  loadDeferredSection,
+  withSiteGlobals,
+} from "@decocms/start/routes";
+```
+
+## `cmsRouteConfig`
+
+Builds a TanStack Router config for a catch-all CMS route.
+
+```ts
+// src/routes/$.tsx
+import { createFileRoute } from "@tanstack/react-router";
+import { cmsRouteConfig } from "@decocms/start/routes";
+
+export const Route = createFileRoute("/$")(
+  cmsRouteConfig({
+    siteName: "my-store",
+    defaultTitle: "My Store",
+    ignoreSearchParams: ["skuId"],
+  }),
+);
+```
+
+### Options
+
+```ts
+type CmsRouteOptions = {
+  siteName: string;
+  defaultTitle?: string;
+  ignoreSearchParams?: string[];
+  staleTime?: number;          // ms
+  gcTime?: number;             // ms
+  pendingComponent?: React.ComponentType;
+  errorComponent?: React.ComponentType<{ error: Error }>;
+};
+```
+
+| Option | What it controls |
+|---|---|
+| `siteName` | Site identifier in admin |
+| `defaultTitle` | `<title>` fallback when CMS doesn't provide one |
+| `ignoreSearchParams` | Search params excluded from route key (cache invariant) |
+| `staleTime` | TanStack Router loader cache freshness |
+| `gcTime` | Loader cache GC threshold |
+| `pendingComponent` | Render while loader is in-flight |
+| `errorComponent` | Render when loader throws |
+
+### What it returns
+
+A TanStack Router route config object with:
+
+- `loader` — calls `loadCmsPage({ siteName, pathname, search })`.
+- `head` — pulls SEO from the resolved page.
+- `component` — `<DecoPageRenderer />` over loaded data.
+- `pendingComponent` — default skeleton, override-able.
+- `errorComponent` — default fallback, override-able.
+
+You can spread into your own route to override pieces:
+
+```tsx
+const config = cmsRouteConfig({ siteName: "my-store" });
+
+export const Route = createFileRoute("/$")({
+  ...config,
+  component: function CustomPage() {
+    return <CustomShell><DecoPageRenderer /></CustomShell>;
+  },
+});
+```
+
+## `cmsHomeRouteConfig`
+
+Same shape as `cmsRouteConfig`, but bound to `/`:
+
+```ts
+// src/routes/index.tsx
+import { createFileRoute } from "@tanstack/react-router";
+import { cmsHomeRouteConfig } from "@decocms/start/routes";
+
+export const Route = createFileRoute("/")(
+  cmsHomeRouteConfig({ siteName: "my-store" }),
+);
+```
+
+The home route can have different cache and SEO defaults than the catch-all (typically more aggressive caching since `/` rarely varies).
+
+## `loadCmsPage`
+
+The function the route loader calls. You rarely call it directly, but its signature matters for understanding what's happening:
+
+```ts
+loadCmsPage({
+  siteName: string;
+  pathname: string;
+  search?: string | URLSearchParams;
+}): Promise<ResolvedPage>;
+```
+
+`ResolvedPage` is the tree of resolved sections, ready for `DecoPageRenderer`.
+
+## `loadDeferredSection`
+
+A TanStack Start server function exposed by the framework so deferred sections can hydrate on scroll.
+
+```ts
+// inside LazySection (you don't usually call this directly)
+loadDeferredSection({ pageId: string, sectionIndex: number }): Promise<RenderedSection>;
+```
+
+The framework wires `LazySection` to call it via `IntersectionObserver`. You only touch this if you're building custom deferral.
+
+## `withSiteGlobals`
+
+Wraps a route config with site-wide globals (analytics IDs, theme tokens, custom head tags).
+
+```9:18:/Users/fernandofrizzatti/development/workspace/decocms/baggagio-tanstack/src/routes/$.tsx
+const routeConfig = withSiteGlobals(
+  cmsRouteConfig({
+    siteName: "Bagaggio",
+    defaultTitle: "Baggagio-tanstack",
+    ignoreSearchParams: ["skuId"],
+  }),
+);
+```
+
+Useful when you want to add the same head tags to every CMS page without copying the config in `index.tsx` and `$.tsx`.
+
+## Custom routes alongside CMS routes
+
+You can add specific routes that take precedence over `$.tsx`:
+
+```
+src/routes/
+├── __root.tsx
+├── index.tsx          ← cmsHomeRouteConfig
+├── $.tsx              ← cmsRouteConfig (catch-all)
+├── checkout/
+│   └── success.tsx    ← bespoke confirmation page
+└── api/
+    └── ping.tsx       ← non-CMS API endpoint
+```
+
+TanStack Router dispatches the most specific path first, so `/checkout/success` and `/api/ping` are handled by their own files, and everything else falls through to the catch-all.
+
+## Server functions
+
+Inside any route, you can call `createServerFn` from `@tanstack/react-start` for arbitrary server logic:
+
+```tsx
+import { createServerFn } from "@tanstack/react-start";
+
+const updateCart = createServerFn("POST", async (input: CartInput) => {
+  // server-side logic with access to RequestContext
+  return await persistCart(input);
+});
+```
+
+These get bundled into Worker server functions automatically.
+
+<Callout type="warning">
+**Server functions don't replace admin handlers.** If you need a custom admin endpoint (`/live/_meta` extension, custom `/.decofile`), wire it through `worker-entry.ts` — not via `createServerFn`. Vite strips custom logic from `createServerEntry` in production builds. See [Worker entry](/v2/en/framework/worker-entry).
+</Callout>
+
+## Custom `pendingComponent`
+
+The default pending state is a generic skeleton. Override per route for a better experience:
+
+```tsx
+const config = cmsRouteConfig({ siteName: "my-store" });
+
+export const Route = createFileRoute("/$")({
+  ...config,
+  pendingComponent: function PageSkeleton() {
+    return (
+      <div class="animate-pulse">
+        <div class="h-12 bg-gray-200 mb-4" />
+        <div class="grid grid-cols-4 gap-4">
+          {[...Array(8)].map((_, i) => (
+            <div key={i} class="aspect-square bg-gray-200" />
+          ))}
+        </div>
+      </div>
+    );
+  },
+});
+```
+
+## Cache headers per route
+
+Set `headers` on the route config to override the default cache profile:
+
+```tsx
+const config = cmsRouteConfig({
+  siteName: "my-store",
+  headers: () => ({
+    "cache-control": "public, max-age=300, s-maxage=600",
+  }),
+});
+```
+
+For URL-pattern-based overrides, use `setCacheProfile` and `registerCachePattern` from the framework caching module. See [Caching strategy](/v2/en/deployment/caching-strategy).
+
+## See also
+
+- [Pages and routes (concept)](/v2/en/concepts/pages-and-routes)
+- [Worker entry](/v2/en/framework/worker-entry)
+- [Hooks](/v2/en/framework/hooks)
+- [Caching](/v2/en/framework/caching)

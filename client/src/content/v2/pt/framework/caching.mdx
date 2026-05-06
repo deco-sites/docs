@@ -1,0 +1,204 @@
+---
+title: "Caching"
+description: "Profiles de cache de borda, cacheHeaders, cachedLoader, mergeCacheControl, urlUtils."
+icon: "Database"
+---
+
+import Callout from "../../../../components/ui/Callout.astro";
+
+Caching em v2 acontece em três camadas:
+
+1. **Cache de borda** (Cloudflare Cache API) — respostas inteiras, chaveadas por URL + segmento.
+2. **Cache de loader** (`createCachedLoader`) — em memória, por isolate de Worker, com SWR.
+3. **Cache de loader do TanStack Router** (`staleTime` / `gcTime`) — client-side, entre transições de rota.
+
+Toda página de loja toca pelo menos as duas primeiras.
+
+## Profiles de cache de borda
+
+`@decocms/start/sdk/cacheHeaders` contém um catálogo de profiles por padrão de URL. Quando um request entra em `createDecoWorkerEntry`, o framework casa a URL com um profile e usa seu TTL.
+
+Profiles default (extraídos de [`cacheHeaders.ts`](/Users/fernandofrizzatti/development/workspace/decocms/deco-start/src/sdk/cacheHeaders.ts)):
+
+| Padrão | Profile | maxAge | s-maxage |
+|---|---|---|---|
+| `/` (home) | `home` | 60s | 300s |
+| `/p/*` (PDP) | `pdp` | 60s | 300s |
+| `/s` (busca) | `search` | 0 | 60s |
+| `/cart`, `/checkout` | `bypass` | 0 | 0 (não cacheia) |
+| `/api/*`, `/deco/*` | `bypass` | 0 | 0 |
+| `*.{js,css,png,...}` | `static` | 31536000s | 31536000s |
+| (catch-all) | `default` | 60s | 300s |
+
+`s-maxage` controla o TTL no edge cache; `maxAge` controla o do browser.
+
+## Sobrescrever profiles
+
+### `setCacheProfile`
+
+Substitua um profile inteiro:
+
+```ts
+import { setCacheProfile } from "@decocms/start/sdk/cacheHeaders";
+
+setCacheProfile("pdp", {
+  maxAge: 30,
+  sMaxAge: 600,
+  staleWhileRevalidate: 86400,
+});
+```
+
+### `registerCachePattern`
+
+Adicione um padrão custom:
+
+```ts
+import { registerCachePattern } from "@decocms/start/sdk/cacheHeaders";
+
+registerCachePattern("/coupons", "bypass");
+registerCachePattern(/^\/landing\/.*/, "home");
+```
+
+Padrões são casados na ordem de registro; primeiro match ganha.
+
+Veja [`cache-config.ts` do Casa&Vídeo](/Users/fernandofrizzatti/development/workspace/decocms/casaevideo-storefront/src/cache-config.ts) para um exemplo real de override em larga escala.
+
+## `cacheHeaders` em rotas
+
+Para sobrescrever em uma rota específica em vez de globalmente:
+
+```tsx
+import { cacheHeaders } from "@decocms/start/sdk/cacheHeaders";
+
+const config = cmsRouteConfig({
+  siteName: "minha-loja",
+  headers: () => cacheHeaders({ maxAge: 60, sMaxAge: 600 }),
+});
+```
+
+`cacheHeaders` formata o objeto Cache-Control com a sintaxe certa.
+
+## `createCachedLoader`
+
+Embrulhe qualquer loader server-side para ganhar dedup in-flight + SWR:
+
+```ts
+import { createCachedLoader } from "@decocms/start/sdk/cachedLoader";
+
+export const cachedProduct = createCachedLoader({
+  key: ({ slug }: { slug: string }) => `product:${slug}`,
+  ttl: 60_000,
+  loader: async ({ slug }) => fetchProduct(slug),
+});
+```
+
+Comportamento:
+
+- **Dedup in-flight** — duas chamadas concorrentes com a mesma chave esperam o mesmo upstream.
+- **SWR** — entradas frescas servem na hora; stale serve enquanto refresca em background.
+- **TTL por status HTTP** — 2xx cacheia pelo TTL; 4xx cacheia 1/10 do TTL; 5xx não cacheia.
+- **LRU eviction** — limite default de 1000 entradas por isolate.
+
+Veja [`vtex-fetch-cache.ts`](/Users/fernandofrizzatti/development/workspace/decocms/apps-start/src/vtex/sdk/vtex-fetch-cache.ts) em `@decocms/apps` para a versão de fetch (`vtexFetchWithCache`).
+
+### Tunning
+
+```ts
+createCachedLoader({
+  key: (props) => /* ... */,
+  ttl: 60_000,
+  staleTtl: 5 * 60_000,    // serve stale por 5 min
+  maxSize: 5000,           // tamanho do LRU
+  loader: async (props) => /* ... */,
+});
+```
+
+## `mergeCacheControl`
+
+Funde múltiplos cache-control headers, escolhendo o mais conservador (menor TTL):
+
+```ts
+import { mergeCacheControl } from "@decocms/start/sdk/cacheHeaders";
+
+const merged = mergeCacheControl([
+  "public, max-age=300",
+  "public, max-age=60, s-maxage=120",
+]);
+// → "public, max-age=60, s-maxage=120"
+```
+
+Útil quando seu loader de section define um TTL e o profile da rota define outro — fundir colapsa para o mais seguro.
+
+## Pegadinha da Cache API: `s-maxage` é ignorado
+
+A Cache API do Cloudflare ignora `s-maxage` ao decidir se uma entrada está fresca; usa `max-age`. Para que o edge cache respeite seu TTL desejado, o framework escreve no formato:
+
+```
+max-age=<sMaxAge>, s-maxage=<sMaxAge>
+```
+
+Como efeito colateral, o browser também cacheia por `s-maxage`. Para profiles onde browser-cache é proibido (e.g. `home` que precisa atualizar quando o admin republica), o framework usa também o header `Vary` para forçar re-validação.
+
+Você não configura — só esteja ciente: `cacheHeaders` produz a string que funciona em ambos os contextos.
+
+## Bypass de cache
+
+Algumas rotas nunca devem cachear:
+
+- Endpoints de admin (`/live/_meta`, `/.decofile`, `/deco/*`).
+- Endpoints autenticados (`/api/account/*`).
+- Chamadas POST para `/deco/invoke`.
+
+Esses casam com o profile `bypass` (TTL zero) e o framework pula `caches.put` por completo.
+
+Para invalidação manual, dispare `?__deco_purge_cache=<key>`. Veja [Worker entry](/v2/pt/framework/worker-entry).
+
+## Layout caching
+
+Sections de layout (Header, Footer, Theme) são especiais. O framework cacheia o **layout resolvido** entre requests na mesma versão do decofile, então o block do header só re-resolve quando o conteúdo do header muda — não a cada page load.
+
+Habilite registrando os componentes:
+
+```ts
+import { registerLayoutSections } from "@decocms/start/cms";
+
+registerLayoutSections({
+  Header: () => import("~/sections/Header/Header"),
+  Footer: () => import("~/sections/Footer/Footer"),
+  Theme: () => import("~/sections/Theme/Theme"),
+});
+```
+
+Sem isso, o Header re-resolve a cada page load, disparando chamadas redundantes para a API VTEX. Veja [skill `deco-cms-layout-caching`](https://github.com/decocms/deco-start/tree/main/.agents/skills) para a investigação completa.
+
+## `urlUtils`
+
+`@decocms/start/sdk/urlUtils` exporta helpers de URL que respeitam `ignoreSearchParams`:
+
+```ts
+import { stableUrl } from "@decocms/start/sdk/urlUtils";
+
+const url = new URL(request.url);
+const cacheKey = stableUrl(url, ["skuId", "_branch"]);
+// → URL com skuId e _branch removidos, params restantes ordenados
+```
+
+`stableUrl` é o que o framework usa internamente para construir cache keys que ignoram params irrelevantes.
+
+## Diagnóstico
+
+`wrangler tail --format pretty` mostra o status do cache em headers de resposta:
+
+```
+cf-cache-status: HIT
+x-deco-cache: profile=pdp;ttl=300;state=fresh
+```
+
+Em desenvolvimento, defina `DEBUG_CACHE=1` no `vite.config.ts` para emitir log detalhado de toda decisão de cache.
+
+## Veja também
+
+- [Estratégia de cache](/v2/pt/deployment/caching-strategy)
+- [Worker entry](/v2/pt/framework/worker-entry)
+- [Loaders](/v2/pt/concepts/loaders)
+- [Estudo de caso Casa&Vídeo](/v2/pt/case-studies/casaevideo)

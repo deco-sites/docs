@@ -1,0 +1,238 @@
+---
+title: "Shared commerce"
+description: "schema.org types, useOffer, formatPrice, analytics, useVariantPossibilities, Image / Picture / JsonLd."
+icon: "Library"
+---
+
+import Callout from "../../../../components/ui/Callout.astro";
+
+`@decocms/apps/commerce/*` provides the platform-agnostic surface: types, SDK helpers, and components used by both VTEX and Shopify integrations. If you're building a custom commerce integration or a custom storefront component, this is the contract.
+
+## Types
+
+`@decocms/apps/commerce/types` exports schema.org-aligned commerce shapes:
+
+| Type | Use |
+|---|---|
+| `Product` | Single product (PDP, shelf cards) |
+| `ProductLeaf` | A specific SKU/variant of a product |
+| `AggregateOffer` | Wrapper around multiple offers (lowest price, count, etc.) |
+| `Offer` | Single offer (price, availability, seller) |
+| `UnitPriceSpecification` | Per-unit pricing (e.g. `R$ 10.00 each`) |
+| `ProductDetailsPage` | PDP page shape — product + breadcrumbs + SEO + similar products |
+| `ProductListingPage` | PLP page shape — products + filters + sort options + pagination |
+| `BreadcrumbList` | Breadcrumb path |
+| `Minicart` | Cart shape used by `useCart` / SSR minicart |
+| `SiteNavigationElement` | Header/footer navigation item |
+
+```ts
+import type {
+  Product,
+  ProductDetailsPage,
+  ProductListingPage,
+  AggregateOffer,
+  BreadcrumbList,
+} from "@decocms/apps/commerce/types";
+```
+
+These mirror schema.org JSON-LD, so types double as both runtime data shapes and SEO payloads.
+
+<Callout type="info">
+**TODOs in the type file.** [`commerce/types/commerce.ts`](/Users/fernandofrizzatti/development/workspace/decocms/apps-start/commerce/types/commerce.ts) has open TODOs about JSON Schema generator support for recursive types. Some navigation types are marked `@deprecated`. Pin to current types and watch the changelog when upgrading.
+</Callout>
+
+## SDK helpers
+
+### `useOffer`
+
+```ts
+import { useOffer } from "@decocms/apps/commerce/sdk/useOffer";
+
+const { price, listPrice, availability, seller, installments, installment } = useOffer(
+  product.offers,
+);
+```
+
+Pulls the canonical offer from an `AggregateOffer`. Returns:
+
+- `price` — lowest current price.
+- `listPrice` — original price (for strikethrough display).
+- `availability` — `"InStock"` / `"OutOfStock"`.
+- `seller` — seller ID for VTEX multi-seller stores.
+- `installments` / `installment` — installment plans where applicable.
+
+### `formatPrice`
+
+```ts
+import { formatPrice, formatPriceRange } from "@decocms/apps/commerce/sdk/formatPrice";
+
+formatPrice(99.9, "BRL", "pt-BR");        // "R$ 99,90"
+formatPriceRange("100:200", "BRL");       // "R$ 100,00 — R$ 200,00"
+```
+
+`formatPriceRange` parses VTEX-style `min:max` facet bounds.
+
+### `analytics`
+
+```ts
+import { mapProductToAnalyticsItem } from "@decocms/apps/commerce/sdk/analytics";
+
+const item = mapProductToAnalyticsItem({
+  product,
+  index: 0,
+  itemListName: "Home — Best sellers",
+});
+```
+
+Returns a GA4-compatible `AnalyticsItem`. Push to `dataLayer` directly:
+
+```ts
+window.dataLayer.push({ event: "view_item_list", items: [item] });
+```
+
+### `useVariantPossibilities`
+
+```ts
+import { useVariantPossibilities } from "@decocms/apps/commerce/sdk/useVariantPossibilities";
+
+const possibilities = useVariantPossibilities(product.isVariantOf?.hasVariant ?? [], product);
+// → { Color: { Red: { url: "/p/red-version" }, Blue: ... }, Size: ... }
+```
+
+Builds a map of variant-property → option → URL for the variant picker UI. Handles cross-product variants (different products grouped by a shared `isSimilarTo` relationship).
+
+### `url`
+
+```ts
+import { relative } from "@decocms/apps/commerce/sdk/url";
+
+const cleanLink = relative(href, { stripSearchParams: ["idsku"] });
+```
+
+Converts absolute URLs to relative + strips known noise params. Use for PDP `<a href>` so cross-variant navigation doesn't carry SKU IDs forward.
+
+## Components
+
+### `Image`
+
+```tsx
+import { Image, registerImageCdnDomain } from "@decocms/apps/commerce/components/Image";
+```
+
+Optimized commerce image with width/height enforcement (CLS), responsive `srcSet`, and CDN URL transformation.
+
+```tsx
+<Image
+  src="https://cdn.example.com/product.jpg"
+  width={400}
+  height={400}
+  fit="cover"
+  preload
+  alt="Product name"
+/>
+```
+
+Required props: `src`, `width`. Recommended: `height` (improves CLS), `alt`. Optional: `fit` (`cover` / `contain` / `fill`), `preload` (adds preload link), `media`.
+
+If your CDN isn't auto-detected, register it once at site setup:
+
+```ts
+import { registerImageCdnDomain } from "@decocms/apps/commerce/components/Image";
+
+registerImageCdnDomain("cdn.example.com", {
+  buildUrl: ({ src, width, height, fit }) => `${src}?w=${width}&h=${height}`,
+});
+```
+
+### `Picture`
+
+```tsx
+import { Picture, Source } from "@decocms/apps/commerce/components/Picture";
+
+<Picture preload>
+  <Source src={mobileSrc} media="(max-width: 767px)" width={400} />
+  <Source src={desktopSrc} media="(min-width: 768px)" width={1200} />
+  <Image src={desktopSrc} width={1200} alt="Banner" />
+</Picture>
+```
+
+Use when you have art-directed responsive images (different crops or compositions for different viewports). For simple resizing, `Image` alone is enough.
+
+### `JsonLd`
+
+```tsx
+import { ProductJsonLd, BreadcrumbJsonLd, PLPJsonLd } from "@decocms/apps/commerce/components/JsonLd";
+
+<ProductJsonLd product={product} url={pageUrl} />
+<BreadcrumbJsonLd breadcrumbs={breadcrumbList} />
+<PLPJsonLd page={productListingPage} />
+```
+
+Emits `<script type="application/ld+json">` with schema.org markup. Search engines pick this up for rich results.
+
+## Utils
+
+### `productToAnalyticsItem`
+
+```ts
+import { mapProductToAnalyticsItem } from "@decocms/apps/commerce/utils/productToAnalyticsItem";
+```
+
+Slightly different shape from `sdk/analytics`'s mapper — kept for compatibility with v1 sites. New code should prefer the SDK version.
+
+### `canonical`
+
+```ts
+import { canonicalFromBreadcrumblist } from "@decocms/apps/commerce/utils/canonical";
+
+const canonical = canonicalFromBreadcrumblist(breadcrumbs, baseUrl);
+```
+
+Builds the canonical URL for a PLP from its breadcrumb path. Useful when the displayed URL has tracking params or filter state that shouldn't be canonical.
+
+### `stateByZip` (Brazil-specific)
+
+```ts
+import getStateFromZip from "@decocms/apps/commerce/utils/stateByZip";
+
+const state = getStateFromZip("01310-100"); // → "SP"
+```
+
+Maps Brazilian CEPs to state UFs via Correios ranges. Handy for VTEX regional logic.
+
+### `filters`
+
+```ts
+import { facetsToFilters } from "@decocms/apps/commerce/utils/filters";
+```
+
+Helpers for transforming Intelligent Search facets into UI-friendly filter shapes.
+
+### `constants`
+
+Shared constants — currency codes, sort key constants, etc.
+
+## App typing
+
+`@decocms/apps/commerce/app-types` exports the contracts apps must satisfy:
+
+```ts
+import type { AppDefinition, AppMiddleware, ResolveSecretFn } from "@decocms/apps/commerce/app-types";
+```
+
+Used by anyone building a custom commerce app. End users don't touch this.
+
+## `resolveApps`
+
+```ts
+import { resolveApps } from "@decocms/apps/commerce/resolve";
+```
+
+Composes multiple `AppDefinition`s into one — merging manifests, chaining middleware. Used internally by `autoconfigApps`. End users rarely call.
+
+## See also
+
+- [Commerce overview](/v2/en/commerce/overview)
+- [VTEX overview](/v2/en/commerce/vtex-overview)
+- [Shopify](/v2/en/commerce/shopify)
+- [Sections](/v2/en/concepts/sections)

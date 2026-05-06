@@ -1,0 +1,156 @@
+---
+title: "VTEX — visão geral"
+description: "configure(), VtexConfig, secrets, salesChannel, passos de install."
+icon: "Building2"
+---
+
+import Callout from "../../../../components/ui/Callout.astro";
+
+A integração VTEX é a mais profunda em `@decocms/apps`. Esta página cobre setup; loaders, actions, hooks, client e gotchas têm páginas dedicadas.
+
+## Install
+
+```bash
+npm install @decocms/apps
+```
+
+`@decocms/apps` traz tudo — não há subpacote VTEX-only.
+
+## Config block no admin
+
+Crie um block `deco-vtex` em `.deco/blocks/deco-vtex.json` (ou via UI do admin):
+
+```json
+{
+  "__resolveType": "deco-vtex",
+  "account": "loja",
+  "publicUrl": "https://www.example.com.br",
+  "salesChannel": "1",
+  "appKey": { "__resolveType": "secret/key" },
+  "appToken": { "__resolveType": "secret/key" }
+}
+```
+
+| Campo | Função |
+|---|---|
+| `account` | Nome da conta VTEX (sem domínio) |
+| `publicUrl` | URL pública para o storefront (preserva cookies) |
+| `salesChannel` | Sales channel default (string ou number) |
+| `appKey` / `appToken` | Credenciais admin VTEX (referenciam blocks de secret) |
+
+## Wiring no setup
+
+Em `src/setup.ts`:
+
+```ts
+import { initVtexFromBlocks, setVtexFetch } from "@decocms/apps/vtex/client";
+import { createVtexCommerceLoaders } from "@decocms/apps/vtex/commerceLoaders";
+import { registerCommerceLoaders } from "@decocms/start/cms";
+import { createInstrumentedFetch } from "@decocms/start/sdk/instrumentedFetch";
+
+createSiteSetup({
+  // ...
+  initPlatform: () => initVtexFromBlocks(),
+  getCommerceLoaders: () => createVtexCommerceLoaders(),
+});
+
+setVtexFetch(createInstrumentedFetch("vtex"));
+```
+
+`initVtexFromBlocks` lê o block `deco-vtex` e configura o cliente. `setVtexFetch` substitui o fetch interno por um instrumentado para tracing.
+
+## Que loaders VTEX você pega
+
+Inline loaders VTEX prontos cobrem:
+
+- **PDP** — `vtex/loaders/intelligentSearch/productDetailsPage.ts`
+- **PLP** — `vtex/loaders/intelligentSearch/productListingPage.ts`
+- **Busca** — `vtex/loaders/intelligentSearch/searchPage.ts`
+- **Detalhes de produto** (sem PDP wrap) — `vtex/loaders/intelligentSearch/productList.ts`
+- **Carrinho** — `vtex/loaders/cart.ts`
+- **Usuário** — `vtex/loaders/user.ts`
+- **Wishlist** — `vtex/loaders/wishlist/list.ts`
+- **Pedidos** — `vtex/loaders/orders/list.ts`
+
+E muitos mais. Veja [VTEX loaders e actions](/v2/pt/commerce/vtex-loaders-and-actions) para a lista completa.
+
+## Que hooks VTEX você pega
+
+```ts
+import {
+  useCart,
+  useUser,
+  useWishlist,
+  useAutocomplete,
+} from "@decocms/apps/vtex/hooks";
+```
+
+Embrulham `invoke` com TanStack Query. Cobrem 90% das interações de UI commerce comuns. Veja [VTEX hooks](/v2/pt/commerce/vtex-hooks).
+
+## Sales channel
+
+Sales channel decide preço, estoque e visibilidade de produto. Padrões:
+
+- **Sales channel único** — defina no config e siga em frente.
+- **Sales channel detectado** (regional, B2B vs B2C) — sobrescreva via `salesChannel` no body do POST do loader, ou role o seu próprio:
+
+```ts
+import { configure } from "@decocms/apps/vtex/client";
+
+configure({
+  account: "loja",
+  salesChannel: detectChannel(request),
+});
+```
+
+[Casa&Vídeo](/Users/fernandofrizzatti/development/workspace/decocms/casaevideo-storefront/src/setup.ts) usa setup baseado em região para escolher channel a partir do header `cf-ipcountry`.
+
+## Secrets
+
+Nunca hardcode `appKey` ou `appToken` em `.deco/blocks/deco-vtex.json`. Use blocks de secret:
+
+```json
+{
+  "__resolveType": "secret/key",
+  "name": "VTEX_APP_KEY",
+  "encrypted": "..."
+}
+```
+
+Faça o framework injetar do binding do Worker:
+
+```ts
+// no init customizado:
+configure({
+  account: "loja",
+  appKey: env.VTEX_APP_KEY,
+  appToken: env.VTEX_APP_TOKEN,
+});
+```
+
+Em produção, defina os secrets via `wrangler secret put VTEX_APP_KEY`. Veja [Deployment](/v2/pt/deployment/cloudflare-workers).
+
+## Cookies essenciais
+
+VTEX rastreia sessão, segmento, regionId, orderForm via cookies. Se eles não chegarem nas chamadas upstream, você pega:
+
+- Pricing errado (segmento perdido).
+- Estoque vazio (regionId perdido).
+- Carrinho zumbi (orderFormId não persistente).
+
+`@decocms/apps/vtex/middleware` lida com a propagação automaticamente quando você usa `vtexFetch` — não precisa orquestrar manualmente. Veja [VTEX gotchas](/v2/pt/commerce/vtex-gotchas) para a lista completa.
+
+## Versionamento
+
+`@decocms/apps` é versionado independente de `@decocms/start`. Cheque a referência cruzada no README. Em geral:
+
+- Major do `apps` casa com a major suportada do `start`.
+- Patches de `apps` adicionam features ou corrigem bugs sem requerer bump de `start`.
+
+## Veja também
+
+- [Visão geral de commerce](/v2/pt/commerce/overview)
+- [VTEX loaders e actions](/v2/pt/commerce/vtex-loaders-and-actions)
+- [VTEX inline loaders](/v2/pt/commerce/vtex-inline-loaders)
+- [VTEX hooks](/v2/pt/commerce/vtex-hooks)
+- [VTEX gotchas](/v2/pt/commerce/vtex-gotchas)

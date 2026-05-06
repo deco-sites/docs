@@ -1,0 +1,171 @@
+---
+title: "Playbook de migração"
+description: "Passo a passo de mover uma loja Fresh para TanStack Start."
+icon: "BookOpen"
+---
+
+import Callout from "../../../../components/ui/Callout.astro";
+
+Este é o caminho manual. Se preferir automatizar, rode [`deco-migrate`](/v2/pt/migration/migrate-script) primeiro — ele faz os 70% mecânicos. Leia este playbook quando o script sinalizar algo que não auto-corrige, ou quando quiser entender o que ele está fazendo.
+
+## Fase 1 — Análise
+
+Antes de mexer em qualquer coisa, faça um inventário:
+
+```bash
+cd /caminho/para/site-v1
+
+# contagem de sections
+find src/sections -name "*.tsx" | wc -l
+
+# contagem de islands (precisam ser eliminadas)
+find src/islands -name "*.tsx" 2>/dev/null | wc -l
+
+# rotas customizadas
+find routes -type f | wc -l
+
+# loaders / actions
+find src/loaders src/actions -name "*.ts" 2>/dev/null | wc -l
+
+# blocks
+find .deco/blocks -name "*.json" | wc -l
+```
+
+Anote os números. Eles viram a baseline de verificação pós-migração.
+
+Procure por:
+- Imports de `@deco/deco/*` e `$fresh/*` — o script lida.
+- Imports de `@preact/signals` e `preact/*` — o script reescreve para React.
+- Chamadas custom de `useScript(fn)` — precisam de revisão manual.
+- Leituras custom de `Deno.env` — precisam de conversão.
+- Tudo em `src/islands/` — toda island precisa de um destino.
+
+## Fase 2 — Scaffold
+
+Gere os arquivos baseline da v2:
+
+- `vite.config.ts` (com `decoVitePlugin`, plugin Cloudflare, plugin TanStack Start, React, Tailwind v4)
+- `wrangler.jsonc` (com `nodejs_compat` + `no_handle_cross_request_promise_resolution`)
+- `src/setup.ts` (chama `createSiteSetup`)
+- `src/server.ts` (server entry do TanStack Start)
+- `src/worker-entry.ts` (chama `createDecoWorkerEntry`)
+- `src/routes/__root.tsx`, `src/routes/index.tsx`, `src/routes/$.tsx`
+
+O script gera todos. Se for fazer na mão, copie dos templates em [`@decocms/start/.agents/skills/deco-to-tanstack-migration/templates/`](https://github.com/decocms/deco-start/tree/main/.agents/skills).
+
+## Fase 3 — Transformação
+
+Esta é a fase de reescrita em massa:
+
+- **Imports** — `preact/*` → `react`, `@preact/signals` → `@tanstack/store`, `$fresh/*` → `@tanstack/react-start`, `@deco/deco/*` → `@decocms/start/*` e `@decocms/apps/*`.
+- **Atributos JSX** — `class` → `className`, `for` → `htmlFor`.
+- **APIs Fresh** — `defineRoute` / `defineApp` para padrões TanStack Router.
+- **Deno-isms** — `Deno.env.get(X)` para bindings, `import.meta.url` para equivalentes Vite.
+- **Tailwind** — v3 → v4 (referências de cor por token, sintaxe de opacidade, reescrita de `@apply`).
+
+As 70+ regras moram no script de migração. Veja [Referência do script](/v2/pt/migration/migrate-script) para a lista.
+
+## Fase 4 — Limpeza
+
+Remova o que não é mais necessário:
+
+- `src/islands/` — toda island virou outra coisa.
+- `routes/` (a pasta antiga do Fresh).
+- `deno.json`, `deno.lock`.
+- `static/` — movido para `public/`.
+- Pastas `compat/` que o time tenha criado durante tentativas incrementais.
+
+## Fase 5 — Bootstrap
+
+Instale dependências e regenere tudo:
+
+```bash
+npm install
+npm run generate:blocks
+npm run generate:schema
+npm run generate:sections
+npm run generate:loaders
+npx tsr generate
+```
+
+As lojas de referência têm tudo isso como scripts compostos no `package.json`.
+
+## Fase 6 — Verificação
+
+Rode typecheck e build:
+
+```bash
+npm run typecheck   # tsc --noEmit
+npx vite build      # build de prod completo
+npx wrangler deploy --dry-run
+```
+
+Typecheck limpo + build limpo significa que a migração mecânica terminou. Correção em runtime é um pass à parte.
+
+## Fase 7 — Ajustes manuais
+
+O script registra tudo que precisa de atenção humana em `MIGRATION_REPORT.md`. Os itens mais comuns:
+
+### Islands → `"use client"` ou estado içado
+
+Padrão: uma island que era dona de estado local (toggle de drawer do carrinho, modal de busca). Em React, marque a section pai como `"use client"` se a section toda for interativa, ou ice o estado para um provider no nível da section.
+
+```tsx
+// antes (Fresh)
+// src/islands/CartDrawer.tsx ← island inteira
+// src/sections/Header.tsx importa a island
+
+// depois (React)
+// src/sections/Header/Header.tsx
+"use client";
+
+import { useState } from "react";
+import CartDrawer from "~/components/CartDrawer";
+
+export default function Header({ ... }: Props) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <header>...</header>
+      <CartDrawer open={open} onClose={() => setOpen(false)} />
+    </>
+  );
+}
+```
+
+Veja [`use-client-migration.md`](/Users/fernandofrizzatti/development/workspace/decocms/casaevideo-storefront/docs/use-client-migration.md) do Casa&Vídeo para um mapa exaustivo de island por island de uma loja real.
+
+### Remoção de `useScript(fn)`
+
+`useScript(fn)` era um padrão Fresh que extraía uma função para uma `<script>` inline. Em v2 não hidrata limpo. Substitua por:
+
+- **`inlineScript`** de `@decocms/start/sdk/useScript` para conteúdo estático.
+- **Um componente client de verdade** para qualquer coisa que toque estado ou DOM.
+
+### Hooks de plataforma (`useCart`, `useUser`, `useWishlist`)
+
+Se sua loja v1 tinha overrides custom, porte. As implementações default em `@decocms/apps/vtex/hooks` cobrem os casos comuns. Veja [Hooks VTEX](/v2/pt/commerce/vtex-hooks).
+
+### Scripts de terceiros no `<head>`
+
+Scripts que mutam o `<head>` (Google Tag Manager, Adobe Launch, Hotjar) frequentemente causam mismatch de hidratação em React. A correção é injetar via resposta do worker, depois do React renderizar, em vez de em JSX. Veja [`cls-pending-issues.md`](/Users/fernandofrizzatti/development/workspace/decocms/casaevideo-storefront/docs/cls-pending-issues.md) do Casa&Vídeo.
+
+## Fase 8 — Pass de performance
+
+Depois da correção funcional:
+
+- **Tunning do `foldThreshold`** — geralmente 2-3 sections eager, resto deferred.
+- **Auditoria de profiles de cache** — defaults são conservadores; afrouxe para conteúdo estático, aperte para páginas perto do checkout.
+- **Pode `loaders.gen.ts`** — use `--decofile-dir .deco/blocks` para que só apareçam loaders que o CMS realmente referencia. Bagaggio usa; Casa e Le biscuit ainda não.
+- **Verifique sections deferred em dev** — se aparecer "I/O across requests", configure `no_handle_cross_request_promise_resolution` em `wrangler.jsonc`.
+
+## Fase 9 — QA e deploy
+
+Use o [checklist de migração](/v2/pt/migration/checklist) para a verificação.
+
+## Veja também
+
+- [Script de migração](/v2/pt/migration/migrate-script)
+- [Agent skills](/v2/pt/migration/agent-skills)
+- [Checklist de migração](/v2/pt/migration/checklist)
+- [Referência do worker entry](/v2/pt/framework/worker-entry)

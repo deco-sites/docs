@@ -1,0 +1,198 @@
+---
+title: "Shopify"
+description: "Storefront API integration via GraphQL — loaders, actions, transforms."
+icon: "ShoppingCart"
+---
+
+import Callout from "../../../../components/ui/Callout.astro";
+
+`@decocms/apps/shopify` integrates Shopify Storefront API via GraphQL. It's leaner than the VTEX integration: simpler config, no middleware, no SWR cache layer in the client.
+
+## Configuration
+
+### Block
+
+```json
+{
+  "__resolveType": "deco-shopify",
+  "storeName": "my-shop",
+  "storefrontAccessToken": { "__resolveType": "secret", "name": "SHOPIFY_STOREFRONT_TOKEN" },
+  "publicUrl": "https://my-shop.com"
+}
+```
+
+### Wiring
+
+```ts
+// src/setup.ts
+import { initShopifyFromBlocks } from "@decocms/apps/shopify/init";
+
+createSiteSetup({
+  // ...
+  initPlatform: () => initShopifyFromBlocks(),
+});
+```
+
+Or with `autoconfigApps()`:
+
+```ts
+import { autoconfigApps } from "@decocms/start/apps/autoconfig";
+createSiteSetup({ initPlatform: () => autoconfigApps() });
+```
+
+The Storefront API endpoint is `https://{storeName}.myshopify.com/api/2025-04/graphql.json`. The version is pinned in [`shopify/client.ts`](/Users/fernandofrizzatti/development/workspace/decocms/apps-start/shopify/client.ts).
+
+## Client
+
+```ts
+import { setShopifyFetch } from "@decocms/apps/shopify/client";
+
+setShopifyFetch(createInstrumentedFetch("shopify"));
+```
+
+The client is a typed GraphQL wrapper. It sends `X-Shopify-Storefront-Access-Token` and parses GraphQL errors into typed exceptions.
+
+<Callout type="info">
+**No SWR layer for Shopify.** Unlike VTEX, the Shopify client does **not** ship with a `fetchWithCache` analog. You can wrap individual loaders with `createCachedLoader` from `@decocms/start/sdk/cachedLoader` if you want caching.
+</Callout>
+
+## Loaders
+
+```ts
+import productDetailsPageLoader from "@decocms/apps/shopify/loaders/ProductDetailsPage";
+import productListingPageLoader from "@decocms/apps/shopify/loaders/ProductListingPage";
+import { getCart } from "@decocms/apps/shopify/loaders/cart";
+import shopLoader from "@decocms/apps/shopify/loaders/shop";
+```
+
+| Loader | Purpose |
+|---|---|
+| `ProductDetailsPage` | Single product PDP shape (`ProductDetailsPage` from commerce types) |
+| `ProductListingPage` | Collection / search PLP |
+| `ProductList` | Array of products for shelves |
+| `RelatedProducts` | Related products on PDP |
+| `cart.getCart(headers, responseHeaders?)` | Fetch cart by cookie ID; creates if missing when `responseHeaders` provided |
+| `cart.createCart()` | Explicitly create a new cart |
+| `user` | Logged-in customer profile |
+| `shop` | Shop metadata (name, currency, locales, primary domain) |
+
+### `ProductDetailsPage` example
+
+```ts
+const page = await productDetailsPageLoader(
+  { slug: "blue-widget", metafields: ["custom.detail"] },
+  request,
+);
+```
+
+### `ProductListingPage` example
+
+```ts
+const plp = await productListingPageLoader(
+  {
+    query: "shoes",
+    collectionName: "summer-2025",
+    count: 24,
+    metafields: [],
+    pageHref: url.href,
+  },
+  request,
+);
+```
+
+### Cart cookie
+
+```ts
+const cart = await getCart(request.headers, responseHeaders);
+```
+
+`getCart` reads the cart cookie from `request.headers`. If absent and `responseHeaders` is provided, it creates a new cart and writes the cookie back via `setCartCookie`.
+
+<Callout type="warning">
+**`addItems` throws `Missing cart cookie` if no cart exists.** Call `getCart(...)` with `responseHeaders` first to ensure a cart cookie is set, then `addItems`. The pattern:
+
+```ts
+await getCart(request.headers, responseHeaders);   // ensures cookie
+await addItems({ lines, requestHeaders, responseHeaders });
+```
+</Callout>
+
+## Actions
+
+```ts
+import { addItems, updateItems, updateCoupons } from "@decocms/apps/shopify/actions/cart";
+import { signIn } from "@decocms/apps/shopify/actions/user/signIn";
+import { signUp } from "@decocms/apps/shopify/actions/user/signUp";
+```
+
+| Action | Purpose |
+|---|---|
+| `cart.addItems({ lines, requestHeaders, responseHeaders? })` | Add line items |
+| `cart.updateItems({ lines })` | Update quantities |
+| `cart.updateCoupons({ codes })` | Apply or remove discount codes |
+| `user.signIn({ email, password })` | Customer access token |
+| `user.signUp({ email, password, ... })` | Create customer + access token |
+
+All cart actions require `requestHeaders` to read the cart cookie. Pass `responseHeaders` if the action might need to set new cookies (rare, but possible during cart consolidation).
+
+## Hooks
+
+<Callout type="info">
+**No Shopify hooks ship in `@decocms/apps/shopify`.** VTEX gets `useCart`, `useUser`, etc.; Shopify currently does not. Sites using Shopify build their own React Query hooks on top of `/deco/invoke/shopify/...`.
+
+The pattern looks like:
+
+```tsx
+"use client";
+import { useQuery } from "@tanstack/react-query";
+import { invoke } from "~/server/cms/invoke.gen";
+
+function useCart() {
+  return useQuery({
+    queryKey: ["shopify", "cart"],
+    queryFn: () => invoke.shopify.loaders.cart(),
+  });
+}
+```
+
+Contributions to ship parity hooks are welcome.
+</Callout>
+
+## Utils
+
+| Module | Purpose |
+|---|---|
+| `shopify/utils/transform.ts` | Shopify GraphQL → schema.org commerce types |
+| `shopify/utils/storefront/queries.ts` | Storefront API GraphQL strings |
+| `shopify/utils/storefront.graphql.gen.ts` | Generated from Shopify schema |
+| `shopify/utils/cart.ts` | Cart-specific helpers |
+| `shopify/utils/cookies.ts` | Cart cookie naming + setters |
+| `shopify/utils/user.ts` | Customer access token helpers |
+| `shopify/utils/admin/admin.ts` | Admin API stub (not used by storefront flows) |
+| `shopify/utils/graphql.ts` | `createGraphqlClient` |
+
+## Differences from VTEX
+
+| | VTEX | Shopify |
+|---|---|---|
+| API style | REST + IS GraphQL | Storefront GraphQL |
+| Region/segment | `vtex_segment` cookie | (not applicable) |
+| Sales channel | `salesChannel` config | (not applicable) |
+| Cart middleware | Yes (`propagateISCookies` etc.) | None |
+| Client SWR cache | Yes (`fetchCache`) | No |
+| Bundled hooks | `useCart`, `useUser`, `useWishlist`, `useAutocomplete` | None |
+| Cookie semantics | Many cookies; `vtexFetchWithCookies` | One cart cookie; manual handling |
+
+The integration assumes Shopify is simpler than VTEX (which is generally true). Sites with complex Shopify setups (B2B, multi-region) may need to extend.
+
+## Open issues
+
+- `shopify/utils/admin/queries.ts` has a TODO: "Remove this once you add any other query." The Admin API surface is currently a stub.
+- The lack of bundled hooks (compared to VTEX) is a known gap. Sites build their own.
+
+## See also
+
+- [Commerce overview](/v2/en/commerce/overview)
+- [Shared commerce](/v2/en/commerce/shared)
+- [VTEX overview](/v2/en/commerce/vtex-overview) (for comparison)
+- [Loaders (concept)](/v2/en/concepts/loaders)

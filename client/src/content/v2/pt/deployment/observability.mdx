@@ -1,0 +1,227 @@
+---
+title: "Observability"
+description: "OpenTelemetry, instrumentedFetch, server timings, health endpoints."
+icon: "Activity"
+---
+
+import Callout from "../../../../components/ui/Callout.astro";
+
+v2 traz observability na caixa: traces OpenTelemetry, headers Server-Timing, métricas de health e tail logs do Worker. Esta página cobre o que vem grátis e como exportar para o coletor que você quiser.
+
+## OpenTelemetry
+
+`@decocms/start/observability` configura OTel automaticamente. Os pontos de auto-instrumentação:
+
+- **Cada request HTTP** → span de root para o response.
+- **Cada chamada de loader** → span filho com nome do loader, tempo, status.
+- **Cada chamada de matcher** → span filho com veredito.
+- **Cada `instrumentedFetch`** (incluindo `vtexFetch`, `shopifyFetch`) → span filho com URL, método, status, tempo.
+- **Cada renderização de section** → span filho com nome.
+
+Atributos comuns:
+
+```
+service.name = "minha-loja"
+service.version = "<git-sha>"
+http.method = "GET"
+http.url = "https://minha-loja.com/p/produto"
+deco.section = "site/sections/Hero/Hero.tsx"
+deco.profile = "pdp"
+deco.cache.status = "HIT"
+```
+
+## Exportando
+
+Default: spans são logados ao stdout (visível em `wrangler tail`). Para enviar a um coletor, configure exportador:
+
+```ts
+// src/setup.ts
+import { configureObservability } from "@decocms/start/observability";
+
+configureObservability({
+  exporter: "otlp",
+  endpoint: env.OTEL_ENDPOINT,
+  headers: { Authorization: `Bearer ${env.OTEL_TOKEN}` },
+});
+```
+
+Onde rotear:
+
+| Coletor | Notas |
+|---|---|
+| Honeycomb | OTLP nativo; exporter funciona out-of-box |
+| Grafana Tempo | Aceita OTLP; pareie com Loki para logs |
+| Datadog | Use vendor de OTel; alguns atributos são renomeados |
+| New Relic | OTLP nativo |
+
+Veja [HyperDX skill](https://github.com/decocms/deco-start/tree/main/.agents/skills) para o setup canônico em produção da deco.cx.
+
+## Server-Timing headers
+
+Cada response carrega timings:
+
+```
+Server-Timing: total;dur=125, vtex.pdp;dur=80, render;dur=15, cache;dur=2
+```
+
+Inspect em devtools tab Network → coluna Timing. Útil para spot-check de gargalos sem abrir o coletor de tracing.
+
+`@decocms/start` emite por default. Para customizar, use `addServerTiming`:
+
+```ts
+import { addServerTiming } from "@decocms/start/observability";
+
+const fetchData = async () => {
+  const start = performance.now();
+  const data = await fetchUpstream();
+  addServerTiming("upstream", performance.now() - start);
+  return data;
+};
+```
+
+## Health endpoint
+
+`/_health` retorna 200 com check básico. Use para liveness/readiness probes:
+
+```bash
+curl https://minha-loja.com/_health
+# → { "status": "ok", "version": "abc123" }
+```
+
+Adicione checks custom:
+
+```ts
+import { addHealthCheck } from "@decocms/start/observability";
+
+addHealthCheck("vtex", async () => {
+  const res = await fetch("https://loja.vtexcommercestable.com.br/api/...");
+  return res.ok ? "ok" : "degraded";
+});
+```
+
+`/_health` agrega; status all-ok responde 200, qualquer "degraded" responde 503.
+
+## Métricas custom
+
+```ts
+import { recordMetric } from "@decocms/start/observability";
+
+recordMetric("cart.items_added", 1, { product_id: "123" });
+recordMetric("checkout.duration_ms", 1250);
+```
+
+Exportadas via mesmo OTLP endpoint dos traces. Configure por separado se precisar:
+
+```ts
+configureObservability({
+  exporter: "otlp",
+  endpoint: env.OTEL_ENDPOINT,
+  metrics: {
+    endpoint: env.OTEL_METRICS_ENDPOINT,
+    interval: 60_000,
+  },
+});
+```
+
+## `instrumentedFetch`
+
+Coberto em [Loaders](/v2/pt/concepts/loaders). Lembrete:
+
+```ts
+import { createInstrumentedFetch } from "@decocms/start/sdk/instrumentedFetch";
+
+const vtexFetch = createInstrumentedFetch("vtex");
+```
+
+Toda chamada feita por essa instância pega seu próprio span com a label "vtex". `@decocms/apps` faz automaticamente quando você roda `setVtexFetch(createInstrumentedFetch("vtex"))` em setup.
+
+## Tail logs
+
+```bash
+npx wrangler tail --format pretty
+```
+
+Stream de requests em tempo real, com console.log e errors. Filtros úteis:
+
+```bash
+# só errors
+npx wrangler tail --status error
+
+# por path
+npx wrangler tail --search "/p/"
+
+# por região
+npx wrangler tail --colo gru01
+```
+
+Tail logs são complementares para tracing — bom para reativo (algo está quebrado agora) vs traces (analise tendência ao longo do tempo).
+
+## Sentry
+
+Para tracking de erro de usuário-visível, integre Sentry:
+
+```ts
+import * as Sentry from "@sentry/cloudflare";
+
+Sentry.init({
+  dsn: env.SENTRY_DSN,
+  tracesSampleRate: 0.01,
+});
+```
+
+`@sentry/cloudflare` é compatível com Workers. Exception capture acontece automaticamente quando handlers do Worker lançam.
+
+Casa&Vídeo usa Sentry; veja [`apps-start.config.ts`](/Users/fernandofrizzatti/development/workspace/decocms/casaevideo-storefront) para integração.
+
+## Real User Monitoring (RUM)
+
+Para Core Web Vitals (LCP, INP, CLS), client-side:
+
+```ts
+import { onCLS, onLCP, onINP } from "web-vitals";
+
+onLCP((metric) => {
+  fetch("/api/rum", { method: "POST", body: JSON.stringify(metric) });
+});
+```
+
+Expose `/api/rum` como server function que encaminha pro coletor. Default é encaminhar pro mesmo OTel endpoint dos server traces, mas pode ser separado.
+
+## Dashboards
+
+Padrões de dashboard típicos:
+
+| Painel | Query |
+|---|---|
+| Request rate | `count(spans) where service.name="minha-loja"` |
+| p50/p95/p99 latency | `percentile(duration_ms) where http.method="GET"` |
+| Cache hit rate | `count(spans) where deco.cache.status="HIT" / total` |
+| Errors | `count(spans) where status="error"` |
+| Slow loaders | `top(spans) where deco.loader.* and duration_ms>500` |
+
+Em Grafana: queries Tempo + Loki. Em Honeycomb: bookmarks vão diretas. Em Datadog: dashboards APM.
+
+## Custos
+
+Tracing pesado vira ruído quando volume cresce. Defaults:
+
+- **Sample 10%** de requests bem-sucedidos.
+- **Sample 100%** de errors (sempre logue).
+- **Sample 100%** de requests > 1s (sempre logue lentos).
+
+Override:
+
+```ts
+configureObservability({
+  sampleRate: 0.05,         // 5% baseline
+  errorSampleRate: 1.0,     // 100% de errors
+  slowThreshold: 2000,      // log requests > 2s
+});
+```
+
+## Veja também
+
+- [Loaders](/v2/pt/concepts/loaders)
+- [Worker entry](/v2/pt/framework/worker-entry)
+- [Cloudflare Workers](/v2/pt/deployment/cloudflare-workers)
+- [Estudo de caso Casa&Vídeo](/v2/pt/case-studies/casaevideo)

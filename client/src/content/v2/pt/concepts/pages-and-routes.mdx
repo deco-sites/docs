@@ -1,0 +1,157 @@
+---
+title: "Páginas e rotas"
+description: "Como URLs guiadas pelo CMS mapeiam para rotas TanStack Router via cmsRouteConfig."
+icon: "Route"
+---
+
+import Callout from "../../../../components/ui/Callout.astro";
+
+Em v2, **a maior parte das URLs de uma loja é guiada pelo CMS**. O framework provê dois helpers que conectam o TanStack Router ao resolver do CMS, então você não precisa escrever código por URL para páginas de conteúdo.
+
+## As duas rotas obrigatórias
+
+### Catch-all: `src/routes/$.tsx`
+
+Lida com toda URL não capturada por uma rota mais específica — PDPs, PLPs, páginas de conteúdo, busca, qualquer coisa que esteja em `.deco/blocks/`.
+
+```tsx
+// exemplo mínimo
+import { createFileRoute } from "@tanstack/react-router";
+import { cmsRouteConfig, loadCmsPage } from "@decocms/start/routes";
+
+export const Route = createFileRoute("/$")(
+  cmsRouteConfig({
+    siteName: "minha-loja",
+    defaultTitle: "Minha Loja",
+    ignoreSearchParams: ["skuId"],
+  }),
+);
+```
+
+### Home: `src/routes/index.tsx`
+
+Mesmo formato, para a raiz `/`:
+
+```tsx
+import { createFileRoute } from "@tanstack/react-router";
+import { cmsHomeRouteConfig } from "@decocms/start/routes";
+
+export const Route = createFileRoute("/")(
+  cmsHomeRouteConfig({ siteName: "minha-loja" }),
+);
+```
+
+## O que os helpers realmente fazem
+
+`cmsRouteConfig` retorna uma config TanStack Router com:
+
+- Um **loader** que chama `loadCmsPage({ siteName, pathname, search })` para resolver o block da página e suas sections.
+- Uma função **head** que extrai o SEO da página resolvida.
+- Um **`pendingComponent`** que renderiza o shell enquanto carrega.
+- Um **`errorComponent`** que mostra erros de section.
+- Um **`component`** padrão que renderiza `<DecoPageRenderer />` sobre os dados carregados.
+
+Você pode sobrescrever qualquer um. As lojas de referência fazem isso — veja [`baggagio-tanstack/src/routes/$.tsx`](/Users/fernandofrizzatti/development/workspace/decocms/baggagio-tanstack/src/routes/$.tsx) para um arquivo de rota real.
+
+## Opções importantes
+
+### `ignoreSearchParams`
+
+Search params que não estão nessa lista entram na cache key. A seleção de variante usa `?skuId=...`, o que causaria miss no cache em toda troca de SKU; coloque na lista para ignorar.
+
+```ts
+ignoreSearchParams: ["skuId", "_branch"]
+```
+
+### `staleTime` / `gcTime`
+
+Tunning de cache do loader cache do TanStack Router (separado do edge cache).
+
+```ts
+cmsRouteConfig({
+  siteName: "minha-loja",
+  staleTime: 30_000,
+  gcTime: 5 * 60_000,
+})
+```
+
+### `siteName`
+
+O identificador do site no admin. Tem que casar com o que está em `admin.deco.cx`.
+
+## Embrulhar com `withSiteGlobals`
+
+Alguns sites precisam injetar loaders ou heads globais por cima da rota CMS. `@decocms/start/routes` exporta `withSiteGlobals`:
+
+```9:18:/Users/fernandofrizzatti/development/workspace/decocms/baggagio-tanstack/src/routes/$.tsx
+const routeConfig = withSiteGlobals(
+  cmsRouteConfig({
+    siteName: "Bagaggio",
+    defaultTitle: "Baggagio-tanstack",
+    ignoreSearchParams: ["skuId"],
+  }),
+);
+```
+
+Isso injeta dados globais (analytics IDs, theme tokens etc.) em toda página sem ter que mexer em cada rota.
+
+## Rotas customizadas ao lado da catch-all
+
+Você pode adicionar rotas específicas que têm precedência sobre `$`:
+
+```
+src/routes/
+├── __root.tsx       # layout global
+├── index.tsx        # cmsHomeRouteConfig
+├── $.tsx            # cmsRouteConfig (catch-all)
+├── api/
+│   └── analytics.tsx   # POST handler, ganha do $
+└── checkout/
+    └── success.tsx     # página customizada de confirmação
+```
+
+TanStack Router resolve caminhos mais específicos primeiro, então qualquer arquivo explícito ganha da catch-all.
+
+## O root layout
+
+`src/routes/__root.tsx` é onde mora o shell — `<html>`, `<head>`, fontes, providers. Dois padrões:
+
+### Usar `DecoRootLayout`
+
+Casa&Vídeo e Le biscuit usam o shell que o framework provê, que cuida de fontes, preconnects e do iframe de preview do CMS:
+
+```tsx
+import { DecoRootLayout } from "@decocms/start/hooks";
+
+export const Route = createRootRoute({
+  component: () => (
+    <DecoRootLayout
+      account="minha-loja"
+      head={[/* fontes, preconnects */]}
+    />
+  ),
+});
+```
+
+### Construir o seu
+
+Bagaggio usa um shell custom para colocar o drawer do minicart e os links de Google Fonts diretamente. Veja [`baggagio-tanstack/src/routes/__root.tsx`](/Users/fernandofrizzatti/development/workspace/decocms/baggagio-tanstack/src/routes/__root.tsx).
+
+## Server functions e loaders
+
+Dentro de qualquer rota, você pode usar `createServerFn` de `@tanstack/react-start` para lógica server-side arbitrária. O framework usa internamente para [`loadDeferredSection`](/v2/pt/concepts/deferred-rendering). Use também para endpoints específicos do site ao lado das rotas CMS.
+
+<Callout type="warning">
+**Não coloque handlers de admin (`/live/_meta`, `/.decofile`, `/deco/render`, `/deco/invoke`) dentro de server entries do TanStack.** O Vite remove lógica custom de `createServerEntry` em builds de produção. Rotas de admin têm que viver no `worker-entry.ts` via `createDecoWorkerEntry`. Veja [Referência do worker entry](/v2/pt/framework/worker-entry).
+</Callout>
+
+## Cache headers por rota
+
+Detecção do profile de cache por padrão de URL é automática. Para sobrescrever por rota, defina `headers` na config da rota. O framework também expõe `setCacheProfile` e `registerCachePattern` para tunning global. Veja [Estratégia de cache](/v2/pt/deployment/caching-strategy).
+
+## Veja também
+
+- [Sections](/v2/pt/concepts/sections)
+- [Blocks](/v2/pt/concepts/blocks)
+- [Worker entry](/v2/pt/framework/worker-entry)
+- [Referência de routes](/v2/pt/framework/routes)

@@ -1,0 +1,207 @@
+---
+title: "Worker entry"
+description: "createDecoWorkerEntry — the outermost wrapper around your Cloudflare Worker."
+icon: "Server"
+---
+
+import Callout from "../../../../components/ui/Callout.astro";
+
+`createDecoWorkerEntry` is the outermost layer of a v2 storefront. It wraps the TanStack Start server entry and runs admin routes, cache logic, and static asset bypass before the framework gets the request.
+
+## Import
+
+```ts
+import { createDecoWorkerEntry } from "@decocms/start/sdk/workerEntry";
+```
+
+## Minimum usage
+
+```ts
+// src/worker-entry.ts
+import "./setup";   // MUST be first
+
+import { createDecoWorkerEntry } from "@decocms/start/sdk/workerEntry";
+import {
+  handleMeta,
+  handleDecofile,
+  handleRender,
+  handleInvoke,
+} from "@decocms/start/admin";
+import serverEntry from "./server";
+
+const decoWorker = createDecoWorkerEntry(serverEntry, {
+  admin: {
+    handleMeta,
+    handleDecofile,
+    handleRender,
+    handleInvoke,
+  },
+});
+
+export default decoWorker;
+```
+
+That's the smallest production-ready worker entry.
+
+<Callout type="warning">
+**`import "./setup"` must come first.** The setup file registers sections, loaders, and matchers in module-scope state. If TanStack Start's server-fn split happens before setup runs, parts of the registry are missing in production. Always put `import "./setup";` at the top of `src/server.ts` AND `src/worker-entry.ts`.
+</Callout>
+
+## Request flow
+
+```
+Request → createDecoWorkerEntry()
+  ├─ tryAdminRoute()        → /live/_meta, /.decofile, /live/previews/*
+  ├─ cache purge check      → __deco_purge_cache=1
+  ├─ static asset bypass    → /assets/*, favicon.ico, sprite.svg
+  ├─ Cloudflare edge cache  → caches.open() with profile-based TTLs
+  └─ serverEntry.fetch()    → TanStack Start handles the rest
+```
+
+Steps are short-circuit: an admin route returns early without touching the framework; a cache HIT returns early without running the server entry.
+
+## Options
+
+```ts
+type WorkerEntryOptions = {
+  admin?: {
+    handleMeta: AdminHandler;
+    handleDecofile: AdminHandler;
+    handleRender: AdminHandler;
+    handleInvoke: AdminHandler;
+  };
+  proxyHandler?: (request: Request, env: Env) => Promise<Response | null>;
+  buildSegment?: (request: Request) => Record<string, string>;
+  productionOrigins?: string[];
+  cachePurgeKey?: string;
+};
+```
+
+### `admin`
+
+Pass the four admin handlers from `@decocms/start/admin`. **Without these, admin can't talk to your storefront.**
+
+If you want to extend admin behavior (custom auth, custom CORS rules), wrap the handlers:
+
+```ts
+const handleMetaWithAuth: AdminHandler = async (request, env) => {
+  if (!isAuthorized(request)) return new Response("Unauthorized", { status: 401 });
+  return handleMeta(request, env);
+};
+```
+
+### `proxyHandler`
+
+Runs after admin routes and after the cache check, but before the server entry. Used for site-specific proxies (commerce checkout, legacy URL forwarders).
+
+[Le biscuit](/Users/fernandofrizzatti/development/workspace/decocms/lebiscuit-tanstack/src/worker-entry.ts) and [Casa&Video](/Users/fernandofrizzatti/development/workspace/decocms/casaevideo-storefront/src/worker-entry.ts) use it for the VTEX checkout proxy:
+
+```ts
+import { createVtexCheckoutProxy } from "@decocms/apps/vtex/middleware";
+
+const proxyHandler = createVtexCheckoutProxy({
+  checkoutOrigin: "https://www.example.com.br",
+  htmlTransform: (html) => html.replace(/<script>/g, "<script defer>"),
+});
+
+const decoWorker = createDecoWorkerEntry(serverEntry, {
+  admin: {/* ... */},
+  proxyHandler,
+});
+```
+
+[Bagaggio](/Users/fernandofrizzatti/development/workspace/decocms/baggagio-tanstack/src/worker-entry.ts) uses `proxyHandler` for legacy URL redirects from a CSV file.
+
+### `buildSegment`
+
+Returns a key-value object mixed into the cache key. Used for cache segmentation by region, device, or user state.
+
+```ts
+import { detectDevice } from "@decocms/start/sdk/useDevice";
+
+const decoWorker = createDecoWorkerEntry(serverEntry, {
+  admin: {/* ... */},
+  buildSegment: (request) => ({
+    device: detectDevice(request).type,        // mobile / tablet / desktop
+    country: request.headers.get("cf-ipcountry") ?? "?",
+  }),
+});
+```
+
+The framework appends the segment to the cache key, so different segments hit different cached responses.
+
+### `productionOrigins`
+
+Whitelist of origins admin is allowed to talk to. Defaults to admin's origin in production, plus localhost in dev.
+
+### `cachePurgeKey`
+
+Secret key for the cache purge endpoint. When `?__deco_purge_cache=<key>` is present, the framework purges the matching cached entries. Set to a strong random string in production.
+
+## A/B testing wrapper
+
+For site-version-level A/B (canary deploys, full-stack experiments), wrap the worker in `withABTesting`:
+
+```ts
+import { withABTesting } from "@decocms/start/sdk/abTesting";
+
+export default withABTesting(decoWorker, {
+  kvBinding: "SITES_KV",
+  preHandler: (request, url) => {
+    // optional pre-handler before A/B kicks in
+    return null;
+  },
+});
+```
+
+See [A/B testing and redirects](/v2/en/deployment/ab-testing-and-redirects) for the deployment picture.
+
+## Redirect loading
+
+`@decocms/start/sdk/redirects` exposes `loadRedirects(blocks)` that finds CMS-defined redirects in `.deco/blocks/` and produces a matcher you can call from `proxyHandler`:
+
+```ts
+import { loadBlocks } from "@decocms/start/cms";
+import { loadRedirects, matchRedirect } from "@decocms/start/sdk/redirects";
+
+const cmsRedirects = loadRedirects(loadBlocks());
+
+const proxyHandler = (request: Request, url: URL) => {
+  const redirect = matchRedirect(url.pathname, cmsRedirects);
+  if (redirect) {
+    const target = url.search ? `${redirect.to}${url.search}` : redirect.to;
+    return new Response(null, { status: redirect.status, headers: { Location: target } });
+  }
+  return null;
+};
+```
+
+For sites with thousands of legacy redirects, see [Bagaggio's CSV pattern](/v2/en/case-studies/baggagio).
+
+## Static asset handling
+
+Static assets (`/assets/*`, `/favicon.ico`, `/sprite.svg`) bypass the framework entirely. The Worker reads from the bundled assets directory and returns with appropriate cache headers. You don't configure this — it's automatic.
+
+## Cache integration
+
+`createDecoWorkerEntry` calls `caches.default` directly. The cache key is the URL plus the segment from `buildSegment`. TTLs are derived from URL profiles via [`@decocms/start/sdk/cacheHeaders`](/v2/en/framework/caching).
+
+<Callout type="info">
+**Cache API ignores `s-maxage`.** The framework writes `max-age` (browser) and stores entries with the equivalent of `s-maxage` for the duration. This works around a Cloudflare Cache API quirk.
+</Callout>
+
+## Why admin handlers are at this layer
+
+You'll see this warning twice: it's important.
+
+**Vite strips custom fetch logic from TanStack `createServerEntry` in production builds.** If you put `/live/_meta` inside `server.ts`, it works in dev mode and silently disappears in prod. Always wire admin through `worker-entry.ts`.
+
+The framework intentionally splits server entry (TanStack-owned) from worker entry (storefront-owned) for this reason.
+
+## See also
+
+- [Setup](/v2/en/framework/setup)
+- [Vite plugin](/v2/en/framework/vite-plugin)
+- [Caching](/v2/en/framework/caching)
+- [Cloudflare Workers deployment](/v2/en/deployment/cloudflare-workers)
+- [Bagaggio case study](/v2/en/case-studies/baggagio)

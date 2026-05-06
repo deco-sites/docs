@@ -1,0 +1,208 @@
+---
+title: "Invoke"
+description: "createInvoke, invoke, batch invoke, and the generated typed client."
+icon: "Send"
+---
+
+import Callout from "../../../../components/ui/Callout.astro";
+
+The invoke surface is how the browser, the admin, and your own code call loaders and actions over HTTP. The framework generates a typed client (`invoke.gen.ts`) so call sites are end-to-end type-safe.
+
+## The endpoint
+
+Every invoke target is reachable at `/deco/invoke/<resolveType>`:
+
+```http
+POST /deco/invoke
+Content-Type: application/json
+
+{
+  "__resolveType": "vtex/loaders/cart.ts",
+  "props": {}
+}
+```
+
+The handler runs the resolved loader/action and returns its result as JSON. Cookies, auth, and request context propagate from the original request.
+
+## Generated client
+
+`scripts/generate-invoke.ts` walks the loader/action registry and emits `src/server/cms/invoke.gen.ts`:
+
+```ts
+// generated
+export const invoke = {
+  vtex: {
+    loaders: {
+      cart: (props?: CartProps) => /* ... */,
+      productList: (props: ProductListProps) => /* ... */,
+    },
+    actions: {
+      cart: {
+        addItems: (props: AddItemsProps) => /* ... */,
+      },
+    },
+  },
+};
+```
+
+You import from this and get autocompletion + type-checking:
+
+```ts
+import { invoke } from "~/server/cms/invoke.gen";
+
+const cart = await invoke.vtex.loaders.cart();
+const updated = await invoke.vtex.actions.cart.addItems({
+  lines: [{ id: "sku-1", quantity: 1 }],
+});
+```
+
+Regenerate after adding new loaders/actions:
+
+```bash
+npx tsx node_modules/@decocms/start/scripts/generate-invoke.ts
+# or via the npm script in your package.json:
+npm run generate:invoke
+```
+
+## `createInvoke`
+
+Lower-level factory for building your own invoke client. Used by the generator; you rarely call it manually.
+
+```ts
+import { createInvoke } from "@decocms/start/sdk/createInvoke";
+
+const invoke = createInvoke({
+  baseUrl: "/deco/invoke",
+  fetch: globalThis.fetch,
+});
+
+const result = await invoke({
+  __resolveType: "vtex/loaders/cart.ts",
+  props: {},
+});
+```
+
+Useful when:
+
+- You're building a custom non-framework client (e.g. a CLI that hits the storefront's invoke endpoint).
+- You're testing invoke flows without spinning up the full Worker.
+
+## Batch invoke
+
+For multiple invokes in one round-trip, use the batch form:
+
+```ts
+import { invoke } from "~/server/cms/invoke.gen";
+
+const [cart, user, wishlist] = await invoke.batch([
+  { __resolveType: "vtex/loaders/cart.ts" },
+  { __resolveType: "vtex/loaders/user.ts" },
+  { __resolveType: "vtex/loaders/wishlist.ts" },
+]);
+```
+
+The framework runs them in parallel server-side and returns one combined response. Better than three sequential round-trips, especially over slow connections.
+
+## Server-side invoke
+
+Inside loaders, you can invoke other loaders without going through HTTP:
+
+```ts
+import { invoke } from "~/server/cms/invoke.gen";
+
+export const loader = async (props: Props) => {
+  const cart = await invoke.vtex.loaders.cart();
+  return { ...props, cart };
+};
+```
+
+The framework detects you're already on the server and short-circuits the HTTP round-trip — direct function call.
+
+## Server functions vs. invoke
+
+TanStack Start has its own `createServerFn`:
+
+```ts
+import { createServerFn } from "@tanstack/react-start";
+
+const myFn = createServerFn("POST", async (input) => {/* ... */});
+```
+
+Use `createServerFn` for site-specific server logic (form submissions, custom endpoints).
+
+Use **`invoke`** for CMS-registered loaders and actions (cart, products, user, anything in the registry).
+
+The two coexist — server functions are for ad-hoc, invoke is for the CMS-backed surface.
+
+## Auth and cookies
+
+Invoke requests carry the original request's cookies via `RequestContext`. Loaders/actions can read them as if called inside a regular section render:
+
+```ts
+export const loader = async (props: Props) => {
+  const ctx = RequestContext.current;
+  const authCookie = ctx?.request.headers.get("cookie") ?? "";
+  return await fetchUser(authCookie);
+};
+```
+
+Set-Cookie responses from invoke calls are propagated back to the client through the response headers.
+
+## Error handling
+
+Invoke errors come back as a JSON shape:
+
+```json
+{
+  "error": {
+    "type": "ValidationError",
+    "message": "Invalid input",
+    "fieldErrors": { "slug": "required" }
+  }
+}
+```
+
+The generated client automatically throws on errors:
+
+```ts
+try {
+  const cart = await invoke.vtex.loaders.cart();
+} catch (error) {
+  // standard JS Error with .message and (when applicable) .fieldErrors
+}
+```
+
+## Caching
+
+Invoke responses can be cached the same way loader responses are — wrap the underlying loader in `createCachedLoader`. The cache key should not include cookies if you want shared caching, but **must** include user-specific identifiers if the data is user-scoped.
+
+```ts
+const cachedCart = createCachedLoader({
+  key: ({ orderFormId }) => `cart:${orderFormId}`,
+  ttl: 5_000,
+  loader: async ({ orderFormId }) => fetchCart(orderFormId),
+});
+```
+
+<Callout type="warning">
+**Don't cache user-scoped invoke responses with a global key.** A `cart` loader that returns "cart for user A" cached under `cart` will serve user A's cart to user B. Always include a user/session identifier in the key.
+</Callout>
+
+## Tracing
+
+Every invoke call is auto-traced. In `wrangler tail` you'll see spans like:
+
+```
+POST /deco/invoke
+└─ invoke.vtex/loaders/cart.ts (124ms)
+   └─ fetch.vtex (89ms)
+```
+
+Useful when debugging slow paths.
+
+## See also
+
+- [Loaders (concept)](/v2/en/concepts/loaders)
+- [Caching](/v2/en/framework/caching)
+- [Admin protocol](/v2/en/concepts/admin-protocol)
+- [VTEX hooks](/v2/en/commerce/vtex-hooks)

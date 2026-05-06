@@ -1,0 +1,90 @@
+---
+title: "Visão geral dos estudos de caso"
+description: "Como ler estes — estudos de caso são read-only references, não receitas para copiar literalmente."
+icon: "BookOpen"
+---
+
+import Callout from "../../../../components/ui/Callout.astro";
+
+Esta seção tem três lojas reais em produção rodando deco.cx v2. Cada uma faz tradeoffs diferentes — escolha a que combina com sua escala e complexidade.
+
+## Como ler estes
+
+Os estudos de caso são **referências em read-only**. Não são tutorials você-copia-e-cola. Eles documentam decisões em contexto: o que essa loja precisava, como elas atenderam essa necessidade, e quais tradeoffs aparecem em produção.
+
+Quando você ler:
+
+- **Procure por padrões** que combinam com o seu site. Dois sites podem ter o mesmo problema; uma solução vai funcionar pra um e quebrar pro outro.
+- **Note as omissões.** Le biscuit não tem fetch regional; isso é deliberadamente certo para a loja deles e errado para Casa&Vídeo.
+- **Cuide dos números.** "5000 produtos" e "500.000 produtos" levam a estratégias diferentes.
+
+Não são as únicas três lojas v2 — só são as três cuja codebase é open source o suficiente para citar diretamente.
+
+## As três lojas
+
+### Casa&Vídeo
+
+A mais elaborada. Loja brasileira de varejo (eletrônicos + utilidades domésticas) com tráfego alto, multi-região, A/B testing maduro, fluxo de checkout custom. Use como referência para:
+
+- Async section rendering tunning para performance.
+- Fetch regional VTEX por CEP.
+- A/B testing + KV + redirects vindos do CMS.
+- Overrides de profile de cache em larga escala.
+- Documentação interna como gap analysis (eles documentam tudo).
+
+[Ler →](/v2/pt/case-studies/casaevideo)
+
+### Bagaggio
+
+Médio porte. Bagagem brasileira / acessórios. Sem A/B; CSV redirects (10k+ legacy URLs); loaders podados; sem fetch regional. Use como referência para:
+
+- CSV redirects no worker (alta-performance, low-mantence).
+- `loaders.gen.ts` podado pelo decofile (--decofile-dir).
+- Padrão `withSiteGlobals` em rotas.
+- Pattern minimal-but-not-too-minimal.
+
+[Ler →](/v2/pt/case-studies/baggagio)
+
+### Le biscuit
+
+Mais close-to-spine. Marca brasileira de moda. Setup minimal: sem A/B, sem CSV redirects, sem region-aware fetch, defaults straight de framework. Use como referência para:
+
+- Como uma loja v2 default fica.
+- Quanta coisa a stack default cuida sozinha.
+- Quando customização não é necessária.
+
+[Ler →](/v2/pt/case-studies/lebiscuit)
+
+## Tabela comparativa
+
+| | Casa&Vídeo | Bagaggio | Le biscuit |
+|---|---|---|---|
+| Plataforma | VTEX | VTEX | VTEX |
+| Stack | TanStack Start, React 19, CF Workers | TanStack Start, React 19, CF Workers | TanStack Start, React 19, CF Workers |
+| ABTesting | ✓ via KV | ✗ | ✗ |
+| Redirects | CMS-driven via `loadRedirects` | CSV (10k+) | CMS-driven |
+| Region-aware fetch | ✓ | ✗ | ✗ |
+| Cache profile overrides | ✓ via `cache-config.ts` | ✗ | ✗ |
+| Loaders podados | ✗ | ✓ via `--decofile-dir` | ✗ |
+| `withSiteGlobals` | ✓ | ✓ | ✗ |
+| Custom proxy handler | ✓ checkout VTEX | ✓ legacy redirects | ✓ checkout VTEX |
+| Async rendering tunning | ✓ profundo | ✓ default | ✓ default |
+| Internal docs/ | ✓ extenso | ✗ | ✗ |
+| Tamanho do site (sections) | 70+ | 35+ | 25+ |
+
+Use como heurística: se sua loja parece com um deles em escala, comece pelo padrão dela.
+
+## Onde NÃO seguir
+
+- **Não copie `cache-config.ts` cego.** Profile overrides do Casa&Vídeo refletem o tráfego deles. Sua mistura de URLs vai diferir.
+- **Não copie todo override de proxy handler.** Cada loja teve razão para customizar; você pode não ter.
+- **Não copie scaffolding de sections.** Eles construíram contra o catálogo deles. Suas sections vão ser diferentes.
+
+Use os estudos de caso para ver o que é possível, não para herdar implementação.
+
+## Veja também
+
+- [Casa&Vídeo](/v2/pt/case-studies/casaevideo)
+- [Bagaggio](/v2/pt/case-studies/baggagio)
+- [Le biscuit](/v2/pt/case-studies/lebiscuit)
+- [Visão geral da stack](/v2/pt/getting-started/stack-overview)

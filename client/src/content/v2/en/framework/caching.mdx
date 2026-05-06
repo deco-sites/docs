@@ -1,0 +1,245 @@
+---
+title: "Caching"
+description: "Edge cache profiles, cacheHeaders, cachedLoader, mergeCacheControl, urlUtils."
+icon: "Database"
+---
+
+import Callout from "../../../../components/ui/Callout.astro";
+
+Caching in v2 spans three layers: the **Cloudflare edge cache** (Cache API), the **TanStack Router loader cache** (per-tab in the browser), and the **in-process `cachedLoader`** (per-Worker-isolate, with SWR + dedup). This page documents all three from the framework's perspective.
+
+## Edge cache profiles
+
+`@decocms/start/sdk/cacheHeaders` ships URL-to-profile detection. Default profiles:
+
+| URL pattern | Profile | Edge `s-maxage` | Edge SWR |
+|---|---|---|---|
+| `/` | `static` | 1 day | 7 days |
+| `*/p` (PDP) | `product` | 5 min | 30 min |
+| `/s`, `?q=` (search) | `search` | 60 s | 5 min |
+| `/cart`, `/checkout` | `private` | (none) | (none) |
+| Everything else | `listing` | 2 min | 30 min |
+
+The Worker entry consults this map and writes the right `Cache-Control` (and Cache API entry) for each request.
+
+```ts
+import { detectCacheProfile, cacheHeaders } from "@decocms/start/sdk";
+
+const profile = detectCacheProfile(url.pathname, url.searchParams);
+const headers = cacheHeaders(profile);
+```
+
+## Customizing profiles
+
+Override the built-in profiles with `setCacheProfile` from `@decocms/start/sdk/cacheHeaders`:
+
+```ts
+// src/cache-config.ts
+import { setCacheProfile } from "@decocms/start/sdk/cacheHeaders";
+
+setCacheProfile("static", {
+  edge: { fresh: 1800, swr: 7200, sie: 43200 },
+  browser: { fresh: 300, swr: 3600, sie: 14400 },
+  client: { staleTime: 600_000, gcTime: 3_600_000 },
+});
+
+setCacheProfile("listing", {
+  edge: { fresh: 300, swr: 1800, sie: 7200 },
+  // ...
+});
+```
+
+This is exactly what [Casa&Video does](/Users/fernandofrizzatti/development/workspace/decocms/casaevideo-storefront/src/cache-config.ts) — looser TTLs for static-shaped routes, tighter for search.
+
+Import the file from `setup.ts` so the overrides apply before the framework reads the config:
+
+```ts
+// src/setup.ts
+import "./cache-config";
+import { createSiteSetup } from "@decocms/start/setup";
+// ...
+```
+
+## `registerCachePattern`
+
+Add new URL → profile mappings without overwriting the built-ins:
+
+```ts
+import { registerCachePattern } from "@decocms/start/sdk/cacheHeaders";
+
+registerCachePattern({
+  test: (pathname) => pathname === "/sitemap.xml",
+  profile: "static",
+});
+```
+
+This is what [Bagaggio uses](/Users/fernandofrizzatti/development/workspace/decocms/baggagio-tanstack/src/cache-config.ts) to route the sitemap to the static profile.
+
+## Cache API mechanics
+
+`@decocms/start/sdk/workerEntry` interacts with `caches.default` directly:
+
+1. Compute cache key: URL + segment.
+2. Probe `caches.default.match(key)`.
+3. **HIT** → return immediately, optionally trigger SWR revalidation.
+4. **MISS** → run TanStack Start, cache the response, return.
+
+<Callout type="info">
+**Cache API ignores `s-maxage`.** Cloudflare's Cache API only honors `max-age` for storage duration. The framework writes `max-age` equal to `sMaxAge` from the profile so cached entries last the right amount of time. Browser-facing `Cache-Control` carries both `max-age` (browser) and `s-maxage` (intermediaries), but the Workers Cache API specifically requires this workaround.
+</Callout>
+
+### Segments
+
+Segments are key-value pairs that mix into the cache key. Use them to vary cached responses by device, region, or user state:
+
+```ts
+const decoWorker = createDecoWorkerEntry(serverEntry, {
+  buildSegment: (request) => ({
+    device: detectDevice(request).type,
+    country: request.headers.get("cf-ipcountry") ?? "?",
+  }),
+});
+```
+
+Be conservative — every segment dimension multiplies cached response counts.
+
+## `cachedLoader`
+
+In-process cache for loader functions. Provides:
+
+- **In-flight deduplication** — concurrent requests with the same key share one upstream fetch.
+- **SWR** — cached responses serve immediately; fresh data fetches in the background.
+- **TTL by status** — 2xx responses cache long, 4xx short, 5xx not at all.
+- **LRU eviction** — bounded memory.
+
+```ts
+import { createCachedLoader } from "@decocms/start/sdk/cachedLoader";
+
+export const cachedProduct = createCachedLoader({
+  key: (props: { slug: string }) => `product:${props.slug}`,
+  ttl: 60_000,
+  loader: async ({ slug }) => fetchProduct(slug),
+});
+
+// Usage
+const product = await cachedProduct({ slug: "blue-widget" });
+```
+
+### Options
+
+```ts
+createCachedLoader({
+  key: (input) => string;            // cache key derivation
+  ttl?: number;                       // ms; default 60_000
+  staleTtl?: number;                  // ms during which stale data serves with background revalidate
+  shouldCache?: (result) => boolean;  // gate on response (e.g. don't cache empty arrays)
+  loader: (input) => Promise<T>;      // upstream fetch
+});
+```
+
+The key function is critical. If two semantically-different requests produce the same key, you'll serve stale data from the wrong context.
+
+### Where it's used
+
+`@decocms/apps` wraps every commerce inline loader with `createCachedLoader`. PDP, PLP, shelves, suggestions — all cached and deduped automatically. See [`createVtexCommerceLoaders`](/Users/fernandofrizzatti/development/workspace/decocms/apps-start/vtex/commerceLoaders.ts).
+
+## `mergeCacheControl`
+
+Combines multiple `Cache-Control` headers into the most-restrictive merged value. Used when chaining middleware that each set their own headers.
+
+```ts
+import { mergeCacheControl } from "@decocms/start/sdk/mergeCacheControl";
+
+const merged = mergeCacheControl(["max-age=300", "private, max-age=60"]);
+// → "private, max-age=60"
+```
+
+The merger always takes the shortest TTL, the most restrictive privacy directive, and the strictest revalidation flag.
+
+## `instrumentedFetch` and caching
+
+`createInstrumentedFetch` (from `@decocms/start/sdk/instrumentedFetch`) wraps `fetch` with tracing and metrics. Use it inside loaders:
+
+```ts
+import { createInstrumentedFetch } from "@decocms/start/sdk/instrumentedFetch";
+
+const vtexFetch = createInstrumentedFetch("vtex");
+
+const loader = async ({ slug }) => {
+  return await vtexFetch(`https://api.vtex.com/products/${slug}`);
+};
+```
+
+The instrumented fetch:
+
+- Emits OpenTelemetry spans (`fetch.vtex` etc.).
+- Adds Server-Timing entries to the response.
+- Counts via the framework's metrics meter.
+
+## `urlUtils`
+
+Helpers for URL canonicalization, used by the cache key builder and by SEO:
+
+```ts
+import { canonicalUrl, normalizeUrl } from "@decocms/start/sdk/urlUtils";
+
+const canonical = canonicalUrl(url);
+const normalized = normalizeUrl(url, { stripTrackingParams: true });
+```
+
+Used internally to ensure `/products?utm_source=x` and `/products?utm_source=y` produce the same cache key.
+
+## `normalizeUrls`
+
+Bulk URL normalization for sitemaps, redirect tables, and analytics. Strips known tracking params, normalizes trailing slashes, lowercases the host.
+
+```ts
+import { normalizeUrls } from "@decocms/start/sdk/normalizeUrls";
+
+const cleaned = normalizeUrls([
+  "https://my-store.com/products?utm_source=fb",
+  "https://my-store.com/products/",
+]);
+// → ["https://my-store.com/products", "https://my-store.com/products"]
+```
+
+## Route-level cache (TanStack Router)
+
+The TanStack Router loader cache is separate from the edge cache. Tune via `staleTime` and `gcTime` on `cmsRouteConfig`:
+
+```ts
+cmsRouteConfig({
+  siteName: "my-store",
+  staleTime: 30_000,    // ms; loader data fresh for this long
+  gcTime: 5 * 60_000,   // ms; loader data evicted after this long
+})
+```
+
+In dev mode, set `staleTime: 0` to always re-fetch on navigation. In prod, longer is better for instant back-button navigation.
+
+## When caches collide
+
+Three-layer caching is powerful but easy to misconfigure. A common mistake:
+
+- Edge cache holds a stale page from before a CMS publish.
+- Browser cache holds a different stale version because of a different `max-age`.
+- TanStack Router holds yet another version per tab.
+
+To avoid: set `s-maxage` (edge) significantly longer than `max-age` (browser) so the edge is the source of truth, and use the cache purge endpoint to invalidate the edge on publish.
+
+## Cache purge
+
+The framework supports a purge probe:
+
+```
+GET /any-url?__deco_purge_cache=<key>
+```
+
+Where `<key>` matches `cachePurgeKey` you passed to `createDecoWorkerEntry`. The probe purges the matching cache entries. Use this from a CI hook on CMS publish.
+
+## See also
+
+- [Worker entry](/v2/en/framework/worker-entry)
+- [Loaders](/v2/en/concepts/loaders)
+- [Caching strategy (deployment)](/v2/en/deployment/caching-strategy)
+- [Casa&Video case study](/v2/en/case-studies/casaevideo)

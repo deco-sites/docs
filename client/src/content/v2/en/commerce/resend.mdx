@@ -1,0 +1,166 @@
+---
+title: "Resend"
+description: "Email integration via the Resend API."
+icon: "Mail"
+---
+
+import Callout from "../../../../components/ui/Callout.astro";
+
+`@decocms/apps/resend` is a small email integration around the [Resend](https://resend.com) API. It exposes one action — `sendEmail` — that you can invoke from any server-side context (form handlers, post-checkout flows, contact forms).
+
+## Configuration
+
+### Block
+
+```json
+{
+  "__resolveType": "deco-resend",
+  "apiKey": { "__resolveType": "secret", "name": "RESEND_API_KEY" }
+}
+```
+
+### Wiring
+
+If you use `autoconfigApps()`, no extra wiring needed — the registry includes `deco-resend`. If not, configure manually:
+
+```ts
+import * as resendApp from "@decocms/apps/resend/mod";
+
+const resend = await resendApp.configure(
+  { apiKey: { secret: "RESEND_API_KEY" } },
+  resolveSecret,
+);
+```
+
+Set the secret:
+
+```bash
+wrangler secret put RESEND_API_KEY
+```
+
+## Sending email
+
+### Via invoke
+
+```ts
+import { invoke } from "~/server/cms/invoke.gen";
+
+await invoke.resend.actions.emails.send({
+  from: "noreply@my-store.com",
+  to: ["customer@example.com"],
+  subject: "Order confirmation",
+  html: "<h1>Thanks!</h1><p>Your order is on the way.</p>",
+});
+```
+
+### Direct call
+
+```ts
+import { sendEmail } from "@decocms/apps/resend/actions/send";
+
+await sendEmail({
+  from: "noreply@my-store.com",
+  to: ["customer@example.com"],
+  subject: "Order confirmation",
+  html: "<h1>Thanks!</h1>",
+});
+```
+
+The action POSTs to `https://api.resend.com/emails`. Resend handles delivery, bouncing, deliverability headers.
+
+## Inputs
+
+```ts
+type SendEmailInput = {
+  from: string;
+  to: string | string[];
+  subject: string;
+  html?: string;
+  text?: string;
+  cc?: string[];
+  bcc?: string[];
+  replyTo?: string;
+  attachments?: Array<{ filename: string; content: string }>; // base64 content
+  tags?: Array<{ name: string; value: string }>;
+};
+```
+
+The `from` address must be on a domain you've verified in your Resend dashboard. Resend will reject unverified senders.
+
+## Outputs
+
+```ts
+type SendEmailOutput = {
+  id: string;          // Resend message ID
+};
+```
+
+You get back the message ID, which you can use for analytics or to query the Resend dashboard for delivery status.
+
+## Use cases
+
+The Resend integration covers the common sites of email:
+
+- **Form submissions** — newsletter signups, contact forms.
+- **Order notifications** — post-checkout receipts when your commerce stack doesn't handle them.
+- **Internal alerts** — alerting site admins on unusual events (rare).
+
+For high-volume transactional email (every order, every shipment update), Resend can scale, but consider whether your commerce platform (VTEX, Shopify) already sends those emails — duplicating sends is annoying and costly.
+
+## Templates
+
+The Resend action does not ship templates. Render HTML server-side however you prefer:
+
+```ts
+const html = await renderToString(<OrderConfirmation order={order} />);
+
+await sendEmail({
+  from: "noreply@my-store.com",
+  to: order.customer.email,
+  subject: `Order ${order.id} confirmed`,
+  html,
+});
+```
+
+For richer template support, [react-email](https://react.email) integrates well with Resend and works in Workers.
+
+## Custom invoke handlers
+
+The Resend `mod.ts` registers a custom invoke handler for `resend/actions/emails/send` (with `.ts` alias). This is how the typed `invoke.resend.actions.emails.send` ends up wired without you registering it.
+
+If you build custom email flows on top of Resend, you can register your own handlers:
+
+```ts
+import { configureResend } from "@decocms/apps/resend/mod";
+
+// inside your custom configure
+const handlers = {
+  ...defaultHandlers,
+  "resend/actions/orderConfirmation": myOrderConfirmation,
+};
+```
+
+## Rate limits
+
+Resend has plan-tier rate limits (10/sec on free tier as of writing). For high bursts, queue email send via Cloudflare Queues or a similar mechanism rather than hitting Resend directly from the request path.
+
+<Callout type="warning">
+**Don't `await` email sends in critical user-facing paths.** A 200ms email API call is 200ms the user waits for the page to respond. Emit a fire-and-forget call (e.g. `ctx.waitUntil(sendEmail(...))`) so the response returns immediately.
+
+Inside a Worker:
+
+```ts
+ctx.waitUntil(sendEmail({/*...*/}));
+return new Response("OK", { status: 200 });
+```
+</Callout>
+
+## Stability
+
+Resend ships in `@decocms/apps` like VTEX and Shopify, but its `preview` field in `mod.ts` is `undefined` — meaning admin preview integration isn't fully built out yet. The runtime action is stable and production-used.
+
+## See also
+
+- [Commerce overview](/v2/en/commerce/overview)
+- [Invoke](/v2/en/framework/invoke)
+- [Loaders (concept)](/v2/en/concepts/loaders)

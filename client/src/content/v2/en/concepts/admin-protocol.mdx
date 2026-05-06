@@ -1,0 +1,155 @@
+---
+title: "Admin protocol"
+description: "How admin.deco.cx talks to your storefront — meta, decofile, render, invoke."
+icon: "Settings"
+---
+
+import Callout from "../../../../components/ui/Callout.astro";
+
+The admin protocol is the contract between `admin.deco.cx` and your self-hosted storefront. It's small — four endpoints — but it's how editing, previewing, and content sync work.
+
+## The four endpoints
+
+| Method | Path | Purpose |
+|---|---|---|
+| `GET` | `/live/_meta` | JSON Schema + section/loader manifest, for the admin UI |
+| `GET` | `/.decofile` | All site blocks (the decofile bundle) |
+| `POST` | `/deco/render` | Render a section or page in the preview iframe |
+| `POST` | `/deco/invoke` | Run a loader or action and return its result |
+
+These all live in [`@decocms/start/admin`](/Users/fernandofrizzatti/development/workspace/decocms/deco-start/src/admin) and are wired into the worker via `createDecoWorkerEntry`.
+
+## `/live/_meta`
+
+Returns a JSON document with:
+
+- **`schemas`** — JSON Schema for every section's `Props`, derived from your TypeScript at build time by [`generate-schema.ts`](/Users/fernandofrizzatti/development/workspace/decocms/deco-start/scripts/generate-schema.ts).
+- **`manifest`** — registry of section IDs, loader IDs, action IDs, app IDs.
+- **`framework`** — base definitions (`Page`, `MultivariateBlock`, etc.).
+
+The response carries an **ETag** computed as a DJB2 content hash. Admin caches by ETag and only re-fetches when content changes.
+
+```bash
+curl https://my-store.com/live/_meta -H "Accept: application/json"
+```
+
+## `/.decofile`
+
+Returns the entire site's blocks:
+
+```json
+{
+  "blocks": {
+    "blockId1": { "__resolveType": "...", "...": "..." },
+    "blockId2": { "...": "..." }
+  }
+}
+```
+
+Admin reads this to populate the editor and uses diffs against this snapshot to publish changes back. The endpoint is content-hashed for cache invalidation.
+
+## `/deco/render`
+
+The preview iframe in admin posts to this endpoint to render a section in isolation:
+
+```http
+POST /deco/render
+Content-Type: application/json
+
+{
+  "__resolveType": "site/sections/Hero/HeroBanner.tsx",
+  "title": "Preview title"
+}
+```
+
+The framework:
+1. Resolves the block.
+2. Runs any loaders (with the editor's preview overrides).
+3. Renders the React tree to HTML.
+4. Wraps it in a preview shell with `data-theme="light"` (required for DaisyUI v4 color tokens).
+5. Returns the HTML.
+
+The shell uses `LiveControls` so admin can hover-highlight the section, jump to source, and reload on edit. See [`getRenderShellConfig`](/Users/fernandofrizzatti/development/workspace/decocms/deco-start/src/admin/setup.ts).
+
+## `/deco/invoke`
+
+Run a loader or action and return its result. Used for:
+
+- **Client-side data fetching** — `useCart`, `useUser`, `useWishlist` post here.
+- **Admin-side preview** — admin invokes loaders to preview their output.
+- **Programmatic API** — your own client code calling typed loaders via the generated `invoke.gen.ts`.
+
+```http
+POST /deco/invoke
+Content-Type: application/json
+
+{
+  "__resolveType": "vtex/loaders/cart.ts",
+  "props": {}
+}
+```
+
+See [Invoke reference](/v2/en/framework/invoke) for the typed client and batch mode.
+
+## Why these are at the worker level (not TanStack Start)
+
+The admin handlers live in `worker-entry.ts`, **not** in `server.ts`. This matters because:
+
+> Vite strips custom fetch logic from TanStack `createServerEntry` in production builds.
+>
+> — [`@decocms/start/CLAUDE.md`](/Users/fernandofrizzatti/development/workspace/decocms/deco-start/CLAUDE.md)
+
+If you put admin routes inside the framework's server entry, they work in dev but disappear in prod. Always wire them through `createDecoWorkerEntry`:
+
+```ts
+import { createDecoWorkerEntry } from "@decocms/start/sdk/workerEntry";
+import { handleMeta, handleDecofile, handleRender, handleInvoke } from "@decocms/start/admin";
+
+const decoWorker = createDecoWorkerEntry(serverEntry, {
+  admin: { handleMeta, handleDecofile, handleRender, handleInvoke },
+});
+
+export default decoWorker;
+```
+
+## CORS and live controls
+
+Admin runs on `admin.deco.cx`; your storefront runs on a different origin. The admin endpoints emit CORS headers permissive to admin's origin:
+
+```ts
+import { applyCorsHeaders } from "@decocms/start/middleware";
+```
+
+`LiveControls` (loaded by the preview shell) uses `postMessage` to coordinate hover-highlight and section jumps with the parent admin frame.
+
+## ETag invariants
+
+A few things must hold for admin to cache correctly:
+
+1. The `_meta` ETag must change whenever a section's schema changes.
+2. The decofile ETag must change whenever any block changes.
+3. Both ETags must match the format admin expects (DJB2 of content, base64-encoded with admin-compatible padding).
+
+The framework handles all of this — but if you customize the meta or decofile handlers, preserve the ETag contract.
+
+<Callout type="warning">
+**Don't overwrite `data-theme="light"` on the preview shell.** DaisyUI v4 color variables key off `data-theme`, and the preview iframe assumes light theme. Setting `data-theme="dark"` in the shell breaks all colorized sections.
+</Callout>
+
+## Schema generation
+
+`generate-schema.ts` reads every `src/sections/**/*.tsx` and emits JSON Schema by analyzing TypeScript with `ts-morph`. Annotations that survive into JSON Schema:
+
+- `@description` (TSDoc) → field description.
+- `@title` → field label.
+- `@default` → default value.
+- Widget types from `@decocms/start/types/widgets` → custom UI controls.
+
+The generator runs as part of the `generate:schema` npm script. The output (`meta.gen.json`) is what `/live/_meta` serves.
+
+## See also
+
+- [Blocks](/v2/en/concepts/blocks)
+- [Worker entry](/v2/en/framework/worker-entry)
+- [Hooks reference](/v2/en/framework/hooks)
+- [Invoke reference](/v2/en/framework/invoke)

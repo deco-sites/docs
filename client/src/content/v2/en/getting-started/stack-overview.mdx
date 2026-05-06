@@ -1,0 +1,117 @@
+---
+title: "Stack overview"
+description: "The three layers of a deco.cx v2 storefront and what each is responsible for."
+icon: "Layers"
+---
+
+import Callout from "../../../../components/ui/Callout.astro";
+
+A v2 storefront is built from three composable layers. Knowing which layer owns which concern is the difference between idiomatic v2 code and code that fights the framework.
+
+## The three layers
+
+```
+┌─────────────────────────────────────────────────┐
+│   Site repo (your storefront)                    │  ← Components, sections, routes, styles, contexts
+├─────────────────────────────────────────────────┤
+│   @decocms/apps  (commerce integrations)         │  ← VTEX, Shopify, Resend, schema.org types
+├─────────────────────────────────────────────────┤
+│   @decocms/start  (framework)                    │  ← CMS bridge, admin protocol, worker entry, caching
+└─────────────────────────────────────────────────┘
+              ↓ runs on ↓
+   TanStack Start  +  React 19  +  Cloudflare Workers
+```
+
+### Layer 1: `@decocms/start` — framework
+
+**Owns:** the CMS bridge, the admin protocol, the worker entry, edge caching, schema generation, the Vite plugin, and a small SDK.
+
+**Doesn't own:** anything commerce-specific, anything UI-specific, no Preact or widget passthroughs, no site section maps.
+
+[Reference →](/v2/en/framework/overview)
+
+### Layer 2: `@decocms/apps` — commerce
+
+**Owns:** VTEX and Shopify integrations (loaders, actions, hooks, middleware, types), shared schema.org commerce types, commerce SDK utilities (`useOffer`, `formatPrice`), Resend email integration.
+
+**Doesn't own:** UI components for product cards, hook stubs that need site-specific state, anything Preact or Fresh.
+
+[Reference →](/v2/en/commerce/overview)
+
+### Layer 3: site repo — your storefront
+
+**Owns:** UI components, page layouts, custom sections, brand styling, business-specific routes, custom contexts (theming, analytics).
+
+**Doesn't own:** compat shims for the older Fresh stack, hardcoded section maps (the framework generates these), or Vite aliases beyond `~` → `src/`.
+
+## Tech choices and why
+
+### TanStack Start (replaces Fresh)
+
+Why: better React ergonomics, file-based routing with type safety, server functions that work the same in dev and prod, mature ecosystem.
+
+What you'll touch most: `cmsRouteConfig` and `loadCmsPage` from `@decocms/start/routes` for CMS-driven URLs.
+
+### React 19 + React Compiler (replaces Preact)
+
+Why: the React Compiler eliminates the need for `useMemo`, `useCallback`, and `memo` boilerplate. Server Components reduce hydration cost compared to islands.
+
+What changes:
+- `@preact/signals` → `@tanstack/store` + React state.
+- `useEffect` is **discouraged** — most former effects can be `useSuspenseQuery` from `@tanstack/react-query` or render-time computation.
+- `useMemo` / `useCallback` / `memo` are **anti-patterns** — the compiler handles memoization.
+
+### Cloudflare Workers (replaces Deno Deploy)
+
+Why: predictable cold starts (most regions sub-50ms), first-class Cache API integration, KV/R2/D1 in the same runtime, mature observability via `wrangler tail`.
+
+What changes:
+- Fresh's `Deno.env` reads → Worker `env` bindings (passed through `MeshContext`-style state in v2 setup).
+- Edge caching uses `caches.default` instead of HTTP `Cache-Control` heuristics.
+- Some Node APIs require `nodejs_compat` flag.
+
+### Vite + React Compiler + Tailwind v4
+
+Why: faster HMR than esbuild-on-Deno, mature plugin ecosystem (Cloudflare, TanStack, React, Tailwind all maintained).
+
+The required Vite plugin order is documented in [Vite plugin reference](/v2/en/framework/vite-plugin).
+
+## Request lifecycle (30,000 ft)
+
+```
+1. Browser → Cloudflare edge
+2. Worker entry (createDecoWorkerEntry)
+   ├─ Admin routes? (/live/_meta, /.decofile, /deco/render, /deco/invoke)
+   ├─ Cache purge probe?
+   ├─ Static asset? (/assets/*, favicon, sprites)
+   ├─ Edge cache HIT? → return cached response
+   └─ MISS → call TanStack Start server entry
+3. TanStack Start
+   ├─ Match route (e.g. catch-all $ via cmsRouteConfig)
+   ├─ Run loader (loadCmsPage → resolveDecoPage)
+   ├─ CMS resolves the page block + sections
+   ├─ Section loaders run (cached + deduped)
+   └─ DecoPageRenderer renders the React tree
+4. Response goes back to edge cache (per profile) and to the browser
+```
+
+Every step is documented in detail under [Framework reference](/v2/en/framework/overview).
+
+## What you don't have to think about
+
+The framework handles, transparently:
+
+- **Cookie propagation** to upstream APIs (commerce middleware).
+- **Edge cache profiles** — URLs are mapped to TTLs based on patterns (`/p`, `/s`, `/cart`, etc.).
+- **Section deferral** — the CMS marks below-the-fold sections lazy; they hydrate on scroll.
+- **OpenTelemetry tracing** — every loader call is auto-instrumented.
+- **Admin protocol** — the JSON Schema for the editor is generated from your section TypeScript props.
+
+You can override any of these, but you rarely need to.
+
+## See also
+
+- [Project structure](/v2/en/getting-started/project-structure)
+- [Framework overview](/v2/en/framework/overview)
+- [Commerce overview](/v2/en/commerce/overview)
+- [Worker entry reference](/v2/en/framework/worker-entry)

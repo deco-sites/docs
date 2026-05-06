@@ -1,0 +1,168 @@
+---
+title: "VTEX inline loaders"
+description: "createVtexCommerceLoaders, CMS-shaped page loaders for PDP, PLP, shelf, search."
+icon: "Layers"
+---
+
+import Callout from "../../../../components/ui/Callout.astro";
+
+Inline loaders are the bridge between VTEX APIs and CMS-shaped page data. They compose multiple low-level loader/action calls + transforms into a single page payload (`ProductDetailsPage`, `ProductListingPage`, etc.).
+
+## How they differ from regular loaders
+
+| Aspect | Regular VTEX loaders (`vtex/loaders/*`) | Inline loaders (`vtex/inline-loaders/*`) |
+|---|---|---|
+| Output shape | Raw VTEX shapes | schema.org / CMS shapes |
+| Composition | Single API call | Multiple API calls + transforms |
+| CMS exposure | Exposed individually | Exposed under one `__resolveType` per page kind |
+| Caching | You wrap manually | Wrapped automatically with `createCachedLoader` |
+
+In practice: when the CMS configures a page like `{ "__resolveType": "vtex/loaders/intelligentSearch/productDetailsPage.ts", "slug": "{slug}" }`, that's an **inline loader**.
+
+## `createVtexCommerceLoaders`
+
+Returns a registry mapping CMS `__resolveType` keys to inline loader functions:
+
+```ts
+import { createVtexCommerceLoaders } from "@decocms/apps/vtex/commerceLoaders";
+import { registerCommerceLoaders } from "@decocms/start/cms";
+
+const commerceLoaders = createVtexCommerceLoaders();
+registerCommerceLoaders(commerceLoaders);
+```
+
+After this, the framework can resolve any of the registered keys to its function.
+
+## What's registered
+
+| `__resolveType` | What it returns |
+|---|---|
+| `vtex/loaders/intelligentSearch/productDetailsPage.ts` | `ProductDetailsPage` (PDP) |
+| `vtex/loaders/intelligentSearch/productListingPage.ts` | `ProductListingPage` (PLP) |
+| `vtex/loaders/intelligentSearch/productList.ts` | `Product[]` (shelf) |
+| `vtex/loaders/intelligentSearch/productListShelf.ts` | `Product[]` with shelf-specific defaults |
+| `vtex/loaders/intelligentSearch/relatedProducts.ts` | Related products for PDP cross-sell |
+| `vtex/loaders/intelligentSearch/suggestions.ts` | Autocomplete results |
+| `vtex/loaders/intelligentSearch/minicart.ts` | SSR minicart payload |
+| `vtex/loaders/categories/tree.ts` | Category tree (via `getCategoryTree`) |
+| `vtex/loaders/workflowProducts.ts` | Workflow-backed product grids |
+
+The full registration logic lives in [`vtex/commerceLoaders.ts`](/Users/fernandofrizzatti/development/workspace/decocms/apps-start/vtex/commerceLoaders.ts).
+
+## Caching layer
+
+Every inline loader is wrapped in `createCachedLoader` from `@decocms/start/sdk/cachedLoader`:
+
+- **In-flight dedup** — multiple sections requesting the same shelf data share one fetch.
+- **SWR** — cached responses serve immediately; fresh data refreshes in background.
+- **TTL by status** — 2xx caches longer than 4xx; 5xx never caches.
+
+You don't configure this — it's automatic.
+
+## PDP loader composition
+
+The PDP inline loader composes several pieces:
+
+1. **Catalog/IS lookup** — fetch the product by slug.
+2. **`slugCache` consult** — if the slug has a known canonical SKU, use it (fast path).
+3. **`toProductPage` transform** — convert VTEX shape to schema.org `ProductDetailsPage`.
+4. **(Optional) variant enrichment** — fetch cross-product similars when the CMS asks.
+
+A real-world enrichment from Casa&Video:
+
+```29:52:/Users/fernandofrizzatti/development/workspace/decocms/casaevideo-storefront/src/setup/commerce-loaders.ts
+// Wrap PDP to fetch similar products (color/voltage variants) when CMS
+// configures "similars: true". Without this, isSimilarTo is empty and
+// the variant selector won't show cross-product options (e.g. Cor: Verde/Preto).
+export const cachedPDP = async (props: any) => {
+  const page = await _basePDP(props);
+  if (!page?.product || props.similars === false) return page;
+  const enriched = await withIsSimilarTo(page.product);
+  return { ...page, product: enriched };
+};
+// ...
+  "vtex/loaders/intelligentSearch/productDetailsPage.ts": cachedPDP,
+```
+
+This pattern — wrap the inline loader with site-specific enrichment, register the wrapped version under the same key — is the canonical way to extend without forking.
+
+## PLP loader composition
+
+PLP-side composition includes:
+
+- IS query construction from URL params (sort, page, filters).
+- `map=productClusterIds` translation (collection IDs → IS map).
+- Sort whitelist enforcement against `VALID_IS_SORTS` (invalid sort returns 400 from VTEX).
+- Facet → `BreadcrumbList` derivation.
+- Pagination metadata (next/prev links, total count).
+
+## SSR minicart
+
+[`vtex/inline-loaders/minicart.ts`](/Users/fernandofrizzatti/development/workspace/decocms/apps-start/vtex/inline-loaders/minicart.ts) is special:
+
+- Reads the `checkout.vtex.com__orderFormId` cookie from the request.
+- **If absent**, returns an empty minicart **without** creating an empty orderForm — important to avoid polluting VTEX with empty carts on every anonymous visit.
+- If present, fetches the orderForm with `DEFAULT_EXPECTED_SECTIONS`.
+- Transforms to `Minicart` shape for SSR rendering.
+
+The empty-cart guard is the difference between a healthy VTEX account and one drowning in empty orderForms — a real production lesson encoded in this file.
+
+## Sort sanitization
+
+VTEX Intelligent Search rejects unknown `sort` values with a 400. The inline loaders enforce a whitelist:
+
+```ts
+import { VALID_IS_SORTS } from "@decocms/apps/vtex/utils/intelligentSearch";
+
+if (!VALID_IS_SORTS.includes(sort)) sort = ""; // fall back to default
+```
+
+If a CMS author types a typo in the sort field, the page falls back to default ordering instead of crashing. The PLP inline loader runs this check transparently.
+
+## Pruning unused loaders (optional)
+
+By default, every inline loader appears in your generated `loaders.gen.ts`. For sites with thousands of unused loaders, this bloats the bundle. Bagaggio uses the `--decofile-dir` flag to prune:
+
+```3:19:/Users/fernandofrizzatti/development/workspace/decocms/baggagio-tanstack/src/setup/commerce-loaders.ts
+ *   3. The auto-generated `siteLoaders` map (`server/cms/loaders.gen.ts`)
+ *      which the build step prunes to only the `site/loaders/*` and
+ *      `site/actions/*` keys actually referenced by the CMS decofile —
+ *      avoiding the "200 dead passthroughs" pattern that bloated this
+ *      file before the architectural cleanup.
+```
+
+The npm script becomes:
+
+```jsonc
+"generate:loaders": "tsx node_modules/@decocms/start/scripts/generate-loaders.ts --exclude vtex/loaders,vtex/actions --decofile-dir .deco/blocks"
+```
+
+Loaders not referenced by any block in `.deco/blocks/` are excluded from the generated registry. The framework still resolves them on demand — but the generated client is lean.
+
+## Customizing inline loaders
+
+To add fields, change cache keys, or enrich responses:
+
+```ts
+import { createVtexCommerceLoaders } from "@decocms/apps/vtex/commerceLoaders";
+
+const baseLoaders = createVtexCommerceLoaders();
+
+const customLoaders = {
+  ...baseLoaders,
+  "vtex/loaders/intelligentSearch/productDetailsPage.ts": async (props) => {
+    const base = await baseLoaders["vtex/loaders/intelligentSearch/productDetailsPage.ts"](props);
+    return enrichWithMyData(base);
+  },
+};
+
+registerCommerceLoaders(customLoaders);
+```
+
+## See also
+
+- [VTEX overview](/v2/en/commerce/vtex-overview)
+- [VTEX loaders and actions](/v2/en/commerce/vtex-loaders-and-actions)
+- [VTEX gotchas](/v2/en/commerce/vtex-gotchas)
+- [Caching](/v2/en/framework/caching)
+- [Casa&Video case study](/v2/en/case-studies/casaevideo)

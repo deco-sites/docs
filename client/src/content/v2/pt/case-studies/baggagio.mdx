@@ -1,0 +1,169 @@
+---
+title: "Estudo de caso: Bagaggio"
+description: "CSV redirects no worker, loaders podados pelo decofile, withSiteGlobals, padrão minimal sem A/B."
+icon: "Briefcase"
+---
+
+import Callout from "../../../../components/ui/Callout.astro";
+
+[Bagaggio](https://www.baggagio.com.br) é uma marca brasileira de bagagem / acessórios. Migraram para v2 em 2025 com setup deliberadamente minimal. Esta página é o playbook deles.
+
+## Forma da loja
+
+- **35+ sections** (PDPs, PLPs, drawer, header, footer).
+- **VTEX**, mid-volume.
+- **Single região** (BR).
+- **Sem A/B testing**.
+- **10.000+ legacy redirects** de migração de URL passada.
+
+[Repo](https://github.com/decocms/baggagio-tanstack).
+
+## Padrões a copiar
+
+### 1. CSV redirects no worker
+
+Bagaggio carrega 10k+ redirects de um CSV inlinado em build time:
+
+```ts
+// src/middleware/redirects.ts
+import redirects from "../../data/redirects.csv?raw";
+
+const map = new Map<string, { to: string; status: number }>();
+for (const line of redirects.split("\n").slice(1)) {
+  const [from, to, status] = line.split(",");
+  if (from && to) {
+    map.set(from.trim(), {
+      to: to.trim(),
+      status: Number(status) || 301,
+    });
+  }
+}
+
+export const matchCsvRedirect = (pathname: string) => map.get(pathname) ?? null;
+```
+
+```ts
+// src/worker-entry.ts
+import { matchCsvRedirect } from "./middleware/redirects";
+
+const proxyHandler = (request: Request, url: URL) => {
+  const redirect = matchCsvRedirect(url.pathname);
+  if (redirect) {
+    const target = url.search ? `${redirect.to}${url.search}` : redirect.to;
+    return new Response(null, {
+      status: redirect.status,
+      headers: { Location: target },
+    });
+  }
+  return null;
+};
+```
+
+`?raw` em Vite inlina conteúdo do CSV. Em runtime, lookup é O(1) Map. Sem leitura de filesystem em runtime, sem chamadas de API, sem dependência KV.
+
+Para 10k+ entradas, esse padrão é 100x mais rápido que `loadRedirects` (que percorre todo decofile).
+
+### 2. Loaders podados
+
+Bagaggio usa `--decofile-dir` em build de loaders para incluir só loaders que o CMS efetivamente referencia:
+
+```jsonc
+// package.json
+{
+  "scripts": {
+    "generate:loaders": "node ... generate-loaders.ts --decofile-dir .deco/blocks"
+  }
+}
+```
+
+Resultado: `loaders.gen.ts` tem ~30 loaders em vez dos 100+ que toda integração `@decocms/apps` exporta. Reduz tamanho do bundle, tempo de cold start, footprint de tipos.
+
+Tradeoff: se time de conteúdo adicionar block referenciando loader não-podado, build em CI vai falhar. Build trigger em mudança de decofile evita o problema.
+
+Casa&Vídeo e Le biscuit não usam isso (mantêm todos os loaders); seu site pode ou não.
+
+### 3. `withSiteGlobals`
+
+Bagaggio embrulha rotas com globals:
+
+```9:18:/Users/fernandofrizzatti/development/workspace/decocms/baggagio-tanstack/src/routes/$.tsx
+const routeConfig = withSiteGlobals(
+  cmsRouteConfig({
+    siteName: "Bagaggio",
+    defaultTitle: "Baggagio-tanstack",
+    ignoreSearchParams: ["skuId"],
+  }),
+);
+```
+
+`withSiteGlobals` injeta head tags compartilhadas (analytics IDs, theme tokens, preconnects) em toda rota CMS. Sem ele, você teria que copiar config em `index.tsx` e `$.tsx` (e mais qualquer rota CMS adicional).
+
+Para sites com global heads non-trivial, sempre prefira `withSiteGlobals` em vez de copy-paste.
+
+### 4. Sem A/B testing (sem KV)
+
+Bagaggio deliberadamente não usa `withABTesting`. Razão: deploys deles são all-or-nothing; time é pequeno o suficiente para validar localmente em vez de via canary.
+
+Resultado: sem KV namespace, sem complexidade de variant cookie, sem segmento na cache key. Cache hit rate é mais alto.
+
+Quando você não está fazendo canary, não pague por canary infrastructure.
+
+### 5. Sem region-aware fetch
+
+VTEX config single-channel, single-region:
+
+```ts
+// src/setup.ts
+import { initVtexFromBlocks, setVtexFetch } from "@decocms/apps/vtex/client";
+
+createSiteSetup({
+  initPlatform: () => initVtexFromBlocks(),
+  // ...
+});
+```
+
+Sem branching por país. Loja é nacional brasileira; estoque é unificado; nenhum overhead regional precisa ser pago.
+
+## Padrões a NÃO copiar
+
+### CSV redirects para volumes baixos
+
+10k+ redirects justifica CSV. Para 50-200, use `loadRedirects` CMS-driven — content team pode editar via admin sem deploy de código.
+
+### Loaders podados sem CI gate
+
+`generate:loaders --decofile-dir` requer rerun toda vez que decofile muda. Bagaggio integra em CI; se você não fizer, builds vão falhar quando content team adicionar block.
+
+## Tradeoffs
+
+**Pros do approach Bagaggio:**
+- Setup simples (poucos arquivos, pouco config).
+- Performance baseline boa (sem A/B segmenting de cache).
+- Bundle size leve (loaders podados).
+- Operações leves (sem KV, sem dashboards de variant).
+
+**Cons:**
+- Sem A/B significa você não pode testar mudanças em parts do tráfego.
+- Sem region-aware fetch significa que se você expandir para multi-região, você terá que retrofit.
+- 10k CSV redirects requer disciplina de manter atualizado.
+
+Para uma loja default + escala média, esse é o ponto sweet. Não puxe complexidade que você não vai usar.
+
+## Quando crescer
+
+Quando começar a precisar:
+
+- **A/B testing**: adicione `withABTesting` + KV namespace. Casa&Vídeo é referência.
+- **Multi-região**: introduza setup de fetch regional ([Casa&Vídeo](/v2/pt/case-studies/casaevideo)).
+- **Cache profile tuning**: cria um `cache-config.ts` quando profiles default não casarem com sua mistura de tráfego.
+- **Internal docs**: comece quando bater em primeiro problema não documentado pelo framework.
+
+A graça da v2 é que essas adições são incrementais — não force agora.
+
+## Veja também
+
+- [Casa&Vídeo](/v2/pt/case-studies/casaevideo)
+- [Le biscuit](/v2/pt/case-studies/lebiscuit)
+- [A/B testing e redirects](/v2/pt/deployment/ab-testing-and-redirects)
+- [SDK utilities](/v2/pt/framework/sdk-utilities)
+- [Routes](/v2/pt/framework/routes)

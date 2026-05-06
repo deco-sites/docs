@@ -5,20 +5,34 @@ import Sidebar from "../components/ui/Sidebar.astro";
 import TableOfContents from "../components/ui/TableOfContents.astro";
 import { Logo } from "../components/atoms/Logo.tsx";
 import { Icon } from "../components/atoms/Icon.tsx";
+import { V2Banner } from "../components/ui/V2Banner.tsx";
 import { getCollection } from "astro:content";
 import { siteConfig } from "../config/site";
+import { LATEST_VERSION, getVersion } from "../config/versions";
 import "../styles/global.css";
-const { title, doc } = Astro.props;
+const { title, doc, version: versionProp } = Astro.props;
+const version = (versionProp as string) || LATEST_VERSION.id;
+const versionConfig = getVersion(version) ?? LATEST_VERSION;
 
-// Get current path for breadcrumbs
+// Get current path for breadcrumbs.
+// URL shape:
+//   v1 (default): /{locale}/{...slug}
+//   v2:           /v2/{locale}/{...slug}
 const currentPath = Astro.url.pathname;
 const pathSegments = currentPath.split("/").filter((segment) => segment !== "");
-const locale = pathSegments[0] || "en";
-const pagePath = pathSegments.slice(1);
+const segmentsAfterPrefix = versionConfig.urlPrefix
+  ? pathSegments.slice(versionConfig.urlPrefix.split("/").filter(Boolean).length)
+  : pathSegments;
+const locale = segmentsAfterPrefix[0] || "en";
+const pagePath = segmentsAfterPrefix.slice(1);
 
 // Get all docs to determine folder vs file
 const allDocs = await getCollection("docs");
-const docs = allDocs.filter((doc) => doc.id.split("/")[0] === locale);
+// doc.id = {version}/{locale}/{...slug}
+const docs = allDocs.filter((doc) => {
+  const parts = doc.id.split("/");
+  return parts[0] === version && parts[1] === locale;
+});
 
 // Build tree to determine folder vs file
 interface TreeNode {
@@ -34,7 +48,8 @@ function buildTree(docs: any[]): TreeNode[] {
   const root: TreeNode[] = [];
 
   docs.forEach((doc: any) => {
-    const pathParts = doc.id.split("/").slice(1);
+    // doc.id = {version}/{locale}/{...slug} → skip first two parts
+    const pathParts = doc.id.split("/").slice(2);
     let currentLevel = root;
 
     pathParts.forEach((part: string, index: number) => {
@@ -87,7 +102,7 @@ const breadcrumbItems: Array<{
 }> = [];
 
 if (pagePath.length > 0) {
-  let currentHref = `/${locale}`;
+  let currentHref = `${versionConfig.urlPrefix}/${locale}`;
   pagePath.forEach((segment, index) => {
     currentHref += `/${segment}`;
     const name =
@@ -108,7 +123,7 @@ if (pagePath.length > 0) {
 
 // Generate GitHub edit URL
 const editUrl = doc
-  ? `${siteConfig.githubRepo}/edit/${siteConfig.githubBranch}/apps/docs/client/src/content/${doc.id}.mdx`
+  ? `${siteConfig.githubRepo}/edit/${siteConfig.githubBranch}/client/src/content/${doc.id}.mdx`
   : null;
 ---
 
@@ -232,7 +247,11 @@ const editUrl = doc
       });
     </script>
   </head>
-  <body class="bg-app-background text-foreground">
+  <body
+    class="bg-app-background text-foreground"
+    data-version={version}
+    data-version-prefix={versionConfig.urlPrefix}
+  >
     <div class="flex h-screen overflow-hidden">
       <!-- Mobile overlay -->
       <div
@@ -247,11 +266,19 @@ const editUrl = doc
         class="fixed lg:relative lg:block hidden z-50 lg:z-auto h-full"
         data-pagefind-ignore
       >
-        <Sidebar />
+        <Sidebar version={version} />
       </div>
 
       <!-- Main content -->
       <div class="flex-1 overflow-y-auto overflow-x-hidden scrollbar-hide">
+        {/* v2 announcement banner — only on v1 pages while v2 is in preview */}
+        {
+          version === "v1" && (
+            <div data-pagefind-ignore>
+              <V2Banner client:load locale={locale} />
+            </div>
+          )
+        }
         <!-- Mobile header - fixed -->
         <div
           class="lg:hidden fixed top-0 left-0 right-0 z-30 bg-app-background"
@@ -354,6 +381,8 @@ const editUrl = doc
       if (mobileControlsContainer) {
         const mobileLocale =
           document.querySelector("nav")?.getAttribute("data-locale") || "en";
+        const mobileVersionPrefix =
+          document.body.getAttribute("data-version-prefix") || "";
         const mobileTranslations = ui[mobileLocale as keyof typeof ui] || ui.en;
         const root = createRoot(mobileControlsContainer);
         root.render(
@@ -362,6 +391,7 @@ const editUrl = doc
               locale: mobileLocale,
               translations: mobileTranslations as unknown as Record<string, string>,
               variant: "mobile",
+              versionPrefix: mobileVersionPrefix,
             }),
             React.createElement(LanguageSelector, {
               locale: mobileLocale,

@@ -1,0 +1,210 @@
+---
+title: "Hooks"
+description: "DecoPageRenderer, LazySection, LiveControls, NavigationProgress, useDevice, useHydrated."
+icon: "Component"
+---
+
+import Callout from "../../../../components/ui/Callout.astro";
+
+`@decocms/start/hooks` exporta componentes e hooks React que conectam dados resolvidos do CMS à página. O carro-chefe é `DecoPageRenderer`; o resto preenche em volta.
+
+## Import
+
+```ts
+import {
+  DecoPageRenderer,
+  DecoRootLayout,
+  LazySection,
+  LiveControls,
+  NavigationProgress,
+  useDevice,
+  useHydrated,
+} from "@decocms/start/hooks";
+```
+
+## `DecoPageRenderer`
+
+Renderiza uma árvore de página CMS. Percorre as sections resolvidas, embrulha as deferred em lazy, anexa error boundaries e emite live controls em modo preview do admin.
+
+```tsx
+import { DecoPageRenderer } from "@decocms/start/hooks";
+
+export default function Page() {
+  return <DecoPageRenderer />;
+}
+```
+
+Você não passa props — `DecoPageRenderer` lê os dados do CMS do contexto do loader da rota atual.
+
+### O que ele faz
+
+1. Lê `useLoaderData()` da rota corrente.
+2. Para cada section resolvida em ordem:
+   - Se a section está marcada como lazy e abaixo da dobra → embrulha em `LazySection`.
+   - Se está acima da dobra → renderiza eager com seus dados de loader.
+3. Adiciona error boundary em cada section para que uma falha não derrube a página.
+4. Em modo preview do admin, emite `LiveControls` para hover-jump-to-source.
+
+Você usa `DecoPageRenderer` quase sempre como `component` da rota CMS.
+
+## `DecoRootLayout`
+
+Um shell `__root.tsx` pré-pronto. Casa&Vídeo e Le biscuit usam; Bagaggio prefere o próprio.
+
+```tsx
+import { DecoRootLayout } from "@decocms/start/hooks";
+
+export const Route = createRootRoute({
+  component: () => (
+    <DecoRootLayout
+      account="minha-loja"
+      head={[
+        { rel: "preconnect", href: "https://fonts.googleapis.com" },
+        { rel: "stylesheet", href: "/styles.css" },
+      ]}
+    />
+  ),
+});
+```
+
+Cuida de:
+
+- Skeleton `<html>` / `<head>` / `<body>`.
+- Preloads de fonte.
+- Shell do iframe de preview do CMS.
+- Provider do React Query.
+- Container de toast.
+
+Faça o seu se precisar de mais controle. Veja [`__root.tsx` do Bagaggio](/Users/fernandofrizzatti/development/workspace/decocms/baggagio-tanstack/src/routes/__root.tsx) para um custom.
+
+## `LazySection`
+
+Embrulha uma section que deve hidratar ao rolar. Você normalmente não instancia — `DecoPageRenderer` faz baseado na flag de lazy.
+
+Se quiser controle manual:
+
+```tsx
+import { LazySection } from "@decocms/start/hooks";
+
+<LazySection
+  pageId={pageId}
+  sectionIndex={3}
+  fallback={<MeuSkeleton />}
+/>
+```
+
+Comportamento:
+
+- Renderiza `fallback` inicialmente (server-side).
+- Configura `IntersectionObserver` no placeholder.
+- Ao entrar no viewport, chama `loadDeferredSection({ pageId, sectionIndex })`.
+- Substitui o placeholder pela section renderizada.
+
+## `LiveControls`
+
+Script que permite o iframe de preview do admin se comunicar com a loja. Hover-highlight, click-to-source. Carregado por `DecoRootLayout` automaticamente; só plugue manualmente em shell custom.
+
+```tsx
+import { LiveControls } from "@decocms/start/hooks";
+
+<LiveControls />
+```
+
+Só emite conteúdo em modo preview do admin (`?_admin=1`). Em produção é no-op.
+
+## `NavigationProgress`
+
+Barra de progresso no topo do viewport que ativa em transições do TanStack Router. Cosmético mas melhora a percepção de performance.
+
+```tsx
+import { NavigationProgress } from "@decocms/start/hooks";
+
+<NavigationProgress />
+```
+
+Monte uma vez no root layout. A barra aparece automaticamente quando `useRouterState().status === "pending"`.
+
+## `useDevice`
+
+Devolve `{ type: "mobile" | "tablet" | "desktop" }` baseado no user-agent.
+
+```tsx
+import { useDevice } from "@decocms/start/hooks";
+
+function Hero() {
+  const device = useDevice();
+  return device.type === "mobile" ? <HeroMobile /> : <HeroDesktop />;
+}
+```
+
+SSR-safe — devolve o mesmo valor no server e no client.
+
+<Callout type="warning">
+**`useDevice` e mismatches de hidratação.** Se você usar `useDevice` direto numa árvore que hidrata no client, pode dar mismatch quando o UA do client parecer diferente do UA do SSR (e.g. ao passar por CDN que limpa hints de UA).
+
+O padrão mais seguro é usar `useDevice` num loader de section (server-only) e passar como prop. Veja [`cls-pending-issues.md`](/Users/fernandofrizzatti/development/workspace/decocms/casaevideo-storefront/docs/cls-pending-issues.md) do Casa&Vídeo para a investigação.
+</Callout>
+
+## `useHydrated`
+
+Devolve `true` após a primeira renderização client-side, `false` durante SSR.
+
+```tsx
+import { useHydrated } from "@decocms/start/hooks";
+
+function Counter() {
+  const hydrated = useHydrated();
+  if (!hydrated) return <div>—</div>;
+  return <ClientCounter />;
+}
+```
+
+Útil para conteúdo que genuinamente não pode renderizar server-side (APIs só do browser, scripts third-party que mutam o DOM).
+
+Não use isso quando puder usar `"use client"` — produz flicker. Use só quando SSR fundamentalmente não consegue produzir a saída certa.
+
+## `RenderSection`
+
+Mais low-level que `DecoPageRenderer`. Renderiza uma única section resolvida isolada. Usado internamente; raramente direto.
+
+```tsx
+import { RenderSection } from "@decocms/start/hooks";
+
+<RenderSection section={resolvedSection} />
+```
+
+## `SectionErrorFallback`
+
+Conteúdo default da error boundary das sections. Você pode customizar por section exportando um `ErrorFallback`:
+
+```tsx
+// src/sections/Shelf/Shelf.tsx
+export const ErrorFallback = ({ error }: { error: Error }) => (
+  <div class="p-4 bg-red-50">Não conseguimos carregar produtos: {error.message}</div>
+);
+```
+
+Se o loader da section lançar, o framework renderiza `ErrorFallback` em vez de derrubar a página.
+
+## `StableOutlet`
+
+Wrapper do `<Outlet />` do TanStack Router que evita flicker em navegação mantendo a renderização anterior visível até os dados da nova rota chegarem.
+
+```tsx
+import { StableOutlet } from "@decocms/start/hooks";
+
+<StableOutlet />
+```
+
+Drop-in replacement do `<Outlet />` em layouts. A maioria das lojas usa em `__root.tsx` para evitar flashes em branco entre rotas.
+
+## `PreviewProviders`
+
+Bundle de providers que o preview do admin precisa (theme, query client, router). Auto-incluído por `DecoRootLayout`. Embed manual só em shell de preview custom.
+
+## Veja também
+
+- [Páginas e rotas (conceito)](/v2/pt/concepts/pages-and-routes)
+- [Deferred rendering](/v2/pt/concepts/deferred-rendering)
+- [Sections](/v2/pt/concepts/sections)
+- [Routes](/v2/pt/framework/routes)

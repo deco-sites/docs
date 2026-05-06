@@ -1,0 +1,140 @@
+---
+title: "Visão geral de commerce"
+description: "@decocms/apps — VTEX, Shopify, Resend e tipos schema.org compartilhados."
+icon: "ShoppingCart"
+---
+
+import Callout from "../../../../components/ui/Callout.astro";
+
+`@decocms/apps` é a camada de commerce — o lugar onde integrações VTEX, Shopify, Resend e qualquer outro provider externo moram. Esta página é o índice; cada plataforma tem sua referência.
+
+## Plataformas suportadas
+
+| Plataforma | Cobertura | Notas |
+|---|---|---|
+| **VTEX** | Profunda — loaders/actions/hooks, IS + Catalog, fetch instrumentado | Mais maduro |
+| **Shopify** | Razoável — loaders + actions; sem implementação de hooks ainda | OK para PDP/PLP; carrinho precisa de wiring custom |
+| **Resend** | Mínima — `sendEmail` + handler de invoke | Para emails transacionais |
+
+Mais providers são adicionados em majors. Se precisar de algo que não está aqui, [implemente um app no padrão e mande PR](https://github.com/decocms/apps-start).
+
+## Fluxo de configure / autoconfigApps
+
+Um "app" em v2 é um config block (`__resolveType: "deco-vtex"`, `deco-shopify` etc.) com setup do provider. Quando o framework boota:
+
+1. `autoconfigApps` lê `blocks.gen.json`.
+2. Acha todo block com `__resolveType` casando com um app registrado.
+3. Chama `configure()` daquele app com as props do block.
+
+Você normalmente só usa `autoconfigApps` se quer customização explícita. Para casos simples, helpers de plataforma como `initVtexFromBlocks()` cuidam.
+
+```ts
+// caso simples
+import { initVtexFromBlocks } from "@decocms/apps/vtex/client";
+
+createSiteSetup({
+  initPlatform: () => initVtexFromBlocks(),
+});
+
+// caso explícito
+import { autoconfigApps } from "@decocms/start/apps";
+import vtex from "@decocms/apps/vtex";
+import shopify from "@decocms/apps/shopify";
+
+autoconfigApps({
+  apps: { vtex, shopify },
+});
+```
+
+## Peer dependencies
+
+`@decocms/apps` depende de `@decocms/start`. Toda loja já tem isso — só certifique-se da compatibilidade de versão:
+
+```jsonc
+{
+  "dependencies": {
+    "@decocms/start": "^2.28.0",
+    "@decocms/apps": "^1.11.0"
+  }
+}
+```
+
+Quando você atualizar uma, atualize a outra.
+
+## Estrutura por plataforma
+
+Toda integração de plataforma segue o mesmo formato:
+
+```
+@decocms/apps/<plataforma>/
+├── actions/         # Mutações (adicionar ao carrinho, atualizar perfil)
+├── loaders/         # Buscas (lista de produtos, detalhe do produto, sessão)
+├── hooks/           # React hooks tipados (useCart, useUser, useWishlist)
+├── client/          # Cliente HTTP + helpers de config
+├── middleware/      # Middlewares de borda específicos da plataforma
+├── types/           # Tipos schema.org + tipos específicos da plataforma
+├── sdk/             # Cache utilities, fetch wrappers
+└── index.ts         # Entry point com configure()
+```
+
+Loaders e actions casam com o que o admin tipicamente usa (`__resolveType` do CMS apontam para esses).
+
+Hooks são para código React (drawer do carrinho, login, lista de favoritos).
+
+## Páginas de referência
+
+| Página | Cobre |
+|---|---|
+| [Shared](/v2/pt/commerce/shared) | Tipos schema.org de commerce, helpers utility, Image/Picture/JsonLd |
+| [VTEX overview](/v2/pt/commerce/vtex-overview) | `configure()`, `VtexConfig`, secrets, salesChannel, install |
+| [VTEX loaders & actions](/v2/pt/commerce/vtex-loaders-and-actions) | Cookbook completo |
+| [VTEX inline loaders](/v2/pt/commerce/vtex-inline-loaders) | Loaders amigáveis ao CMS, `createVtexCommerceLoaders` |
+| [VTEX hooks](/v2/pt/commerce/vtex-hooks) | `useCart`, `useUser`, `useWishlist`, factories |
+| [VTEX client & middleware](/v2/pt/commerce/vtex-client-and-middleware) | `vtexFetch`, IS client, fetch cache, propagação de cookies |
+| [VTEX gotchas](/v2/pt/commerce/vtex-gotchas) | Cookies, sales channel, regionId, sanitização IS, drift do README |
+| [Shopify](/v2/pt/commerce/shopify) | Configure, loaders, actions, gotchas |
+| [Resend](/v2/pt/commerce/resend) | Configure, sendEmail, handler de invoke |
+
+## Fluxo típico de PDP
+
+Para entender como as peças se encaixam, eis o caminho de uma página de produto VTEX:
+
+1. **Browser** acessa `/p/tenis-asics-gel-nimbus`.
+2. **Worker** (`createDecoWorkerEntry`) checa rota de admin / cache; vai para o framework.
+3. **TanStack Router** despacha para `src/routes/$.tsx`, chama `loadCmsPage`.
+4. **CMS** resolve a página `/p/:slug` block; ela referencia `vtex/loaders/intelligentSearch/productDetailsPage.ts`.
+5. **Loader** chama VTEX Intelligent Search via `vtexFetch` (com tracing).
+6. **Cache** armazena o resultado (SWR).
+7. **Render** percorre as sections, passa o produto para `ProductDetail`, `ImageGallery`, `Variants`.
+8. **Sections deferred** (related products, reviews) renderizam placeholders.
+9. **Client** hidrata. Drawer do carrinho usa `useCart` (que invoca `vtex/loaders/cart.ts`).
+
+Cada etapa é coberta na referência apropriada.
+
+## Tipos schema.org
+
+`@decocms/apps/types/commerce` exporta tipos de produto, oferta, item de carrinho, ordem alinhados ao schema.org. Sites ficam neutros à plataforma quando codificam contra esses tipos.
+
+```ts
+import type { Product, ProductDetailsPage, BreadcrumbList } from "@decocms/apps/types/commerce";
+```
+
+VTEX e Shopify mapeiam suas formas nativas de API para esses tipos. Se você trocar de plataforma, suas sections continuam compilando.
+
+## Site neutro à plataforma
+
+A tipagem ajuda, mas pegar um site verdadeiramente neutro à plataforma exige autodisciplina:
+
+- Sections devem aceitar `Product` em vez de `VtexProduct`.
+- Hooks devem chamar `useCart()` (que troca o backend), não `useVtexCart()`.
+- Loaders devem retornar tipos schema.org, não tipos brutos da plataforma.
+
+Casa&Vídeo e Bagaggio são VTEX-only e fortemente acoplados; Le biscuit é mais purista. Inspire-se nos dois conforme suas necessidades.
+
+## Veja também
+
+- [Shared](/v2/pt/commerce/shared)
+- [VTEX overview](/v2/pt/commerce/vtex-overview)
+- [Shopify](/v2/pt/commerce/shopify)
+- [Resend](/v2/pt/commerce/resend)
+- [Exports de commerce](/v2/pt/reference/commerce-exports)

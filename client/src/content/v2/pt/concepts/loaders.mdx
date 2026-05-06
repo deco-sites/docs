@@ -1,0 +1,117 @@
+---
+title: "Loaders"
+description: "Busca de dados server-side para sections, com cache, deduplicação e tracing embutidos."
+icon: "Database"
+---
+
+import Callout from "../../../../components/ui/Callout.astro";
+
+Um **loader** é uma função server-side que busca dados para uma section, página ou componente. O framework executa loaders durante o request, faz cache do resultado e passa os dados para a árvore React.
+
+## Três sabores
+
+### 1. Section loader (colocado na section)
+
+Exportado ao lado do componente como `loader`:
+
+```tsx
+// src/sections/Product/ProductCard.tsx
+export const loader = async (props: Props, req: Request) => {
+  return { ...props, product: await fetchProduct(props.slug) };
+};
+
+export default function ProductCard({ product }: Props & { product: Product }) {
+  return <article>{product.name}</article>;
+}
+```
+
+Útil para dados específicos da section que não são reutilizados. O framework instrumenta automaticamente com tracing e timing.
+
+### 2. Inline loader (com formato CMS)
+
+Loaders reutilizáveis registrados no CMS para aparecerem nos pickers do admin (`__resolveType: "vtex/loaders/intelligentSearch/productDetailsPage.ts"`). Retornam shapes amigáveis ao CMS (`ProductDetailsPage`, `ProductListingPage`, etc.).
+
+`@decocms/apps` traz dezenas deles para VTEX e Shopify. Veja [Inline loaders VTEX](/v2/pt/commerce/vtex-inline-loaders).
+
+### 3. Top-level loader (`createInvoke`)
+
+Expostos via `/deco/invoke/<path>` para que o browser os chame como endpoints fetch. Gerados a partir de `loaders.gen.ts`. Veja [Referência de invoke](/v2/pt/framework/invoke).
+
+## Cache
+
+Embrulhe qualquer loader em `createCachedLoader` de `@decocms/start/sdk/cachedLoader` para ganhar:
+
+- **Deduplicação in-flight** — chamadas concorrentes com a mesma chave compartilham um único upstream.
+- **Stale-while-revalidate (SWR)** — respostas cacheadas servem na hora; dados frescos buscam em background.
+- **TTL por status HTTP** — respostas 2xx cacheiam mais que 4xx; 5xx nunca cacheia.
+
+```ts
+import { createCachedLoader } from "@decocms/start/sdk/cachedLoader";
+
+export const cachedProduct = createCachedLoader({
+  key: (props: { slug: string }) => `product:${props.slug}`,
+  ttl: 60_000, // ms
+  loader: async ({ slug }) => fetchProduct(slug),
+});
+```
+
+As lojas de referência usam isso o tempo todo — veja [`casaevideo-storefront/src/setup/commerce-loaders.ts`](/Users/fernandofrizzatti/development/workspace/decocms/casaevideo-storefront/src/setup/commerce-loaders.ts) para como o loader de PDP é embrulhado para enriquecer com variantes cross-product.
+
+## Instrumented fetch
+
+Dentro de loaders, prefira `instrumentedFetch` ao `fetch` cru:
+
+```ts
+import { createInstrumentedFetch } from "@decocms/start/sdk/instrumentedFetch";
+
+const vtexFetch = createInstrumentedFetch("vtex");
+
+const res = await vtexFetch("https://...", { headers: {...} });
+```
+
+Isso:
+- Emite spans OpenTelemetry para cada chamada.
+- Adiciona Server-Timing headers na resposta.
+- Aparece em `wrangler tail` e dashboards com a label `vtex`.
+
+`@decocms/apps` já embrulha seus clients VTEX/Shopify com instrumented fetch por padrão.
+
+## Request context
+
+Loaders rodam dentro de um `RequestContext` (AsyncLocalStorage) para que possam acessar o request sem ter que receber por parâmetro:
+
+```ts
+import { RequestContext } from "@decocms/start/sdk/requestContext";
+
+export const loader = async (props: Props) => {
+  const ctx = RequestContext.current;
+  const cookies = ctx?.request.headers.get("cookie") ?? "";
+  // usa cookies para chamadas upstream
+};
+```
+
+É assim que `@decocms/apps/vtex` propaga o cookie `vtex_segment` para APIs upstream sem o site ter que orquestrar manualmente. Veja [Fetch regional do Casa&Vídeo](/v2/pt/case-studies/casaevideo) para um padrão real.
+
+<Callout type="warning">
+**Não use `RequestContext` em código client** — só existe no servidor. Se seu componente precisa do request no client, passe via props da section ou via TanStack Query.
+</Callout>
+
+## O que loaders podem fazer
+
+- Buscar de qualquer endpoint HTTP (APIs de commerce, headless CMS, serviços internos).
+- Ler env / secrets via `RequestContext.current.env` (bindings do Worker).
+- Combinar resultados de múltiplos upstreams; transformar shape; enriquecer.
+- Retornar qualquer valor JSON-serializável (vira props da section).
+
+## O que loaders não podem fazer
+
+- Manter estado por usuário em variáveis de módulo (Workers podem rodar em isolates diferentes por request).
+- Usar APIs Node não cobertas pela flag `nodejs_compat` (e.g. `fs` cru).
+- Chamar outros loaders em loops apertados sem batch — use [`invoke.batch`](/v2/pt/framework/invoke#batch) ou pré-componha no nível da página.
+
+## Veja também
+
+- [Sections](/v2/pt/concepts/sections)
+- [Estratégia de cache](/v2/pt/deployment/caching-strategy)
+- [Referência de invoke](/v2/pt/framework/invoke)
+- [Referência de cache](/v2/pt/framework/caching)

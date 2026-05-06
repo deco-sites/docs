@@ -1,0 +1,202 @@
+---
+title: "Estudo de caso: Le biscuit"
+description: "Setup mais close-to-spine — o que faz dele minimal vs Casa&Vídeo."
+icon: "Cookie"
+---
+
+import Callout from "../../../../components/ui/Callout.astro";
+
+[Le biscuit](https://www.lebiscuit.com.br) é a referência v2 mais minimal. Migraram para v2 em 2025 com defaults straight do framework. Use como o ponto de partida ao começar uma loja v2 nova.
+
+## Forma da loja
+
+- **25+ sections** (header, footer, PDP, PLP, prateleiras, drawer).
+- **VTEX**, baixo volume.
+- **Single região** (BR).
+- **Sem A/B testing**.
+- **CMS-driven redirects** (mantenance ativo).
+- **Sem `cache-config.ts`** — defaults do framework.
+- **Sem `withSiteGlobals`** — heads inline em `__root.tsx`.
+
+[Repo](https://github.com/deco-sites/lebiscuit-tanstack).
+
+## O que faz dele minimal
+
+### `setup.ts` simples
+
+```ts
+// src/setup.ts
+import "./styles.css?url";
+
+import { createSiteSetup } from "@decocms/start/setup";
+import {
+  applySectionConventions,
+  registerLayoutSections,
+  setAsyncRenderingConfig,
+} from "@decocms/start/cms";
+import { createInstrumentedFetch } from "@decocms/start/sdk/instrumentedFetch";
+import { initVtexFromBlocks, setVtexFetch } from "@decocms/apps/vtex/client";
+import { createVtexCommerceLoaders } from "@decocms/apps/vtex/commerceLoaders";
+import { configureWebsite } from "@decocms/apps/website";
+import { registerBuiltinMatchers } from "@decocms/start/matchers/builtins";
+
+import blocks from "./server/cms/blocks.gen";
+import sectionsGen from "./server/cms/sections.gen";
+import meta from "./server/cms/meta.gen.json";
+
+createSiteSetup({
+  sections: import.meta.glob("./sections/**/*.tsx", { eager: true }),
+  blocks,
+  meta: () => meta,
+  productionOrigins: ["https://www.lebiscuit.com.br"],
+  initPlatform: () => initVtexFromBlocks(),
+  getCommerceLoaders: () => createVtexCommerceLoaders(),
+});
+
+applySectionConventions(sectionsGen);
+registerLayoutSections({
+  Header: () => import("~/sections/Header/Header"),
+  Footer: () => import("~/sections/Footer/Footer"),
+  Theme: () => import("~/sections/Theme/Theme"),
+});
+setAsyncRenderingConfig({ foldThreshold: 3, respectCmsLazy: true });
+setVtexFetch(createInstrumentedFetch("vtex"));
+configureWebsite({ seo: getSiteSeo() });
+registerBuiltinMatchers({ customMatchers: {} });
+```
+
+100% calls do framework, zero customização. Nenhum branching por país, sem tweak de matcher custom, sem pre-handlers.
+
+### `worker-entry.ts` simples
+
+```ts
+// src/worker-entry.ts
+import "./setup";
+
+import { createDecoWorkerEntry } from "@decocms/start/sdk/workerEntry";
+import {
+  handleMeta,
+  handleDecofile,
+  handleRender,
+  handleInvoke,
+} from "@decocms/start/admin";
+import { vtexCacheKeySuffix } from "@decocms/apps/vtex/middleware";
+import { createVtexCheckoutProxy } from "@decocms/apps/vtex/middleware";
+import serverEntry from "./server";
+
+const proxyHandler = createVtexCheckoutProxy({
+  checkoutOrigin: "https://www.lebiscuit.com.br",
+});
+
+const decoWorker = createDecoWorkerEntry(serverEntry, {
+  admin: { handleMeta, handleDecofile, handleRender, handleInvoke },
+  proxyHandler,
+  buildSegment: vtexCacheKeySuffix,
+});
+
+export default decoWorker;
+```
+
+Usa proxy de checkout VTEX padrão (necessário porque checkout VTEX vive em URL separada). Sem A/B wrapper, sem redirect handling custom.
+
+### `__root.tsx` straight DecoRootLayout
+
+```tsx
+// src/routes/__root.tsx
+import { DecoRootLayout } from "@decocms/start/hooks";
+
+export const Route = createRootRoute({
+  component: () => (
+    <DecoRootLayout
+      account="lebiscuit"
+      head={[
+        { rel: "preconnect", href: "https://lebiscuit.vteximg.com.br" },
+        { rel: "preconnect", href: "https://api.vtex.com" },
+      ]}
+    />
+  ),
+});
+```
+
+Default shell do framework. Drawer cart é incluído via section, não em shell custom.
+
+### Rotas straight
+
+```tsx
+// src/routes/$.tsx
+import { createFileRoute } from "@tanstack/react-router";
+import { cmsRouteConfig } from "@decocms/start/routes";
+
+export const Route = createFileRoute("/$")(
+  cmsRouteConfig({
+    siteName: "lebiscuit",
+    defaultTitle: "Le biscuit",
+    ignoreSearchParams: ["skuId"],
+  }),
+);
+```
+
+Sem `withSiteGlobals`. Heads são inline em root layout. Para 1-2 head tags, inline é OK; quando crescer, mude para `withSiteGlobals` aí.
+
+## O que faz dele close-to-spine
+
+| Característica | Casa&Vídeo | Bagaggio | Le biscuit |
+|---|---|---|---|
+| Cache profiles | Custom | Default | Default |
+| Region-aware fetch | ✓ | ✗ | ✗ |
+| A/B testing | ✓ | ✗ | ✗ |
+| Redirects | CMS + CSV | CSV | CMS |
+| Loaders podados | ✗ | ✓ | ✗ |
+| `withSiteGlobals` | ✓ | ✓ | ✗ |
+| Internal docs/ | ✓ | ✗ | ✗ |
+| Setup config lines | ~150 | ~80 | ~50 |
+
+Le biscuit roda com half do código de Casa&Vídeo. O framework cuida do que sites de outras escalas precisam customizar.
+
+## Como começar daqui
+
+Para começar uma loja v2 nova, **clone Le biscuit primeiro**:
+
+```bash
+git clone https://github.com/deco-sites/lebiscuit-tanstack minha-loja
+cd minha-loja
+rm -rf .git node_modules
+git init
+```
+
+Depois remova o que não cabe no seu site:
+
+- Brand styles em `src/styles.css`.
+- Logos e branding assets em `public/`.
+- Sections específicas a Le biscuit em `src/sections/`.
+- Conteúdo `.deco/blocks/*.json`.
+- Account names em `setup.ts`, `__root.tsx`, `$.tsx`, `index.tsx`.
+
+Adicione customizations só quando seu site precisa:
+
+- Region-aware fetch quando entra multi-região.
+- A/B testing quando precisar de canary.
+- Cache profile overrides quando default fizer cache miss em URLs cruciais.
+- CSV redirects quando legacy URL count exceder ~500.
+
+## Tradeoffs
+
+**Pros do approach Le biscuit:**
+- Mais simples de entender (qualquer engenheiro novo onboard rápido).
+- Menos superficie para manter.
+- Mais alinhado com defaults do framework, então atualizações major do framework requerem menos refactor.
+
+**Cons:**
+- Sem A/B significa rolling out de mudanças é all-or-nothing.
+- Sem internal docs significa knowledge não acumula.
+- Default cache profiles podem deixar performance na mesa.
+
+Para uma loja default-Brazilian, single-tier e single-region, é o sweet spot. Para escala maior, evolva conforme.
+
+## Veja também
+
+- [Casa&Vídeo](/v2/pt/case-studies/casaevideo)
+- [Bagaggio](/v2/pt/case-studies/baggagio)
+- [Começar do zero](/v2/pt/getting-started/start-fresh)
+- [Setup](/v2/pt/framework/setup)
+- [Estrutura do projeto](/v2/pt/getting-started/project-structure)

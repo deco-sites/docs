@@ -1,0 +1,247 @@
+---
+title: "Setup"
+description: "createSiteSetup — bootstrap em uma chamada que registra tudo que o framework precisa."
+icon: "Wrench"
+---
+
+import Callout from "../../../../components/ui/Callout.astro";
+
+`createSiteSetup` é a função única que faz bootstrap de uma loja v2. Registra suas sections, blocks, matchers e integrações de plataforma em um lugar. Toda loja de referência tem um `src/setup.ts` que chama ela.
+
+## Import
+
+```ts
+import { createSiteSetup } from "@decocms/start/setup";
+```
+
+## Uso mínimo
+
+```ts
+// src/setup.ts
+import "./cache-config";   // opcional: overrides de profile de cache
+
+import { createSiteSetup } from "@decocms/start/setup";
+import { applySectionConventions } from "@decocms/start/cms";
+
+import blocks from "./server/cms/blocks.gen";
+import sectionsGen from "./server/cms/sections.gen";
+import meta from "./server/cms/meta.gen.json";
+import "./styles.css?url";
+
+createSiteSetup({
+  sections: import.meta.glob("./sections/**/*.tsx", { eager: true }),
+  blocks,
+  meta: () => meta,
+  productionOrigins: ["https://minha-loja.com"],
+});
+
+applySectionConventions(sectionsGen);
+```
+
+A função não retorna nada útil — o trabalho dela é efeito colateral (preencher registros).
+
+## Parâmetros obrigatórios
+
+### `sections`
+
+Um mapa de glob import com todos os arquivos de section. `import.meta.glob` do Vite produz isso:
+
+```ts
+sections: import.meta.glob("./sections/**/*.tsx", { eager: true })
+```
+
+Use `eager: true` para que os imports aconteçam em load do módulo (antes do TanStack dividir server functions). O framework percorre o mapa e monta o registro de sections.
+
+### `blocks`
+
+O bundle de blocks, importado de `./server/cms/blocks.gen.ts` (que o [Vite plugin](/v2/pt/framework/vite-plugin) substitui pelo fast-path JSON).
+
+### `meta`
+
+Função que retorna o bundle de JSON Schema (`meta.gen.json`). Embrulhada em função para load preguiçoso — o schema é grande e só o endpoint do admin precisa.
+
+```ts
+meta: () => import("./server/cms/meta.gen.json"),
+```
+
+## Parâmetros opcionais
+
+### `productionOrigins`
+
+Whitelist das origens que o admin pode chamar. Usada para validação CORS nos endpoints do admin.
+
+```ts
+productionOrigins: [
+  "https://minha-loja.com",
+  "https://www.minha-loja.com",
+],
+```
+
+### `initPlatform`
+
+Bootstrap específico de plataforma. Para VTEX:
+
+```ts
+import { initVtexFromBlocks } from "@decocms/apps/vtex/client";
+
+createSiteSetup({
+  // ...
+  initPlatform: () => initVtexFromBlocks(),
+});
+```
+
+Isso lê o block `deco-vtex` do decofile e chama `configureVtex` com o resultado.
+
+### `getCommerceLoaders`
+
+Devolve o registro de inline loaders. Conecta os loaders de `@decocms/apps/vtex` ou `@decocms/apps/shopify` aos `__resolveType` do CMS.
+
+```ts
+import { createVtexCommerceLoaders } from "@decocms/apps/vtex/commerceLoaders";
+
+createSiteSetup({
+  // ...
+  getCommerceLoaders: () => createVtexCommerceLoaders(),
+});
+```
+
+Veja [Inline loaders VTEX](/v2/pt/commerce/vtex-inline-loaders).
+
+### `customMatchers`
+
+Mapa nome → função para lógica A/B específica do site.
+
+```ts
+import { registerBuiltinMatchers } from "@decocms/start/matchers/builtins";
+
+createSiteSetup({
+  // ...
+  customMatchers: {
+    MatchHasCart: matchHasCart,
+  },
+});
+```
+
+### `css`
+
+Caminho para o arquivo CSS de entrada (Tailwind etc.). Importado como `?url` para o Vite resolver a URL bundled:
+
+```ts
+import css from "./styles.css?url";
+
+createSiteSetup({
+  // ...
+  css,
+});
+```
+
+### `fonts`
+
+Array de hints de preload de fonte. O framework injeta no `<head>`.
+
+```ts
+fonts: [
+  { href: "/fonts/inter-var.woff2", type: "font/woff2" },
+],
+```
+
+### `errorHandler`
+
+Handler customizado para quando sections lançam. Default: log + render fallback.
+
+```ts
+errorHandler: (error, sectionName) => {
+  console.error(`[${sectionName}]`, error);
+},
+```
+
+## Depois do `createSiteSetup`
+
+Algumas chamadas em sequência são típicas. A ordem importa:
+
+```ts
+createSiteSetup({/* ... */});
+
+applySectionConventions(sectionsGen);   // embrulha sections em error boundary, lazy
+registerCommerceLoaders(commerceLoaders);   // wire de inline loaders
+registerLayoutSections({/* Header, Footer, Theme */});   // cacheia layout entre páginas
+setAsyncRenderingConfig({ foldThreshold: 3 });   // tunning de deferred rendering
+setVtexFetch(createInstrumentedFetch("vtex"));   // fetch instrumentado para VTEX
+setInvokeLoaders(invokeLoaders);   // cliente tipado de invoke
+```
+
+`applySectionConventions` e `registerLayoutSections` são quase sempre chamados. O resto depende do que seu site usa. Veja o [`setup.ts` do Casa&Vídeo](/Users/fernandofrizzatti/development/workspace/decocms/casaevideo-storefront/src/setup.ts) para o pacote completo, ou o [do Bagaggio](/Users/fernandofrizzatti/development/workspace/decocms/baggagio-tanstack/src/setup.ts) para o mínimo.
+
+## Por que `setup.ts` precisa vir primeiro
+
+<Callout type="warning">
+**`import "./setup"` é a primeira linha de `src/server.ts` E de `src/worker-entry.ts`.**
+
+A chamada de setup tem efeitos colaterais: popula registros (sections, loaders, matchers). O TanStack Start divide server functions em chunks separados em build time. Se esses chunks carregarem antes do `setup.ts`, os registros estão vazios e você ganha erros enigmáticos do tipo "section not found" em produção.
+
+Pôr `import "./setup"` no topo de toda entry server-side garante que os registros existam antes de qualquer coisa tentar usar.
+</Callout>
+
+## Sections de layout
+
+Header, Footer e Theme são especiais. Aparecem em toda página; re-resolver a cada request é desperdício. Registre como layout sections:
+
+```ts
+import { registerLayoutSections } from "@decocms/start/cms";
+
+registerLayoutSections({
+  Header: () => import("~/sections/Header/Header"),
+  Footer: () => import("~/sections/Footer/Footer"),
+  Theme: () => import("~/sections/Theme/Theme"),
+});
+```
+
+O framework cacheia o layout resolvido entre requests (na mesma versão do decofile) e só re-resolve quando um block de layout muda.
+
+## Bootstrap VTEX
+
+Para sites com VTEX, o setup completo típico fica:
+
+```ts
+import { createSiteSetup } from "@decocms/start/setup";
+import { applySectionConventions, registerCommerceLoaders, registerLayoutSections, setAsyncRenderingConfig } from "@decocms/start/cms";
+import { createInstrumentedFetch } from "@decocms/start/sdk/instrumentedFetch";
+import { initVtexFromBlocks, setVtexFetch } from "@decocms/apps/vtex/client";
+import { createVtexCommerceLoaders } from "@decocms/apps/vtex/commerceLoaders";
+import { configureWebsite } from "@decocms/apps/website";
+import { registerBuiltinMatchers } from "@decocms/start/matchers/builtins";
+
+import blocks from "./server/cms/blocks.gen";
+import sectionsGen from "./server/cms/sections.gen";
+import meta from "./server/cms/meta.gen.json";
+import css from "./styles.css?url";
+
+createSiteSetup({
+  sections: import.meta.glob("./sections/**/*.tsx", { eager: true }),
+  blocks,
+  meta: () => meta,
+  css,
+  productionOrigins: ["https://minha-loja.com"],
+  initPlatform: () => initVtexFromBlocks(),
+  getCommerceLoaders: () => createVtexCommerceLoaders(),
+});
+
+applySectionConventions(sectionsGen);
+registerLayoutSections({
+  Header: () => import("~/sections/Header/Header"),
+  Footer: () => import("~/sections/Footer/Footer"),
+  Theme: () => import("~/sections/Theme/Theme"),
+});
+setAsyncRenderingConfig({ foldThreshold: 3, respectCmsLazy: true });
+setVtexFetch(createInstrumentedFetch("vtex"));
+configureWebsite({ seo: getSiteSeo() });
+registerBuiltinMatchers({ customMatchers: {} });
+```
+
+## Veja também
+
+- [Worker entry](/v2/pt/framework/worker-entry)
+- [Vite plugin](/v2/pt/framework/vite-plugin)
+- [Routes](/v2/pt/framework/routes)
+- [Caching](/v2/pt/framework/caching)
+- [Visão geral VTEX](/v2/pt/commerce/vtex-overview)

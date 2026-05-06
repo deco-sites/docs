@@ -23,6 +23,9 @@ function patchCsrRedirect() {
           "index.html",
           "en/index.html",
           "pt/index.html",
+          "v2/index.html",
+          "v2/en/index.html",
+          "v2/pt/index.html",
         ];
         for (const file of filesToDelete) {
           try {
