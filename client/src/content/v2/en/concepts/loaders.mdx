@@ -55,7 +55,7 @@ export const cachedProduct = createCachedLoader({
 });
 ```
 
-The reference sites use this pervasively — see [`casaevideo-storefront/src/setup/commerce-loaders.ts`](/Users/fernandofrizzatti/development/workspace/decocms/casaevideo-storefront/src/setup/commerce-loaders.ts) for how the PDP loader is wrapped to enrich with cross-product variants.
+Wrapping commerce loaders is a common pattern — for example, the PDP loader can be wrapped to enrich a single product with its cross-product variants in one fetch.
 
 ## Instrumented fetch
 
@@ -90,7 +90,7 @@ export const loader = async (props: Props) => {
 };
 ```
 
-This is how `@decocms/apps/vtex` propagates the `vtex_segment` cookie to upstream APIs without sites having to plumb it manually. See [Casa&Video's region-aware fetch](/v2/en/case-studies/casaevideo) for a real-world pattern.
+This is how `@decocms/apps/vtex` propagates the `vtex_segment` cookie to upstream APIs without sites having to plumb it manually.
 
 <Callout type="warning">
 **Don't reach for `RequestContext` in client code** — it only exists on the server. If your component needs request data on the client, pass it via section props or use a TanStack Query call.

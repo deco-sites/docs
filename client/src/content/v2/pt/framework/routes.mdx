@@ -130,11 +130,11 @@ O framework pluga `LazySection` com `IntersectionObserver` para chamar isso. Toq
 
 Embrulha uma config de rota com globais do site (analytics IDs, theme tokens, head tags custom).
 
-```9:18:/Users/fernandofrizzatti/development/workspace/decocms/baggagio-tanstack/src/routes/$.tsx
+```tsx
 const routeConfig = withSiteGlobals(
   cmsRouteConfig({
-    siteName: "Bagaggio",
-    defaultTitle: "Baggagio-tanstack",
+    siteName: "minha-loja",
+    defaultTitle: "Minha Loja",
     ignoreSearchParams: ["skuId"],
   }),
 );

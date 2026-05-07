@@ -17,13 +17,13 @@ O protocolo do admin é o contrato entre `admin.deco.cx` e a sua loja self-hoste
 | `POST` | `/deco/render` | Renderiza uma section ou página no iframe de preview |
 | `POST` | `/deco/invoke` | Roda um loader ou action e retorna o resultado |
 
-Todos vivem em [`@decocms/start/admin`](/Users/fernandofrizzatti/development/workspace/decocms/deco-start/src/admin) e são plugados no worker via `createDecoWorkerEntry`.
+Todos vivem em `@decocms/start/admin` e são plugados no worker via `createDecoWorkerEntry`.
 
 ## `/live/_meta`
 
 Retorna um JSON com:
 
-- **`schemas`** — JSON Schema para `Props` de cada section, derivado do TypeScript em build time por [`generate-schema.ts`](/Users/fernandofrizzatti/development/workspace/decocms/deco-start/scripts/generate-schema.ts).
+- **`schemas`** — JSON Schema para `Props` de cada section, derivado do TypeScript em build time por `generate-schema.ts`.
 - **`manifest`** — registro de IDs de sections, loaders, actions, apps.
 - **`framework`** — definições base (`Page`, `MultivariateBlock`, etc.).
 
@@ -69,7 +69,7 @@ O framework:
 4. Embrulha num shell de preview com `data-theme="light"` (necessário para os tokens de cor do DaisyUI v4).
 5. Devolve o HTML.
 
-O shell usa `LiveControls` para o admin ter hover-highlight, jump-to-source e reload em edição. Veja [`getRenderShellConfig`](/Users/fernandofrizzatti/development/workspace/decocms/deco-start/src/admin/setup.ts).
+O shell usa `LiveControls` para o admin ter hover-highlight, jump-to-source e reload em edição. Veja `getRenderShellConfig`.
 
 ## `/deco/invoke`
 
@@ -97,7 +97,7 @@ Os handlers de admin moram em `worker-entry.ts`, **não** em `server.ts`. Import
 
 > O Vite remove lógica custom de `createServerEntry` em builds de produção.
 >
-> — [`@decocms/start/CLAUDE.md`](/Users/fernandofrizzatti/development/workspace/decocms/deco-start/CLAUDE.md)
+> — `@decocms/start/CLAUDE.md`
 
 Se você puser rotas de admin dentro do server entry do framework, funciona em dev e some em prod. Sempre conecte via `createDecoWorkerEntry`:
 

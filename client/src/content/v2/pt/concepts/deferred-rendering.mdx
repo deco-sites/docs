@@ -34,7 +34,7 @@ setAsyncRenderingConfig({
 });
 ```
 
-É o que [Casa&Vídeo faz](/Users/fernandofrizzatti/development/workspace/decocms/casaevideo-storefront/src/setup.ts) — as 3 primeiras sections eager, tudo abaixo defere.
+Um valor comum em produção é `foldThreshold: 3` — as 3 primeiras sections renderizam eager, tudo abaixo da dobra defere.
 
 ### 2. Controlado pelo CMS — `respectCmsLazy`
 
@@ -100,7 +100,7 @@ O framework dedup chamadas concorrentes a `loadDeferredSection`, então navegaç
 1. Marque as sections afetadas com `alwaysEager: true` no dev local.
 2. Adicione `no_handle_cross_request_promise_resolution` em `wrangler.jsonc` `compatibility_flags`.
 
-Deploys em produção não têm esse problema. Veja [`ssr-optimization-framework.md`](/Users/fernandofrizzatti/development/workspace/decocms/casaevideo-storefront/docs/ssr-optimization-framework.md) do Casa&Vídeo para a investigação completa.
+Deploys em produção não têm esse problema.
 </Callout>
 
 ## Referência de configuração
@@ -127,4 +127,3 @@ Na dúvida, defira. O framework lida com bots corretamente, e sections eager des
 - [Sections](/v2/pt/concepts/sections)
 - [Referência de hooks](/v2/pt/framework/hooks)
 - [Estratégia de cache](/v2/pt/deployment/caching-strategy)
-- [Estudo de caso Casa&Vídeo](/v2/pt/case-studies/casaevideo)

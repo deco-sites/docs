@@ -6,86 +6,69 @@ icon: "Sparkles"
 
 import Callout from "../../../../components/ui/Callout.astro";
 
-Esta página leva você do zero até uma loja v2 em produção. O caminho mais rápido hoje é **clonar uma loja de referência mínima** e customizar a partir dela — um `npm create deco` dedicado está no roadmap, mas ainda não saiu.
+Esta página leva você do zero até uma loja v2 em produção, criando à mão o conjunto mínimo de arquivos que `@decocms/start` e `@decocms/apps` precisam para subir.
+
+<Callout type="info">
+**Um comando de scaffold está a caminho.** Um `npm create deco@v2` (ou equivalente) dedicado está no roadmap e vai colapsar todos esses passos em um único prompt. Até ele sair, a receita manual abaixo é o caminho suportado.
+</Callout>
 
 <Callout type="info">
 **Pré-requisitos:** Node.js 20+, um package manager (`npm`, `pnpm` ou `bun`), uma conta Cloudflare e (opcionalmente) uma loja VTEX ou Shopify se você quer commerce.
 </Callout>
 
-## 1. Clone uma loja de referência
-
-O ponto de partida mais limpo é **Le biscuit** — a mais "espinha dorsal" das três referências. Usa todos os defaults sem customização pesada.
+## 1. Crie o projeto
 
 ```bash
-git clone https://github.com/deco-sites/lebiscuit-tanstack minha-loja
-cd minha-loja
-rm -rf .git node_modules
+mkdir minha-loja && cd minha-loja
+npm init -y
 git init
 ```
-
-Se quiser uma base mais rica (analytics, Sentry, Firebase, fetch regional), use **Casa&Vídeo** como ponto de partida — mas conte com mais código para apagar.
 
 ## 2. Instale as dependências
 
 ```bash
-npm install
+npm install \
+  @decocms/start \
+  @decocms/apps \
+  @tanstack/react-start @tanstack/react-router \
+  react@^19 react-dom@^19
+
+npm install -D \
+  vite@^6 \
+  wrangler@^4 \
+  typescript \
+  @cloudflare/workers-types
 ```
 
-As peer dependencies que precisam estar presentes (já fixadas no `package.json` da referência):
+Os dois pacotes deco têm versões independentes. Fixe nas versões mais recentes publicadas:
 
-- `@decocms/start ^2.28`
-- `@decocms/apps ^1.11`
-- `@tanstack/react-start ^1.166`
-- `react ^19`, `react-dom ^19`
-- `vite ^6`
-- `wrangler ^4`
+- `@decocms/start ^2.x` — framework + ponte para o CMS.
+- `@decocms/apps ^1.x` — integrações de commerce (VTEX, Shopify, Resend).
 
-## 3. Aponte para o seu próprio decofile
+## 3. Adicione os arquivos de build
 
-Cada site precisa do seu próprio `siteName` e do conteúdo em `.deco/blocks/`. O CMS guarda o conteúdo em dois lugares:
+`vite.config.ts`:
 
-1. **`.deco/blocks/*.json`** — fonte da verdade, commitada. Edite via `admin.deco.cx`, sincronize para disco com o daemon.
-2. **`src/server/cms/blocks.gen.json`** — bundle gerado que o framework carrega em runtime.
+```ts
+import { defineConfig } from "vite";
+import { cloudflare } from "@cloudflare/vite-plugin";
+import { tanstackStart } from "@tanstack/react-start/plugin/vite";
+import react from "@vitejs/plugin-react";
+import tailwindcss from "@tailwindcss/vite";
+import { decoVitePlugin } from "@decocms/start/sdk/vitePlugin";
 
-Atualize o identificador do site em [`src/setup.ts`](/Users/fernandofrizzatti/development/workspace/decocms/lebiscuit-tanstack/src/setup.ts) e em `cmsRouteConfig({ siteName: "sua-loja" })` dentro de `src/routes/$.tsx` e `src/routes/index.tsx`.
-
-Em seguida regenere o bundle:
-
-```bash
-npm run generate:blocks
+export default defineConfig({
+  plugins: [
+    cloudflare(),
+    tanstackStart({ target: "cloudflare-module" }),
+    react(),
+    tailwindcss(),
+    decoVitePlugin(),
+  ],
+});
 ```
 
-## 4. Configure commerce (opcional)
-
-Se sua loja usa VTEX ou Shopify, configure o block correspondente no admin (ou direto em `.deco/blocks/`). VTEX precisa de `account` mais os secrets `appKey`/`appToken`; Shopify precisa de `storeName` mais um Storefront access token. Veja [Visão geral de commerce](/v2/pt/commerce/overview).
-
-## 5. Rode o dev server
-
-```bash
-npm run dev
-```
-
-O Vite serve a loja em `http://localhost:5173` (ou qualquer `PORT` que você configure). A primeira requisição dispara o tunnel do daemon que mantém `admin.deco.cx` em sincronia com seu site local.
-
-## 6. Gere tipos e rotas
-
-Depois de editar sections, blocks ou rotas, regenere os arquivos auxiliares:
-
-```bash
-npm run generate:blocks   # blocks.gen.json
-npm run generate:schema   # JSON Schema para o admin
-npx tsr generate          # tipos do TanStack Router
-```
-
-O `package.json` das lojas de referência expõe esses comandos como scripts compostos; consulte [`lebiscuit-tanstack/package.json`](/Users/fernandofrizzatti/development/workspace/decocms/lebiscuit-tanstack/package.json) para o setup canônico.
-
-## 7. Deploy no Cloudflare Workers
-
-```bash
-npx wrangler deploy
-```
-
-Você precisa de um `wrangler.jsonc` com:
+`wrangler.jsonc`:
 
 ```jsonc
 {
@@ -96,19 +79,154 @@ Você precisa de um `wrangler.jsonc` com:
 }
 ```
 
+## 4. Conecte o framework
+
+`src/setup.ts` — a configuração central. Precisa rodar **antes** de qualquer módulo importar suas sections, loaders ou matchers:
+
+```ts
+import { createSiteSetup } from "@decocms/start/setup";
+import { autoconfigApps } from "@decocms/start/apps";
+
+export const setup = createSiteSetup({
+  siteName: "minha-loja",
+  sectionsGlob: import.meta.glob("./sections/**/*.tsx", { eager: true }),
+  apps: autoconfigApps(),
+});
+```
+
+`src/worker-entry.ts` — a camada mais externa do Worker. **`import "./setup"` precisa ser a primeiríssima linha:**
+
+```ts
+import "./setup";
+
+import { createDecoWorkerEntry } from "@decocms/start/sdk/workerEntry";
+import {
+  handleMeta,
+  handleDecofile,
+  handleRender,
+  handleInvoke,
+} from "@decocms/start/admin";
+import serverEntry from "./server";
+
+export default createDecoWorkerEntry(serverEntry, {
+  admin: { handleMeta, handleDecofile, handleRender, handleInvoke },
+});
+```
+
+`src/server.ts` — o server entry do TanStack Start. Também importa `./setup` primeiro:
+
+```ts
+import "./setup";
+import { createServerEntry } from "@tanstack/react-start/server";
+import { createRouter } from "./router";
+
+export default createServerEntry({ createRouter });
+```
+
+## 5. Adicione as rotas do CMS
+
+`src/routes/__root.tsx` — o shell global:
+
+```tsx
+import { DecoRootLayout } from "@decocms/start/hooks";
+import { createRootRouteWithContext, Outlet } from "@tanstack/react-router";
+
+export const Route = createRootRouteWithContext()({
+  component: () => (
+    <DecoRootLayout>
+      <Outlet />
+    </DecoRootLayout>
+  ),
+});
+```
+
+`src/routes/index.tsx` — a homepage, plugada no CMS:
+
+```tsx
+import { createFileRoute } from "@tanstack/react-router";
+import { cmsHomeRouteConfig } from "@decocms/start/routes";
+
+export const Route = createFileRoute("/")(
+  cmsHomeRouteConfig({ siteName: "minha-loja" }),
+);
+```
+
+`src/routes/$.tsx` — o catch-all para todas as outras URLs do CMS:
+
+```tsx
+import { createFileRoute } from "@tanstack/react-router";
+import { cmsRouteConfig } from "@decocms/start/routes";
+
+export const Route = createFileRoute("/$")(
+  cmsRouteConfig({
+    siteName: "minha-loja",
+    ignoreSearchParams: ["skuId"],
+  }),
+);
+```
+
+`src/router.ts` — conecta a route tree gerada pelo TanStack Router:
+
+```ts
+import { createRouter as createTanStackRouter } from "@tanstack/react-router";
+import { routeTree } from "./routeTree.gen";
+
+export const createRouter = () =>
+  createTanStackRouter({ routeTree });
+```
+
+## 6. Conecte ao CMS
+
+Cada site precisa do seu próprio `siteName` e do conteúdo em `.deco/blocks/`. O CMS guarda o conteúdo em dois lugares:
+
+1. **`.deco/blocks/*.json`** — fonte da verdade, commitada. Edite via `admin.deco.cx`, sincronize para disco com o daemon.
+2. **`src/server/cms/blocks.gen.json`** — bundle gerado que o framework carrega em runtime.
+
+Provisione o site no `admin.deco.cx`, aponte para o seu dev server local com o daemon e puxe o conteúdo inicial em `.deco/blocks/`. Em seguida gere o bundle pela primeira vez:
+
+```bash
+npx deco generate-blocks
+```
+
+(O nome do comando e o wiring exato ainda estão estabilizando; consulte a [referência do framework](/v2/pt/framework/overview) para os scripts atuais.)
+
+## 7. Configure commerce (opcional)
+
+Se sua loja usa VTEX ou Shopify, configure o block correspondente no admin (ou direto em `.deco/blocks/`).
+
+- **VTEX** — precisa de `account` mais os secrets `appKey` / `appToken`.
+- **Shopify** — precisa de `storeName` mais um Storefront access token.
+
+Veja [Visão geral de commerce](/v2/pt/commerce/overview).
+
+## 8. Rode o dev server
+
+```bash
+npx vite dev
+```
+
+O Vite serve a loja em `http://localhost:5173` (ou qualquer `PORT` que você configure). A primeira requisição dispara o tunnel do daemon que mantém `admin.deco.cx` em sincronia com seu site local.
+
+## 9. Deploy no Cloudflare Workers
+
+```bash
+npx vite build
+npx wrangler deploy
+```
+
 Configure secrets via `wrangler secret put` ou pelo painel do Cloudflare. Veja [Deployment no Cloudflare Workers](/v2/pt/deployment/cloudflare-workers) para bindings de KV, observabilidade e checklists de produção.
 
 ## O que vem pronto
 
-Clonar uma loja de referência já entrega:
+Plugando os arquivos acima você ganha:
 
-- O pipeline de build Vite + Cloudflare + TanStack Start ([`vite.config.ts`](/Users/fernandofrizzatti/development/workspace/decocms/lebiscuit-tanstack/vite.config.ts)).
-- O Worker entry com rotas do admin e cache de borda ([`src/worker-entry.ts`](/Users/fernandofrizzatti/development/workspace/decocms/lebiscuit-tanstack/src/worker-entry.ts)).
-- O setup do site com glob de sections, blocks, matchers e init de plataforma ([`src/setup.ts`](/Users/fernandofrizzatti/development/workspace/decocms/lebiscuit-tanstack/src/setup.ts)).
-- A rota catch-all + home via `cmsRouteConfig` / `cmsHomeRouteConfig`.
-- Os arquivos gerados `blocks.gen.ts`, `sections.gen.ts`, `meta.gen.json`, `loaders.gen.ts`.
+- O pipeline de build Vite + Cloudflare + TanStack Start.
+- Um Worker entry com rotas do admin e cache de borda.
+- O setup do site com glob de sections, blocks, matchers e init de plataforma.
+- Uma rota catch-all + home via `cmsRouteConfig` / `cmsHomeRouteConfig`.
+- Os arquivos gerados `blocks.gen.ts`, `sections.gen.ts`, `meta.gen.json`, `loaders.gen.ts` (após o primeiro generate).
 
-Você pode ir trocando peça por peça no seu ritmo.
+A partir daí, é trocar peça por peça no seu ritmo.
 
 ## Veja também
 

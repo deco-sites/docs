@@ -17,13 +17,13 @@ The admin protocol is the contract between `admin.deco.cx` and your self-hosted 
 | `POST` | `/deco/render` | Render a section or page in the preview iframe |
 | `POST` | `/deco/invoke` | Run a loader or action and return its result |
 
-These all live in [`@decocms/start/admin`](/Users/fernandofrizzatti/development/workspace/decocms/deco-start/src/admin) and are wired into the worker via `createDecoWorkerEntry`.
+These all live in `@decocms/start/admin` and are wired into the worker via `createDecoWorkerEntry`.
 
 ## `/live/_meta`
 
 Returns a JSON document with:
 
-- **`schemas`** — JSON Schema for every section's `Props`, derived from your TypeScript at build time by [`generate-schema.ts`](/Users/fernandofrizzatti/development/workspace/decocms/deco-start/scripts/generate-schema.ts).
+- **`schemas`** — JSON Schema for every section's `Props`, derived from your TypeScript at build time by `generate-schema.ts`.
 - **`manifest`** — registry of section IDs, loader IDs, action IDs, app IDs.
 - **`framework`** — base definitions (`Page`, `MultivariateBlock`, etc.).
 
@@ -69,7 +69,7 @@ The framework:
 4. Wraps it in a preview shell with `data-theme="light"` (required for DaisyUI v4 color tokens).
 5. Returns the HTML.
 
-The shell uses `LiveControls` so admin can hover-highlight the section, jump to source, and reload on edit. See [`getRenderShellConfig`](/Users/fernandofrizzatti/development/workspace/decocms/deco-start/src/admin/setup.ts).
+The shell uses `LiveControls` so admin can hover-highlight the section, jump to source, and reload on edit. See `getRenderShellConfig`.
 
 ## `/deco/invoke`
 
@@ -97,7 +97,7 @@ The admin handlers live in `worker-entry.ts`, **not** in `server.ts`. This matte
 
 > Vite strips custom fetch logic from TanStack `createServerEntry` in production builds.
 >
-> — [`@decocms/start/CLAUDE.md`](/Users/fernandofrizzatti/development/workspace/decocms/deco-start/CLAUDE.md)
+> — `@decocms/start/CLAUDE.md`
 
 If you put admin routes inside the framework's server entry, they work in dev but disappear in prod. Always wire them through `createDecoWorkerEntry`:
 

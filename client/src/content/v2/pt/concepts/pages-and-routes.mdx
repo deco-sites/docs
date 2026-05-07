@@ -51,7 +51,7 @@ export const Route = createFileRoute("/")(
 - Um **`errorComponent`** que mostra erros de section.
 - Um **`component`** padrão que renderiza `<DecoPageRenderer />` sobre os dados carregados.
 
-Você pode sobrescrever qualquer um. As lojas de referência fazem isso — veja [`baggagio-tanstack/src/routes/$.tsx`](/Users/fernandofrizzatti/development/workspace/decocms/baggagio-tanstack/src/routes/$.tsx) para um arquivo de rota real.
+Você pode sobrescrever qualquer um — passe seu próprio `loader`, `validateSearch` ou `component` e o framework faz o merge.
 
 ## Opções importantes
 
@@ -83,11 +83,11 @@ O identificador do site no admin. Tem que casar com o que está em `admin.deco.c
 
 Alguns sites precisam injetar loaders ou heads globais por cima da rota CMS. `@decocms/start/routes` exporta `withSiteGlobals`:
 
-```9:18:/Users/fernandofrizzatti/development/workspace/decocms/baggagio-tanstack/src/routes/$.tsx
+```tsx
 const routeConfig = withSiteGlobals(
   cmsRouteConfig({
-    siteName: "Bagaggio",
-    defaultTitle: "Baggagio-tanstack",
+    siteName: "minha-loja",
+    defaultTitle: "Minha Loja",
     ignoreSearchParams: ["skuId"],
   }),
 );
@@ -118,7 +118,7 @@ TanStack Router resolve caminhos mais específicos primeiro, então qualquer arq
 
 ### Usar `DecoRootLayout`
 
-Casa&Vídeo e Le biscuit usam o shell que o framework provê, que cuida de fontes, preconnects e do iframe de preview do CMS:
+O shell que o framework provê cuida de fontes, preconnects e do iframe de preview do CMS:
 
 ```tsx
 import { DecoRootLayout } from "@decocms/start/hooks";
@@ -135,7 +135,7 @@ export const Route = createRootRoute({
 
 ### Construir o seu
 
-Bagaggio usa um shell custom para colocar o drawer do minicart e os links de Google Fonts diretamente. Veja [`baggagio-tanstack/src/routes/__root.tsx`](/Users/fernandofrizzatti/development/workspace/decocms/baggagio-tanstack/src/routes/__root.tsx).
+Descarte `DecoRootLayout` e escreva um `__root.tsx` do zero quando precisar de carregamento de fontes específico, drawer de minicart no shell, ou qualquer markup que os defaults do framework não conseguem expressar. Copie os providers que precisar de `PreviewProviders` e `LiveControls` (ambos de `@decocms/start/hooks`).
 
 ## Server functions e loaders
 

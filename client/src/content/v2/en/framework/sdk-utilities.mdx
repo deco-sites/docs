@@ -158,7 +158,7 @@ const cmsRedirects = loadRedirects(loadBlocks());
 const redirect = matchRedirect("/old-path", cmsRedirects);
 ```
 
-Bagaggio adds CSV-imported redirects on top:
+For sites with thousands of legacy redirects, add CSV-imported redirects on top:
 
 ```ts
 import redirectsCsv from "../redirect.csv?raw";
@@ -323,7 +323,7 @@ The framework ships several scripts under `@decocms/start/scripts/`:
 | `migrate-post-cleanup` | Post-migration cleanup of leftover boilerplate |
 | `tailwind-lint` | Tailwind v3 → v4 lint/fix |
 
-Invoke them via `npx tsx node_modules/@decocms/start/scripts/<name>.ts` or via npm scripts in your `package.json`. The reference sites all expose them as composite scripts — see [`lebiscuit-tanstack/package.json`](/Users/fernandofrizzatti/development/workspace/decocms/lebiscuit-tanstack/package.json).
+Invoke them via `npx tsx node_modules/@decocms/start/scripts/<name>.ts` or via npm scripts in your `package.json`. Wire them as composite scripts (e.g. `"generate": "npm run generate:blocks && npm run generate:schema && npm run generate:sections && npm run generate:loaders"`) so a single command keeps everything in sync.
 
 ## Types and widgets
 

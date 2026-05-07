@@ -49,7 +49,7 @@ You almost always use `DecoPageRenderer` as your CMS route's `component`.
 
 ## `DecoRootLayout`
 
-A pre-built `__root.tsx` shell. Casa&Video and Le biscuit use it; Bagaggio rolls its own.
+A pre-built `__root.tsx` shell. Use it unless you need control the framework shell can't give.
 
 ```tsx
 import { DecoRootLayout } from "@decocms/start/hooks";
@@ -75,7 +75,7 @@ It handles:
 - React Query provider.
 - Toast container.
 
-Roll your own if you need more control over the shell. See [Bagaggio's `__root.tsx`](/Users/fernandofrizzatti/development/workspace/decocms/baggagio-tanstack/src/routes/__root.tsx) for a custom example.
+Roll your own when you need bespoke font loading, a minicart drawer in the shell, or any markup the framework's defaults can't express — drop `DecoRootLayout` and write a `__root.tsx` from scratch, copying just the providers you need from `PreviewProviders` and `LiveControls`.
 
 ## `LazySection`
 
@@ -142,7 +142,7 @@ SSR-safe — returns the same value on server and client.
 <Callout type="warning">
 **`useDevice` and hydration mismatches.** If you call `useDevice` directly inside a component tree that hydrates on the client, you can get a mismatch when the client UA looks different from the SSR UA (e.g. when running through a CDN that strips UA hints).
 
-The safer pattern is to use `useDevice` in a section loader (server-only) and pass the result as a prop. See [Casa&Video's `cls-pending-issues.md`](/Users/fernandofrizzatti/development/workspace/decocms/casaevideo-storefront/docs/cls-pending-issues.md) for the investigation.
+The safer pattern is to use `useDevice` in a section loader (server-only) and pass the result as a prop.
 </Callout>
 
 ## `useHydrated`

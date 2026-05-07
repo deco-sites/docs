@@ -39,7 +39,7 @@ const {
 
 ### Where the data comes from
 
-`useCart` calls **`/api/checkout/pub/orderForm`** directly (relative URL, same origin) with `expectedOrderFormSections` matching `DEFAULT_EXPECTED_SECTIONS` from [`vtex/actions/checkout.ts`](/Users/fernandofrizzatti/development/workspace/decocms/apps-start/vtex/actions/checkout.ts). The cookies (`checkout.vtex.com__orderFormId`, `vtex_segment`) get sent automatically by the browser.
+`useCart` calls **`/api/checkout/pub/orderForm`** directly (relative URL, same origin) with `expectedOrderFormSections` matching `DEFAULT_EXPECTED_SECTIONS` from `vtex/actions/checkout.ts`. The cookies (`checkout.vtex.com__orderFormId`, `vtex_segment`) get sent automatically by the browser.
 
 For `salesChannel`, the hook reads the **`VTEXSC` cookie** from `document.cookie` so per-region behavior matches the user's session.
 
@@ -158,7 +158,7 @@ const useCustomCart = createUseCart({
 });
 ```
 
-The factory hooks expect specific invoke shapes (e.g. `invoke.vtex.actions.checkout.addItemsToCart`). The headers in [`vtex/hooks/createUseCart.ts`](/Users/fernandofrizzatti/development/workspace/decocms/apps-start/vtex/hooks) document the expected invoke surface.
+The factory hooks expect specific invoke shapes (e.g. `invoke.vtex.actions.checkout.addItemsToCart`). The headers in `vtex/hooks/createUseCart.ts` document the expected invoke surface.
 
 **For new code, use the canonical hooks**, not the factories.
 

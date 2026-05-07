@@ -86,7 +86,7 @@ See [Framework: types](/v2/en/framework/sdk-utilities#types-and-widgets) for the
 
 ## Conventions
 
-`@decocms/start` applies a few automatic conventions to sections at register time. See [`applySectionConventions`](/Users/fernandofrizzatti/development/workspace/decocms/deco-start/src/cms/applySectionConventions.ts):
+`@decocms/start` applies a few automatic conventions to sections at register time. See `applySectionConventions`:
 
 - Sections are wrapped in an error boundary so a single broken section doesn't crash the page.
 - Below-the-fold sections are lazy-rendered (see [Deferred rendering](/v2/en/concepts/deferred-rendering)).
@@ -107,7 +107,7 @@ createSiteSetup({
 });
 ```
 
-You can also register sections explicitly via `registerSectionLoaders` from `@decocms/start/cms` if you need finer control. See [`casaevideo-storefront/src/setup.ts`](/Users/fernandofrizzatti/development/workspace/decocms/casaevideo-storefront/src/setup.ts) for a real example.
+You can also register sections explicitly via `registerSectionLoaders` from `@decocms/start/cms` if you need finer control over the order or want to filter the glob.
 
 ## Layout sections
 

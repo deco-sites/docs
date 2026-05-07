@@ -34,7 +34,7 @@ setAsyncRenderingConfig({
 });
 ```
 
-This is what [Casa&Video does](/Users/fernandofrizzatti/development/workspace/decocms/casaevideo-storefront/src/setup.ts) — the first 3 sections render eagerly, everything below the fold defers.
+A common production setting is `foldThreshold: 3` — the first 3 sections render eagerly, everything below the fold defers.
 
 ### 2. CMS-controlled — `respectCmsLazy`
 
@@ -100,7 +100,7 @@ The framework deduplicates concurrent `loadDeferredSection` calls so quick navig
 1. Mark the affected sections `alwaysEager: true` during local dev.
 2. Add `no_handle_cross_request_promise_resolution` to `wrangler.jsonc` `compatibility_flags`.
 
-Production deploys don't have this issue. See [Casa&Video's `ssr-optimization-framework.md`](/Users/fernandofrizzatti/development/workspace/decocms/casaevideo-storefront/docs/ssr-optimization-framework.md) for the full investigation.
+Production deploys don't have this issue.
 </Callout>
 
 ## Configuration reference
@@ -127,4 +127,3 @@ When in doubt, defer. The framework handles bots correctly, and unnecessarily ea
 - [Sections](/v2/en/concepts/sections)
 - [Hooks reference](/v2/en/framework/hooks)
 - [Caching strategy](/v2/en/deployment/caching-strategy)
-- [Casa&Video case study](/v2/en/case-studies/casaevideo)

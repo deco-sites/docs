@@ -232,7 +232,7 @@ CRUD for VTEX MasterData documents (search, get, save, delete, attach files).
 
 ### `misc`
 
-Catch-all module: `notifyMe` (back-in-stock notifications), reviews, payment token deletes, and a few small utilities. See [`vtex/actions/misc.ts`](/Users/fernandofrizzatti/development/workspace/decocms/apps-start/vtex/actions/misc.ts) for the full list.
+Catch-all module: `notifyMe` (back-in-stock notifications), reviews, payment token deletes, and a few small utilities. See `vtex/actions/misc.ts` for the full list.
 
 ### `analytics/sendEvent`
 
@@ -244,7 +244,7 @@ POSTs to VTEX analytics endpoints from the server side (so cookies and request c
 
 ## Cookie semantics
 
-Many actions (especially checkout, auth, session) use `vtexFetchWithCookies` from [`vtex/client.ts`](/Users/fernandofrizzatti/development/workspace/decocms/apps-start/vtex/client.ts):
+Many actions (especially checkout, auth, session) use `vtexFetchWithCookies` from `vtex/client.ts`:
 
 - Forwards inbound request cookies to upstream VTEX.
 - Merges upstream `Set-Cookie` onto the response so the browser receives session/cart cookies.
