@@ -46,7 +46,7 @@ Adicione três registros `A` no seu provedor de DNS, apontando o apex (`@`) para
 
 ### 3. Aguarde o certificado
 
-Após a propagação do DNS, o Let's Encrypt valida o domínio e emite o certificado TLS. A entrada em **Configurações → Domínios** exibe **Active** assim que o certificado estiver pronto. Geralmente isso leva alguns minutos, mas pode levar até uma hora dependendo da propagação do DNS.
+Após a propagação do DNS, o Let's Encrypt valida o domínio e emite o certificado TLS. Atualize a página de **Configurações → Domínios** para ver o status mais recente — a entrada exibirá **Active** assim que o certificado estiver pronto. Geralmente isso leva alguns minutos, mas pode levar até uma hora dependendo da propagação do DNS.
 
 ---
 
@@ -70,7 +70,7 @@ No seu provedor de DNS, substitua os registros apex existentes pelos três novos
 
 **Passo 3 — Exclua a entrada legada**
 
-Aguarde até a nova entrada mostrar **Active** na coluna de status. Isso confirma que o certificado foi emitido e o redirect está em operação. Então abra o menu `…` na entrada **antiga** e escolha **Excluir**.
+Atualize a página e aguarde até a nova entrada mostrar **Active** na coluna de status. Isso confirma que o certificado foi emitido e o redirect está em operação. Então abra o menu `…` na entrada **antiga** e escolha **Excluir**.
 
 <Callout type="info">
   A migração só é concluída após a propagação do DNS. Não exclua a entrada

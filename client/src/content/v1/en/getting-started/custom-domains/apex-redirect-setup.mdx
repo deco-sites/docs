@@ -46,7 +46,7 @@ Add three `A` records at your DNS provider, pointing the apex (`@`) to the follo
 
 ### 3. Wait for the certificate
 
-After DNS propagates, Let's Encrypt validates the domain and issues the TLS certificate. The entry in **Settings → Domains** shows **Active** once the certificate is ready. This usually takes a few minutes but can take up to an hour depending on DNS propagation.
+After DNS propagates, Let's Encrypt validates the domain and issues the TLS certificate. Refresh the **Settings → Domains** page to see the latest status — the entry will show **Active** once the certificate is ready. This usually takes a few minutes but can take up to an hour depending on DNS propagation.
 
 ---
 
@@ -70,7 +70,7 @@ At your DNS provider, replace any existing apex records with the three new IPs s
 
 **Step 3 — Delete the legacy entry**
 
-Wait until the new entry shows **Active** in the status column. This confirms the certificate has been issued and the redirect is serving traffic. Then open the `…` menu on the **old** entry and choose **Delete**.
+Refresh the page and wait until the new entry shows **Active** in the status column. This confirms the certificate has been issued and the redirect is serving traffic. Then open the `…` menu on the **old** entry and choose **Delete**.
 
 <Callout type="info">
   The migration is only complete after DNS propagates. Do not delete the legacy
