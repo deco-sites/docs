@@ -21,7 +21,6 @@ export async function getNavigationLinks(
     "getting-started/creating-a-new-page",
     "getting-started/changes-and-publishing",
     "getting-started/adding-an-app",
-    "getting-started/custom-domains/apex-domains",
     "getting-started/gtm",
 
     // CMS Capabilities
