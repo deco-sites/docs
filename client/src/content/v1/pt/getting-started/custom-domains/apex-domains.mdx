@@ -1,49 +1,73 @@
 ---
 title: Redirecionando sem WWW
-description: Como redirecionar domínio sem www
+description: Como redirecionar um domínio apex na deco.cx
 since: 1.1.0
 ---
 
+import Callout from "../../../../components/ui/Callout.astro";
+
 ## O que é domínio apex?
 
-Domínio apex é o termo utilizado para domínio raiz, sem subdomínio.
+Domínio apex é o domínio raiz sem subdomínio.
 
 Exemplo:
 
-- `www.example.com.br` -> Subdomínio
-- `loja.example.com.br` -> Subdomínio
-- `example.com.br` - Domínio Apex
+- `www.example.com` → Subdomínio
+- `loja.example.com` → Subdomínio
+- `example.com` → Domínio Apex
 
 ## Posso apontar um site deco.cx para o domínio apex?
 
-Não, ainda não é possível apontar um site deco.cx para o seu domínio apex.
+Não diretamente — sites deco.cx rodam em um subdomínio (ex.: `www`). Porém, a deco.cx oferece um serviço de redirect gerenciado para que visitantes que acessem o domínio apex sejam redirecionados automaticamente para o lugar certo.
 
-Por isso, criamos uma solução fácil de redirecionamento, para que os acessos ao
-domínio Apex não sejam perdidos.
+## Como configurar um Apex Redirect
 
-## Como redirecionar um domínio apex na deco.cx?
+**1.** No painel do seu site, acesse **Configurações → Domínios** e clique em **Adicionar domínio existente**.
 
-1 - No painel do seu site na deco.cx, acesse a página de Configurações.
-
-2 - Clique em "Adicionar domínio existente"
-
-3 - Insira o seu domínio apex (sem subdomínio):
+**2.** Insira o seu domínio apex (sem subdomínio):
 
 ![Domain step](/images/getting-started/custom-domains/apex-domain.png)
 
-4 - Defina para qual subdomínio redirecionar:
+**3.** Defina para qual subdomínio redirecionar:
 
-![Sudomain step](/images/getting-started/custom-domains/subdomain.png)
+![Subdomain step](/images/getting-started/custom-domains/subdomain.png)
 
-5 - Agora, você verá os apontamentos que devem ser feitos na sua plataforma de
-hospedagem de domínio:
+**4.** Adicione os seguintes registros DNS no seu provedor de DNS:
 
-![DNS Setup](/images/getting-started/custom-domains/validate-apex.png)
+![DNS Setup](/images/getting-started/custom-domains/dns-records-apex.png)
 
-6 - Após realizar as configurações, clique em Validar Domínio.
+| Tipo | Nome | Valor |
+|------|------|-------|
+| A | @ | `16.148.147.194` |
+| A | @ | `52.32.122.94` |
+| A | @ | `52.35.156.199` |
 
-A etapa de validação é essencial para o funcionamento e ela depende da
-propagação do DNS configurado no serviço de hospedagem.
+> **Obs.:** `@` representa o domínio apex (raiz). Alguns provedores de DNS usam o nome completo do domínio ou deixam o campo em branco — consulte a documentação do seu provedor.
 
-No geral, a propagação ocorre dentro algumas horas, mas pode levar até 48 horas
-em alguns casos.
+**5.** Atualize a página de **Configurações → Domínios** para verificar o status. Quando o certificado for provisionado, a entrada exibirá **Active**. Geralmente isso leva alguns minutos, mas pode levar até 48 horas dependendo da propagação do DNS.
+
+---
+
+## Migrando do Sistema Antigo
+
+<Callout type="warning">
+  Se você vir um banner "Redirect legado detectado" no admin, um ou mais
+  domínios de redirect do seu site ainda usam o sistema antigo e precisam ser
+  migrados.
+</Callout>
+
+**Passo 1 — Adicione novamente o domínio**
+
+Em **Configurações → Domínios**, clique em **Adicionar domínio existente** e informe o mesmo domínio apex. Defina o subdomínio de redirect no próximo passo e confirme. Uma nova entrada aparecerá ao lado da entrada legada existente.
+
+**Passo 2 — Atualize o DNS**
+
+No seu provedor de DNS, substitua os registros apex existentes pelos três novos IPs da tabela acima.
+
+**Passo 3 — Exclua a entrada legada**
+
+Atualize a página e aguarde até a nova entrada mostrar **Active**. Então abra o menu `…` na entrada **antiga** e escolha **Excluir**.
+
+<Callout type="info">
+  Não exclua a entrada legada antes que a nova esteja Active.
+</Callout>

@@ -22,7 +22,6 @@ export async function getNavigationLinks(
     "getting-started/changes-and-publishing",
     "getting-started/adding-an-app",
     "getting-started/custom-domains/apex-domains",
-    "getting-started/custom-domains/apex-redirect-setup",
     "getting-started/gtm",
 
     // CMS Capabilities
