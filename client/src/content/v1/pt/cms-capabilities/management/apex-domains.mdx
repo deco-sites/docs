@@ -61,10 +61,9 @@ Em **Configurações → Domínios**, clique em **Adicionar domínio existente**
 **Passo 2 — Remova os registros DNS antigos**
 
 <Callout type="warning">
-  Haverá um breve período de indisponibilidade no domínio apex (ex.:
-  `example.com`) entre a remoção dos registros antigos e o provisionamento do
-  novo certificado. O subdomínio do seu site (ex.: `www.example.com`) não é
-  afetado e continuará funcionando normalmente durante toda a migração.
+  Pode haver indisponibilidade no domínio apex durante esta etapa. O subdomínio
+  do seu site (ex.: `www.example.com`) não é afetado e continuará funcionando
+  normalmente durante toda a migração.
 </Callout>
 
 No seu provedor de DNS, exclua os registros apex do provedor anterior antes de adicionar os novos. Registros do Deno Deploy, por exemplo, têm este formato:
