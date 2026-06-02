@@ -58,11 +58,34 @@ Not directly — deco.cx sites run on a subdomain (e.g. `www`). However, deco.cx
 
 In **Settings → Domains**, click **Add existing domain** and enter the same apex domain again. Set the redirect subdomain on the next step and confirm. A new entry appears alongside the existing legacy entry.
 
-**Step 2 — Update DNS**
+**Step 2 — Remove old DNS records**
 
-At your DNS provider (where you purchased your domain), replace any existing apex records with the new IPs shown in step 4 above.
+<Callout type="warning">
+  There will be a brief downtime on the apex domain (e.g. `example.com`) between
+  removing the old records and the new certificate being provisioned. Your site's
+  subdomain (e.g. `www.example.com`) is not affected and will continue working
+  normally throughout the migration.
+</Callout>
 
-**Step 3 — Delete the legacy entry**
+At your DNS provider, delete any apex records left from the previous provider before adding the new ones. Records from Deno Deploy, for example, look like this:
+
+| Type | Name | Value |
+|------|------|-------|
+| A | @ | `34.120.54.55` |
+| AAAA | @ | `2600:1901:0:6d85::` |
+| CNAME | `_acme-challenge` | `*.acme.deno.dev` |
+
+<Callout type="warning">
+  Leaving old records in place — especially the AAAA record — will cause
+  browsers to keep routing traffic to the previous provider, since IPv6 takes
+  precedence over IPv4.
+</Callout>
+
+**Step 3 — Add the new DNS records**
+
+At your DNS provider, add the three deco.cx apex-redirect IPs shown in step 4 above.
+
+**Step 4 — Delete the legacy entry**
 
 Refresh the page and wait until the new entry shows **Active**. Then open the `…` menu on the **old** entry and choose **Delete**.
 
@@ -76,15 +99,3 @@ Refresh the page and wait until the new entry shows **Active**. Then open the `�
 
 - Confirm that all three `A` records were added correctly at your DNS provider.
 - DNS propagation can take up to 48 hours in some cases.
-
-**Site is still being served by the previous provider (e.g. Deno Deploy) even with correct A records**
-
-Modern browsers and operating systems prefer IPv6 (AAAA) over IPv4 (A) when both are available. If your domain has a leftover AAAA record from the previous provider, traffic will go there instead of the deco.cx apex-redirect IPs.
-
-Check if an AAAA record exists:
-
-```bash
-dig AAAA your-domain.com +short
-```
-
-If any address is returned, remove that AAAA record at your DNS provider. The deco.cx apex-redirect service uses IPv4 only — no AAAA record should be present on the apex domain.

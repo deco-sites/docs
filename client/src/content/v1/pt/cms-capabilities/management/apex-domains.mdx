@@ -58,11 +58,34 @@ Não diretamente — sites deco.cx rodam em um subdomínio (ex.: `www`). Porém,
 
 Em **Configurações → Domínios**, clique em **Adicionar domínio existente** e informe o mesmo domínio apex. Defina o subdomínio de redirect no próximo passo e confirme. Uma nova entrada aparecerá ao lado da entrada legada existente.
 
-**Passo 2 — Atualize o DNS**
+**Passo 2 — Remova os registros DNS antigos**
 
-No seu provedor de DNS (onde você comprou o seu domínio), substitua os registros apex existentes pelos novos IPs mostrados no passo 4 acima.
+<Callout type="warning">
+  Haverá um breve período de indisponibilidade no domínio apex (ex.:
+  `example.com`) entre a remoção dos registros antigos e o provisionamento do
+  novo certificado. O subdomínio do seu site (ex.: `www.example.com`) não é
+  afetado e continuará funcionando normalmente durante toda a migração.
+</Callout>
 
-**Passo 3 — Exclua a entrada legada**
+No seu provedor de DNS, exclua os registros apex do provedor anterior antes de adicionar os novos. Registros do Deno Deploy, por exemplo, têm este formato:
+
+| Tipo | Nome | Valor |
+|------|------|-------|
+| A | @ | `34.120.54.55` |
+| AAAA | @ | `2600:1901:0:6d85::` |
+| CNAME | `_acme-challenge` | `*.acme.deno.dev` |
+
+<Callout type="warning">
+  Deixar registros antigos no lugar — especialmente o AAAA — fará com que os
+  navegadores continuem roteando o tráfego para o provedor anterior, pois IPv6
+  tem precedência sobre IPv4.
+</Callout>
+
+**Passo 3 — Adicione os novos registros DNS**
+
+No seu provedor de DNS, adicione os três IPs do apex-redirect da deco.cx mostrados no passo 4 acima.
+
+**Passo 4 — Exclua a entrada legada**
 
 Atualize a página e aguarde até a nova entrada mostrar **Active**. Então abra o menu `…` na entrada **antiga** e escolha **Excluir**.
 
@@ -76,15 +99,3 @@ Atualize a página e aguarde até a nova entrada mostrar **Active**. Então abra
 
 - Confirme que os três registros `A` foram adicionados corretamente no seu provedor de DNS.
 - A propagação do DNS pode levar até 48 horas em alguns casos.
-
-**O site continua sendo servido pelo provedor anterior (ex.: Deno Deploy) mesmo com os registros A corretos**
-
-Navegadores e sistemas operacionais modernos preferem IPv6 (AAAA) ao IPv4 (A) quando ambos estão disponíveis. Se o seu domínio tiver um registro AAAA remanescente do provedor anterior, o tráfego irá para lá em vez de seguir para os IPs do apex-redirect da deco.cx.
-
-Verifique se existe um registro AAAA:
-
-```bash
-dig AAAA seu-dominio.com +short
-```
-
-Se algum endereço for retornado, remova esse registro AAAA no seu provedor de DNS. O serviço de apex-redirect da deco.cx utiliza apenas IPv4 — nenhum registro AAAA deve estar presente no domínio apex.
