@@ -58,11 +58,27 @@ Não diretamente — sites deco.cx rodam em um subdomínio (ex.: `www`). Porém,
 
 Em **Configurações → Domínios**, clique em **Adicionar domínio existente** e informe o mesmo domínio apex. Defina o subdomínio de redirect no próximo passo e confirme. Uma nova entrada aparecerá ao lado da entrada legada existente.
 
-**Passo 2 — Atualize o DNS**
+**Passo 2 — Remova os registros DNS antigos**
 
-No seu provedor de DNS (onde você comprou o seu domínio), substitua os registros apex existentes pelos novos IPs mostrados no passo 4 acima.
+No seu provedor de DNS, exclua os registros apex do provedor anterior antes de adicionar os novos. Registros do Deno Deploy, por exemplo, têm este formato:
 
-**Passo 3 — Exclua a entrada legada**
+| Tipo | Nome | Valor |
+|------|------|-------|
+| A | @ | `34.120.54.55` |
+| AAAA | @ | `2600:1901:0:6d85::` |
+| CNAME | `_acme-challenge` | `*.acme.deno.dev` |
+
+<Callout type="warning">
+  Deixar registros antigos no lugar — especialmente o AAAA — fará com que os
+  navegadores continuem roteando o tráfego para o provedor anterior, pois IPv6
+  tem precedência sobre IPv4.
+</Callout>
+
+**Passo 3 — Adicione os novos registros DNS**
+
+No seu provedor de DNS, adicione os três IPs do apex-redirect da deco.cx mostrados no passo 4 acima.
+
+**Passo 4 — Exclua a entrada legada**
 
 Atualize a página e aguarde até a nova entrada mostrar **Active**. Então abra o menu `…` na entrada **antiga** e escolha **Excluir**.
 

@@ -58,11 +58,27 @@ Not directly — deco.cx sites run on a subdomain (e.g. `www`). However, deco.cx
 
 In **Settings → Domains**, click **Add existing domain** and enter the same apex domain again. Set the redirect subdomain on the next step and confirm. A new entry appears alongside the existing legacy entry.
 
-**Step 2 — Update DNS**
+**Step 2 — Remove old DNS records**
 
-At your DNS provider (where you purchased your domain), replace any existing apex records with the new IPs shown in step 4 above.
+At your DNS provider, delete any apex records left from the previous provider before adding the new ones. Records from Deno Deploy, for example, look like this:
 
-**Step 3 — Delete the legacy entry**
+| Type | Name | Value |
+|------|------|-------|
+| A | @ | `34.120.54.55` |
+| AAAA | @ | `2600:1901:0:6d85::` |
+| CNAME | `_acme-challenge` | `*.acme.deno.dev` |
+
+<Callout type="warning">
+  Leaving old records in place — especially the AAAA record — will cause
+  browsers to keep routing traffic to the previous provider, since IPv6 takes
+  precedence over IPv4.
+</Callout>
+
+**Step 3 — Add the new DNS records**
+
+At your DNS provider, add the three deco.cx apex-redirect IPs shown in step 4 above.
+
+**Step 4 — Delete the legacy entry**
 
 Refresh the page and wait until the new entry shows **Active**. Then open the `…` menu on the **old** entry and choose **Delete**.
 
