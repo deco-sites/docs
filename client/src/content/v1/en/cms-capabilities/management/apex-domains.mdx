@@ -60,6 +60,13 @@ In **Settings → Domains**, click **Add existing domain** and enter the same ap
 
 **Step 2 — Remove old DNS records**
 
+<Callout type="warning">
+  There will be a brief downtime on the apex domain (e.g. `example.com`) between
+  removing the old records and the new certificate being provisioned. Your `www`
+  subdomain (e.g. `www.example.com`) is not affected and will continue working
+  normally throughout the migration.
+</Callout>
+
 At your DNS provider, delete any apex records left from the previous provider before adding the new ones. Records from Deno Deploy, for example, look like this:
 
 | Type | Name | Value |
