@@ -92,15 +92,3 @@ Refresh the page and wait until the new entry shows **Active**. Then open the `â
 
 - Confirm that all three `A` records were added correctly at your DNS provider.
 - DNS propagation can take up to 48 hours in some cases.
-
-**Site is still being served by the previous provider (e.g. Deno Deploy) even with correct A records**
-
-Modern browsers and operating systems prefer IPv6 (AAAA) over IPv4 (A) when both are available. If your domain has a leftover AAAA record from the previous provider, traffic will go there instead of the deco.cx apex-redirect IPs.
-
-Check if an AAAA record exists:
-
-```bash
-dig AAAA your-domain.com +short
-```
-
-If any address is returned, remove that AAAA record at your DNS provider. The deco.cx apex-redirect service uses IPv4 only â€” no AAAA record should be present on the apex domain.
