@@ -77,13 +77,9 @@ Atualize a página e aguarde até a nova entrada mostrar **Active**. Então abra
 - Confirme que os três registros `A` foram adicionados corretamente no seu provedor de DNS.
 - A propagação do DNS pode levar até 48 horas em alguns casos.
 
----
+**O site continua sendo servido pelo provedor anterior (ex.: Deno Deploy) mesmo com os registros A corretos**
 
-## Troubleshooting
-
-**O site está sendo servido pelo provedor errado (ex.: Deno Deploy) mesmo com os registros A corretos**
-
-Navegadores e sistemas operacionais modernos preferem IPv6 (AAAA) ao IPv4 (A) quando ambos estão disponíveis. Se o seu domínio tiver um registro AAAA apontando para um provedor de hospedagem anterior, o tráfego irá para lá em vez de seguir para os IPs do apex-redirect da deco.cx.
+Navegadores e sistemas operacionais modernos preferem IPv6 (AAAA) ao IPv4 (A) quando ambos estão disponíveis. Se o seu domínio tiver um registro AAAA remanescente do provedor anterior, o tráfego irá para lá em vez de seguir para os IPs do apex-redirect da deco.cx.
 
 Verifique se existe um registro AAAA:
 
