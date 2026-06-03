@@ -58,7 +58,11 @@ Not directly — deco.cx sites run on a subdomain (e.g. `www`). However, deco.cx
 
 In **Settings → Domains**, click **Add existing domain** and enter the same apex domain again. Set the redirect subdomain on the next step and confirm. A new entry appears alongside the existing legacy entry.
 
-**Step 2 — Remove old DNS records**
+**Step 2 — Add the new DNS records**
+
+At your DNS provider, add the three deco.cx apex-redirect IPs shown in step 4 above.
+
+**Step 3 — Remove old DNS records**
 
 <Callout type="warning">
   There may be downtime on the apex domain during this step. Your site's
@@ -66,7 +70,7 @@ In **Settings → Domains**, click **Add existing domain** and enter the same ap
   normally throughout the migration.
 </Callout>
 
-At your DNS provider, delete any apex records left from the previous provider before adding the new ones. Records from Deno Deploy, for example, look like this:
+At your DNS provider, delete any apex records left from the previous provider. Records from Deno Deploy, for example, look like this:
 
 | Type | Name | Value |
 |------|------|-------|
@@ -79,10 +83,6 @@ At your DNS provider, delete any apex records left from the previous provider be
   browsers to keep routing traffic to the previous provider, since IPv6 takes
   precedence over IPv4.
 </Callout>
-
-**Step 3 — Add the new DNS records**
-
-At your DNS provider, add the three deco.cx apex-redirect IPs shown in step 4 above.
 
 **Step 4 — Delete the legacy entry**
 
@@ -97,4 +97,12 @@ Refresh the page and wait until the new entry shows **Active**. Then open the `�
 **The new entry won't become Active**
 
 - Confirm that all three `A` records were added correctly at your DNS provider.
+- Make sure the old redirect entries have been removed from your DNS provider. The old entries are:
+
+  | Type | Name | Value |
+  |------|------|-------|
+  | A | @ | `34.120.54.55` |
+  | AAAA | @ | `2600:1901:0:6d85::` |
+  | CNAME | `_acme-challenge` | *(e.g. `_acme.deno.dev.`)* |
+
 - DNS propagation can take up to 48 hours in some cases.
