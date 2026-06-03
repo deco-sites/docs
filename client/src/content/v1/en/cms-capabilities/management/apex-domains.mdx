@@ -104,7 +104,7 @@ Still in your DNS provider, delete the old apex records. If you were previously 
 
 Go back to **Settings → Domains** in the deco.cx admin and refresh the page. Wait until the new entry shows **Active** (this can take a few minutes or up to 48 hours depending on DNS propagation).
 
-Once it's Active, identify the old entry — it's the one that shows a **Revalidate domain** button and, if you expand its **DNS records** section, lists the old Deno Deploy IPs (`34.120.54.55`). Open the `…` menu on that entry and choose **Delete**.
+Once it's Active, identify the old entry — expand the **DNS records** section of each entry and look for the one listing the old Deno Deploy IPs (`34.120.54.55`). Open the `…` menu on that entry and choose **Delete**.
 
 <Callout type="info">
   Do not delete the legacy entry before the new one is Active — otherwise the
