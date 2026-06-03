@@ -111,6 +111,25 @@ Once it's Active, identify the old entry — expand the **DNS records** section 
   apex redirect will stop working entirely.
 </Callout>
 
+**Verifying the migration**
+
+Once the new entry is Active, you can confirm the redirect is being served by deco.cx by running the following command in your terminal (replace `yourdomain.com` with your actual domain):
+
+```sh
+curl -s -I yourdomain.com
+```
+
+Look for the `X-Redirect-By: deco` header in the response:
+
+```
+HTTP/1.1 307 Temporary Redirect
+Location: https://www.yourdomain.com
+X-Redirect-By: deco
+...
+```
+
+If you see `X-Redirect-By: deco`, the migration is complete and the apex redirect is running on the new system.
+
 ## Migration Troubleshooting
 
 **The new entry won't become Active**
