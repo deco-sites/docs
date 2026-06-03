@@ -69,17 +69,25 @@ In **Settings → Domains**, click **Add existing domain** and enter the same ap
 
 **Step 2 — Add the new DNS records**
 
-At your DNS provider, add the three deco.cx apex-redirect IPs shown in step 4 above.
+Log in to your DNS provider — this is the service where you registered or manage your domain (e.g. GoDaddy, Cloudflare, Registro.br, Hostgator). Add the following three records:
+
+| Type | Name | Value |
+|------|------|-------|
+| A | @ | `16.148.147.194` |
+| A | @ | `52.32.122.94` |
+| A | @ | `52.35.156.199` |
+
+> **Note:** `@` represents the apex domain itself. Some DNS providers use the full domain name or leave this field blank — check your provider's documentation if unsure.
 
 **Step 3 — Remove old DNS records**
 
 <Callout type="warning">
-  There may be downtime on the apex domain during this step. Your site's
-  subdomain (e.g. `www.example.com`) is not affected and will continue working
-  normally throughout the migration.
+  There may be brief downtime on the apex domain (e.g. `example.com`) during
+  this step. Your site's subdomain (e.g. `www.example.com`) is not affected and
+  will continue working normally.
 </Callout>
 
-At your DNS provider, delete any apex records left from the previous provider. Records from Deno Deploy, for example, look like this:
+Still in your DNS provider, delete the old apex records. If you were previously using deco.cx's legacy system (powered by Deno Deploy), the records to remove look like this:
 
 | Type | Name | Value |
 |------|------|-------|
@@ -88,17 +96,17 @@ At your DNS provider, delete any apex records left from the previous provider. R
 | CNAME | `_acme-challenge` | `*.acme.deno.dev` |
 
 <Callout type="warning">
-  Leaving old records in place — especially the AAAA record — will cause
-  browsers to keep routing traffic to the previous provider, since IPv6 takes
-  precedence over IPv4.
+  Leaving old records in place — especially the `AAAA` record — will cause
+  browsers to keep routing traffic to the old system.
 </Callout>
 
 **Step 4 — Delete the legacy entry**
 
-Refresh the page and wait until the new entry shows **Active**. Then open the `…` menu on the **old** entry and choose **Delete**.
+Go back to **Settings → Domains** in the deco.cx admin and refresh the page. Wait until the new entry shows **Active** (this can take a few minutes or up to 48 hours depending on DNS propagation). Once it's Active, open the `…` menu on the **old entry** (the one labeled "Legacy") and choose **Delete**.
 
 <Callout type="info">
-  Do not delete the legacy entry before the new one is Active.
+  Do not delete the legacy entry before the new one is Active — otherwise the
+  apex redirect will stop working entirely.
 </Callout>
 
 ## Migration Troubleshooting

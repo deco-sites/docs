@@ -69,17 +69,25 @@ Em **Configurações → Domínios**, clique em **Adicionar domínio existente**
 
 **Passo 2 — Adicione os novos registros DNS**
 
-No seu provedor de DNS, adicione os três IPs do apex-redirect da deco.cx mostrados no passo 4 acima.
+Acesse o seu provedor de DNS — é o serviço onde você registrou ou gerencia o seu domínio (ex.: GoDaddy, Cloudflare, Registro.br, Hostgator). Adicione os três registros abaixo:
+
+| Tipo | Nome | Valor |
+|------|------|-------|
+| A | @ | `16.148.147.194` |
+| A | @ | `52.32.122.94` |
+| A | @ | `52.35.156.199` |
+
+> **Obs.:** `@` representa o próprio domínio apex. Alguns provedores usam o nome completo do domínio ou deixam o campo em branco — consulte a documentação do seu provedor se tiver dúvida.
 
 **Passo 3 — Remova os registros DNS antigos**
 
 <Callout type="warning">
-  Pode haver indisponibilidade no domínio apex durante esta etapa. O subdomínio
-  do seu site (ex.: `www.example.com`) não é afetado e continuará funcionando
-  normalmente durante toda a migração.
+  Pode haver breve indisponibilidade no domínio apex (ex.: `example.com`) durante
+  esta etapa. O subdomínio do seu site (ex.: `www.example.com`) não é afetado e
+  continuará funcionando normalmente.
 </Callout>
 
-No seu provedor de DNS, exclua os registros apex do provedor anterior. Registros do Deno Deploy, por exemplo, têm este formato:
+Ainda no seu provedor de DNS, exclua os registros apex antigos. Se você usava o sistema legado da deco.cx (baseado em Deno Deploy), os registros a remover são estes:
 
 | Tipo | Nome | Valor |
 |------|------|-------|
@@ -88,17 +96,17 @@ No seu provedor de DNS, exclua os registros apex do provedor anterior. Registros
 | CNAME | `_acme-challenge` | `*.acme.deno.dev` |
 
 <Callout type="warning">
-  Deixar registros antigos no lugar — especialmente o AAAA — fará com que os
-  navegadores continuem roteando o tráfego para o provedor anterior, pois IPv6
-  tem precedência sobre IPv4.
+  Deixar registros antigos no lugar — especialmente o `AAAA` — fará com que os
+  navegadores continuem roteando o tráfego para o sistema antigo.
 </Callout>
 
 **Passo 4 — Exclua a entrada legada**
 
-Atualize a página e aguarde até a nova entrada mostrar **Active**. Então abra o menu `…` na entrada **antiga** e escolha **Excluir**.
+Volte para **Configurações → Domínios** no admin da deco.cx e atualize a página. Aguarde até a nova entrada mostrar **Active** (pode levar alguns minutos ou até 48 horas dependendo da propagação do DNS). Quando estiver Active, abra o menu `…` na **entrada antiga** (a que está marcada como "Legacy") e escolha **Excluir**.
 
 <Callout type="info">
-  Não exclua a entrada legada antes que a nova esteja Active.
+  Não exclua a entrada legada antes que a nova esteja Active — caso contrário o
+  redirect apex vai parar de funcionar completamente.
 </Callout>
 
 ## Troubleshooting da Migração
@@ -108,7 +116,7 @@ Atualize a página e aguarde até a nova entrada mostrar **Active**. Então abra
 - Confirme que os três registros `A` foram adicionados corretamente no seu provedor de DNS.
 - Certifique-se de que as entradas do redirect antigo foram removidas do seu provedor de DNS. As entradas antigas são:
 
-  | Type | Name | Value |
+  | Tipo | Nome | Valor |
   |------|------|-------|
   | A | @ | `34.120.54.55` |
   | AAAA | @ | `2600:1901:0:6d85::` |
