@@ -50,8 +50,17 @@ Não diretamente — sites deco.cx rodam em um subdomínio (ex.: `www`). Porém,
 
 <Callout type="warning">
   Se você vir um banner "Redirect legado detectado" no admin, um ou mais domínios
-  apex (domínios raiz sem subdomínio, ex.: `example.com`) do seu site ainda usam
-  o sistema de redirect antigo e precisam ser migrados.
+  apex do seu site ainda usam o sistema de redirect antigo e precisam ser
+  migrados.
+
+  **O que é um domínio apex?** É o domínio raiz sem nenhum subdomínio — ex.:
+  `example.com` (apex) em vez de `www.example.com` ou `loja.example.com`
+  (subdomínios).
+
+  **Sua loja não vai sair do ar.** O subdomínio onde o seu site roda de fato
+  (ex.: `www.example.com`) não é afetado em nenhum momento durante a migração.
+  Apenas o redirect apex (ex.: `example.com` → `www.example.com`) passa por uma
+  breve transição.
 </Callout>
 
 **Passo 1 — Adicione novamente o domínio**
