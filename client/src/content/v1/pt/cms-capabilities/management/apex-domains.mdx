@@ -109,6 +109,25 @@ Volte para **Configurações → Domínios** no admin da deco.cx e atualize a p�
   redirect apex vai parar de funcionar completamente.
 </Callout>
 
+**Verificando a migração**
+
+Com a nova entrada Active, você pode confirmar que o redirect está sendo servido pela deco.cx rodando o seguinte comando no terminal (substitua `seudominio.com.br` pelo seu domínio):
+
+```sh
+curl -s -I seudominio.com.br
+```
+
+Procure o header `X-Redirect-By: deco` na resposta:
+
+```
+HTTP/1.1 307 Temporary Redirect
+Location: https://www.seudominio.com.br
+X-Redirect-By: deco
+...
+```
+
+Se aparecer `X-Redirect-By: deco`, a migração está completa e o redirect apex já está rodando no novo sistema.
+
 ## Troubleshooting da Migração
 
 **A nova entrada não fica Active**
