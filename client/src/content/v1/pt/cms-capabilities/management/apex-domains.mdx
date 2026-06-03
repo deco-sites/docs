@@ -102,7 +102,9 @@ Ainda no seu provedor de DNS, exclua os registros apex antigos. Se você usava o
 
 **Passo 4 — Exclua a entrada legada**
 
-Volte para **Configurações → Domínios** no admin da deco.cx e atualize a página. Aguarde até a nova entrada mostrar **Active** (pode levar alguns minutos ou até 48 horas dependendo da propagação do DNS). Quando estiver Active, abra o menu `…` na **entrada antiga** (a que está marcada como "Legacy") e escolha **Excluir**.
+Volte para **Configurações → Domínios** no admin da deco.cx e atualize a página. Aguarde até a nova entrada mostrar **Active** (pode levar alguns minutos ou até 48 horas dependendo da propagação do DNS).
+
+Quando estiver Active, identifique a entrada antiga — é a que exibe o botão **Revalidate domain** e, ao expandir a seção **DNS records**, mostra os IPs antigos do Deno Deploy (`34.120.54.55`). Abra o menu `…` nessa entrada e escolha **Excluir**.
 
 <Callout type="info">
   Não exclua a entrada legada antes que a nova esteja Active — caso contrário o
