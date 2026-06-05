@@ -111,14 +111,7 @@ Still in your DNS provider, delete the old apex records. If you were previously 
   browsers to keep routing traffic to the old system.
 </Callout>
 
-**Step 4 — Clean up (optional)**
-
-Once the new entry shows **Active**, the migration is complete. You can optionally remove the old legacy entry to keep your domain list clean: open the `…` menu on the **old entry** (the one labeled "Legacy") and choose **Delete**.
-
-<Callout type="info">
-  If you choose to delete the legacy entry, make sure the new one is already
-  **Active** first — otherwise the apex redirect will stop working entirely.
-</Callout>
+Once the new entry shows **Active**, the migration is complete. If you want to make sure everything is working, run a request like the one below — only then delete the legacy entry.
 
 **Verifying the migration**
 
