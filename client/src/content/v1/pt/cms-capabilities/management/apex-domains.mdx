@@ -89,10 +89,13 @@ Acesse o seu provedor de DNS — é o serviço onde você registrou ou gerencia 
 
 **Passo 3 — Remova os registros DNS antigos**
 
-<Callout type="warning">
-  Pode haver breve indisponibilidade no domínio apex (ex.: `example.com`) durante
-  esta etapa. O subdomínio do seu site (ex.: `www.example.com`) não é afetado e
-  continuará funcionando normalmente.
+<Callout type="info">
+  Durante esta etapa, o domínio apex (ex.: `example.com`) ficará um breve período
+  sem certificado HTTPS válido — acessos via **HTTP** continuam funcionando
+  normalmente e o redirect para `www` ocorre sem interrupção. O certificado HTTPS
+  é emitido automaticamente em poucos minutos após a propagação do DNS.
+
+  O subdomínio do seu site (ex.: `www.example.com`) não é afetado em nenhum momento.
 </Callout>
 
 Ainda no seu provedor de DNS, exclua os registros apex antigos. Se você usava o sistema legado da deco.cx (baseado em Deno Deploy), os registros a remover são estes:
