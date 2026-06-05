@@ -50,7 +50,7 @@ Não diretamente — sites deco.cx rodam em um subdomínio (ex.: `www`). Porém,
 
 > **Obs.:** `@` representa o domínio apex (raiz). Alguns provedores de DNS usam o nome completo do domínio ou deixam o campo em branco — consulte a documentação do seu provedor.
 
-**5.** Atualize a página de **Configurações → Domínios** para verificar o status. Quando o certificado for provisionado, a entrada exibirá **Active**. Geralmente isso leva alguns minutos, mas pode levar até 48 horas dependendo da propagação do DNS.
+**5.** Atualize a página de **Configurações → Domínios** para verificar o status. Quando o certificado for provisionado, a entrada exibirá **Active**. Geralmente isso leva alguns minutos.
 
 ---
 
@@ -113,7 +113,7 @@ Ainda no seu provedor de DNS, exclua os registros apex antigos. Se você usava o
 
 **Passo 4 — Exclua a entrada legada**
 
-Volte para **Configurações → Domínios** no admin da deco.cx e atualize a página. Aguarde até a nova entrada mostrar **Active** (pode levar alguns minutos ou até 48 horas dependendo da propagação do DNS). Quando estiver Active, abra o menu `…` na **entrada antiga** (a que está marcada como "Legacy") e escolha **Excluir**.
+Volte para **Configurações → Domínios** no admin da deco.cx e atualize a página. Aguarde até a nova entrada mostrar **Active** — neste momento a migração já está concluída. Somente então abra o menu `…` na **entrada antiga** (a que está marcada como "Legacy") e escolha **Excluir**.
 
 <Callout type="info">
   Não exclua a entrada legada antes que a nova esteja Active — caso contrário o
@@ -152,4 +152,4 @@ Se aparecer `X-Redirect-By: deco`, a migração está completa e o redirect apex
   | AAAA | @ | `2600:1901:0:6d85::` |
   | CNAME | `_acme-challenge` | *(ex.: `_acme.deno.dev.`)* |
 
-- A propagação do DNS pode levar até 48 horas em alguns casos.
+- A propagação do DNS leva alguns minutos — se a entrada ainda não estiver Active após 30 minutos, revise os registros acima.
