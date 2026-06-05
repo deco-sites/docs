@@ -89,10 +89,13 @@ Log in to your DNS provider — this is the service where you registered or mana
 
 **Step 3 — Remove old DNS records**
 
-<Callout type="warning">
-  There may be brief downtime on the apex domain (e.g. `example.com`) during
-  this step. Your site's subdomain (e.g. `www.example.com`) is not affected and
-  will continue working normally.
+<Callout type="info">
+  During this step, the apex domain (e.g. `example.com`) will temporarily have no
+  valid HTTPS certificate — **HTTP** requests will continue working normally and
+  the redirect to `www` will not be interrupted. The HTTPS certificate is issued
+  automatically within a few minutes after DNS propagates.
+
+  Your site's subdomain (e.g. `www.example.com`) is not affected at any point.
 </Callout>
 
 Still in your DNS provider, delete the old apex records. If you were previously using deco.cx's legacy system (powered by Deno Deploy), the records to remove look like this:
