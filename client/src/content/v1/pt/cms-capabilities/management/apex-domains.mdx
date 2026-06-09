@@ -111,6 +111,8 @@ Ainda no seu provedor de DNS, exclua os registros apex antigos. Se você usava o
   navegadores continuem roteando o tráfego para o sistema antigo.
 </Callout>
 
+Após remover os registros antigos, aguarde alguns minutos para o DNS propagar e o novo certificado ser emitido — a nova entrada passará a exibir **Active** assim que isso ocorrer e a migração estará concluída.
+
 **Passo 4 — Exclua a entrada legada**
 
 Volte para **Configurações → Domínios** no admin da deco.cx e atualize a página. Aguarde até a nova entrada mostrar **Active** (pode levar alguns minutos ou até 48 horas dependendo da propagação do DNS). Quando estiver Active, abra o menu `…` na **entrada antiga** (a que está marcada como "Legacy") e escolha **Excluir**.
