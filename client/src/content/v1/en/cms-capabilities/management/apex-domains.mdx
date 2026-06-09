@@ -111,6 +111,8 @@ Still in your DNS provider, delete the old apex records. If you were previously 
   browsers to keep routing traffic to the old system.
 </Callout>
 
+After removing the old records, wait a few minutes for DNS to propagate and the new certificate to be issued — the new entry will show **Active** once that's done and the migration will be complete.
+
 **Step 4 — Delete the legacy entry**
 
 Go back to **Settings → Domains** in the deco.cx admin and refresh the page. Wait until the new entry shows **Active** (this can take a few minutes or up to 48 hours depending on DNS propagation). Once it's Active, open the `…` menu on the **old entry** (the one labeled "Legacy") and choose **Delete**.
