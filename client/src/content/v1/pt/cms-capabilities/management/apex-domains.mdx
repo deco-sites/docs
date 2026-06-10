@@ -134,6 +134,21 @@ X-Redirect-By: deco
 
 Se aparecer `X-Redirect-By: deco`, a migração está completa e o redirect apex já está rodando no novo sistema.
 
+## Troubleshooting
+
+**O certificado trava e a entrada nunca fica Active**
+
+Se os registros DNS estão corretamente apontando para a deco.cx mas a entrada continua pendente, verifique se há uma **regra de redirect configurada no seu provedor de DNS ou CDN** (ex.: uma Page Rule ou Redirect Rule na Cloudflare) que envia todo o tráfego do domínio apex para outro endereço.
+
+Quando essa regra existe, a requisição de validação do Let's Encrypt — que a deco.cx envia para `http://seudominio.com/.well-known/acme-challenge/...` — é interceptada e redirecionada antes de chegar aos servidores da deco.cx. O Let's Encrypt nunca recebe a resposta esperada e o certificado não é emitido.
+
+**O redirect da deco.cx e um redirect de terceiro são mutuamente exclusivos.** Se você mantiver um redirect ativo no seu provedor de DNS ou CDN, a deco.cx não consegue emitir o certificado. Você tem duas opções:
+
+- **Usar o redirect da deco.cx** — remova a regra de redirect do seu provedor de DNS/CDN. Assim que o certificado for emitido, a entrada ficará Active automaticamente.
+- **Manter o redirect de terceiro** — nesse caso não há nada para configurar na deco.cx. A entrada ficará pendente até que o redirect externo seja removido.
+
+---
+
 ## Troubleshooting da Migração
 
 **A nova entrada não fica Active**
