@@ -3,6 +3,8 @@ import { createClient } from "@supabase/supabase-js";
 import { embed } from "ai";
 import { z } from "zod";
 import { embeddingModel } from "../lib/mesh-provider";
+import { reformulateQuery } from "../lib/query-reformulation";
+import { rerankResults } from "../lib/reranker";
 
 const supabase = createClient(
   process.env.SUPABASE_URL!,
@@ -11,7 +13,7 @@ const supabase = createClient(
 
 export const searchDocsTool = createTool({
   id: "SEARCH_DOCS",
-  description: "Search the deco.cx documentation using hybrid search (semantic + full-text). Returns relevant documentation chunks based on the query.",
+  description: "Search the deco.cx documentation. Returns relevant results based on the query.",
   inputSchema: z.object({
     query: z.string().describe("The search query in natural language"),
     language: z.enum(["en", "pt"]).optional().describe("Filter by language (optional)"),
@@ -32,9 +34,13 @@ export const searchDocsTool = createTool({
   execute: async ({ context }) => {
     const { query, language, limit = 5, semanticWeight = 0.5 } = context;
 
+    const RETRIEVAL_POOL_SIZE = 20;
+
+    const optimizedQuery = await reformulateQuery(query);
+
     const { embedding } = await embed({
       model: embeddingModel(),
-      value: query,
+      value: optimizedQuery,
     });
 
     const filter = language ? { language } : {};
@@ -42,7 +48,7 @@ export const searchDocsTool = createTool({
     const { data, error } = await supabase.rpc("hybrid_search", {
       query_text: query,
       query_embedding: embedding,
-      match_count: limit,
+      match_count: RETRIEVAL_POOL_SIZE,
       rrf_k: 60,
       semantic_weight: semanticWeight,
       filter_metadata: filter,
@@ -52,7 +58,7 @@ export const searchDocsTool = createTool({
       throw new Error(`Search failed: ${error.message}`);
     }
 
-    const results = (data || []).map((doc: any) => ({
+    const candidates = (data || []).map((doc: any) => ({
       content: doc.content,
       title: doc.metadata?.title || "Untitled",
       source: doc.metadata?.source || "",
@@ -62,6 +68,8 @@ export const searchDocsTool = createTool({
       hybridScore: doc.hybrid_score,
     }));
 
-    return { results };
+    const reranked = await rerankResults(query, candidates);
+
+    return { results: reranked.slice(0, limit) };
   },
 });
