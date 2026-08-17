@@ -56,7 +56,7 @@ Usado em todo PDP card e prateleira de produto.
 ## `formatPrice`
 
 ```ts
-import { formatPrice } from "@decocms/apps-commerce/sdk/format";
+import { formatPrice } from "@decocms/apps-commerce/sdk/formatPrice";
 
 formatPrice(1234.56, "BRL", "pt-BR");
 // → "R$ 1.234,56"
@@ -82,7 +82,7 @@ Para PDPs com múltiplas variantes (cor, tamanho), produz um mapa estruturado pa
 ## Componente `Image`
 
 ```tsx
-import Image from "@decocms/apps-commerce/components/Image";
+import Image from "@decocms/blocks/hooks";
 
 <Image
   src="https://..."
@@ -104,7 +104,7 @@ Wrapper em volta de `<img>` que automaticamente:
 ## Componente `Picture`
 
 ```tsx
-import Picture from "@decocms/apps-commerce/components/Picture";
+import Picture from "@decocms/blocks/hooks";
 
 <Picture src="https://..." alt="Tênis">
   <Source media="(max-width: 768px)" src="https://.../mobile.jpg" />
@@ -117,7 +117,7 @@ import Picture from "@decocms/apps-commerce/components/Picture";
 ## `JsonLd`
 
 ```tsx
-import { JsonLd } from "@decocms/apps-commerce/components/JsonLd";
+import { JsonLd } from "@decocms/blocks/hooks";
 
 <JsonLd data={product} />
 <JsonLd data={breadcrumbList} />
@@ -147,36 +147,6 @@ sendEvent({
 `trackEvent` é o equivalente server-side; loga via instrumented fetch para sua coleta de eventos.
 
 `initAnalytics` aceita ID GTM, ID Meta Pixel etc. e instala os scripts. Tipicamente chamado do shell do root layout.
-
-## `useScript` patterns
-
-`@decocms/apps-commerce/components/Script` provê um wrapper para inserir scripts third-party com setup correto:
-
-```tsx
-import { Script } from "@decocms/apps-commerce/components/Script";
-
-<Script src="https://..." strategy="afterInteractive" />
-```
-
-Estratégias:
-
-- `beforeInteractive` — antes da hidratação (use com parcimônia).
-- `afterInteractive` — depois da hidratação (default; melhor para tags de analytics).
-- `lazyOnload` — em janela `load`.
-
-Reduz CLS frente a injeção crua de `<script>`.
-
-## Helpers de Schema.org
-
-```ts
-import {
-  toBreadcrumbList,
-  toProduct,
-  toProductDetailsPage,
-} from "@decocms/apps-commerce/sdk/transform";
-```
-
-Funções de transformação que convertem responses brutos VTEX/Shopify para tipos schema.org. Loaders usam internamente; código de site raramente.
 
 ## URL utilities
 

@@ -210,16 +210,6 @@ import { withABTesting } from "@decocms/blocks/sdk/abTesting";
 
 Worker wrapper for site-version A/B. See [A/B testing and redirects](/v2/en/deployment/ab-testing-and-redirects).
 
-## Routing helpers
-
-### `router` (subpath only)
-
-```ts
-import { router } from "@decocms/blocks/sdk/router";
-```
-
-Helper around TanStack Router for handling preload errors and graceful fallbacks. Used internally by `cmsRouteConfig`.
-
 ## URL utilities
 
 ### `urlUtils` (barrel)
@@ -253,7 +243,7 @@ Wraps an async function so thrown errors carry a useful stack trace through the 
 ### `useHydrated` (barrel + via hooks)
 
 ```ts
-import { useHydrated } from "@decocms/blocks/sdk/useHydrated";
+import { useHydrated } from "@decocms/blocks/hooks";
 ```
 
 Boolean — true after first client render. See [Hooks](/v2/en/framework/hooks).

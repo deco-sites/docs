@@ -46,7 +46,7 @@ Se sua loja usa multiple init helpers, encadeie em `initPlatform`.
 ## Enviando email
 
 ```ts
-import { sendEmail } from "@decocms/apps-resend/sdk";
+import { sendEmail } from "@decocms/apps-resend/actions/send";
 
 await sendEmail({
   to: "cliente@example.com",
@@ -63,7 +63,7 @@ A função:
 
 ## Handler de invoke
 
-`@decocms/apps-resend/handlers/sendEmail.ts` é uma action invocável:
+`@decocms/apps-resend/actions/send.ts` é uma action invocável:
 
 ```ts
 // do client (raro — geralmente server-side):
@@ -81,7 +81,7 @@ Use server-side em sua maioria — expor envio de email arbitrário ao client é
 ### Email de confirmação de pedido
 
 ```ts
-import { sendEmail } from "@decocms/apps-resend/sdk";
+import { sendEmail } from "@decocms/apps-resend/actions/send";
 import { renderOrderConfirmationHtml } from "~/emails/orderConfirmation";
 
 const handleOrder = async (order) => {

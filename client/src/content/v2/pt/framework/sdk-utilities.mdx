@@ -113,29 +113,13 @@ export const Route = createFileRoute("/sitemap.xml")({
 ## `cookies`
 
 ```ts
-import { parseCookie, serializeCookie } from "@decocms/blocks/sdk/cookies";
+import { parseCookie, serializeCookie } from "@decocms/blocks/sdk/cookie";
 
 const cookies = parseCookie(request.headers.get("cookie") ?? "");
 const setCookie = serializeCookie("session_id", "abc123", { maxAge: 86400 });
 ```
 
 Helpers leves de cookie. `@decocms/apps-*` usa internamente para propagação de cookies VTEX/Shopify.
-
-## `responseUtils`
-
-```ts
-import { jsonResponse, htmlResponse, redirectResponse } from "@decocms/blocks/sdk/responseUtils";
-```
-
-Constructors de Response com headers consistentes (Content-Type, charset, cache-control).
-
-## `headersUtils`
-
-```ts
-import { mergeHeaders, withCorsHeaders } from "@decocms/blocks/sdk/headersUtils";
-```
-
-Funde headers e aplica CORS. `withCorsHeaders` honra a whitelist de `productionOrigins` do `createSiteSetup`.
 
 ## `cacheHeaders`
 

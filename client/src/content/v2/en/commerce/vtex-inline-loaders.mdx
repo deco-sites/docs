@@ -134,7 +134,7 @@ By default, every inline loader appears in your generated `loaders.gen.ts`. For 
 The npm script becomes:
 
 ```jsonc
-"generate:loaders": "tsx node_modules/@decocms/blocks-cli/generate-loaders.ts --exclude vtex/loaders,vtex/actions --decofile-dir .deco/blocks"
+"generate:loaders": "tsx node_modules/@decocms/blocks-cli/scripts/generate-loaders.ts --exclude vtex/loaders,vtex/actions --decofile-dir .deco/blocks"
 ```
 
 Loaders not referenced by any block in `.deco/blocks/` are excluded from the generated registry. The framework still resolves them on demand — but the generated client is lean.

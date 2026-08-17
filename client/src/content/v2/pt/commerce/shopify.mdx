@@ -37,14 +37,19 @@ Mesmo pacote `@decocms/apps-*`. Os subpaths são `@decocms/apps-shopify/*`.
 ## Wiring no setup
 
 ```ts
-import { initShopifyFromBlocks } from "@decocms/apps-shopify/client";
-import { createShopifyCommerceLoaders } from "@decocms/apps-shopify/commerceLoaders";
+import { initShopifyFromBlocks } from "@decocms/apps-shopify";
 
 createSiteSetup({
   // ...
   initPlatform: () => initShopifyFromBlocks(),
-  getCommerceLoaders: () => createShopifyCommerceLoaders(),
 });
+```
+
+Ou com `autoconfigApps()`:
+
+```ts
+import { autoconfigApps } from "@decocms/blocks-admin/apps/autoconfig";
+createSiteSetup({ initPlatform: () => autoconfigApps() });
 ```
 
 ## Loaders disponíveis
@@ -159,18 +164,16 @@ Substitua via `setShopifyFetch(createInstrumentedFetch("shopify"))` para custom 
 Diferente de VTEX (que usa orderForm cookie auto-gerenciado), Shopify exige que **você** mantenha o `cartId` em cookie:
 
 ```ts
-import { getCart } from "@decocms/apps-shopify/loaders";
+import { getCart } from "@decocms/apps-shopify/loaders/cart";
 
 export const loader = async (props, request) => {
   const responseHeaders = new Headers();
-  const cart = await getCart({ request, responseHeaders });
+  const cart = await getCart(request.headers, responseHeaders);
   return new Response(JSON.stringify(cart), { headers: responseHeaders });
 };
 ```
 
-`responseHeaders` é onde `getCart` seta o cookie `shopify_cart_id`. Esquecer significa cliente nunca persiste carrinho — adiciona item, refresh, vazio.
-
-`@decocms/apps-shopify/middleware/cart` provê `withCartCookie` que cuida quando você usa loaders inline.
+`responseHeaders` é onde `getCart` seta o cookie do carrinho. Esquecer significa cliente nunca persiste carrinho — adiciona item, refresh, vazio. Diferente da VTEX, o Shopify **não tem middleware de cart**: você passa `responseHeaders` para `getCart` sempre que quiser garantir/criar o cookie.
 
 ## Hooks faltando
 
@@ -199,10 +202,10 @@ Hooks helper estão no roadmap. Se você precisar agora, abra issue ou contribua
 ## Tipos
 
 ```ts
-import type { Product, ProductDetailsPage, Cart } from "@decocms/apps-shopify/types";
+import type { Product, ProductDetailsPage, Cart } from "@decocms/apps-commerce/types";
 ```
 
-Mapeiam para tipos schema.org compartilhados em `@decocms/apps-commerce/types`.
+Os loaders do Shopify já devolvem os tipos schema.org compartilhados de `@decocms/apps-commerce/types`.
 
 ## Pegadinhas
 
@@ -216,7 +219,7 @@ Storefront API é generoso (1000 calls/min/IP) mas spike test pode atingir. Cach
 
 ### Shape de variants
 
-Variants Shopify são produtos separados na API mas a maioria das UI quer apresentar agrupados. Use `transformShopifyProduct` em `@decocms/apps-shopify/sdk/transform.ts`.
+Variants Shopify são produtos separados na API mas a maioria das UI quer apresentar agrupados. Use `transformShopifyProduct` em `@decocms/apps-shopify/utils/transform.ts`.
 
 ## Veja também
 

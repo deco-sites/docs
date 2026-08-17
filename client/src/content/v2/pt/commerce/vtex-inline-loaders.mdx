@@ -1,6 +1,6 @@
 ---
 title: "VTEX — inline loaders"
-description: "createVtexCommerceLoaders, formato amigável ao CMS, slugCache, sortwhitelist."
+description: "createVtexCommerceLoaders, formato amigável ao CMS, slugCache, whitelist de sort."
 icon: "Workflow"
 ---
 
@@ -69,10 +69,10 @@ export default function ProductDetail({ page }: Props) {
 
 ## Slug cache
 
-`@decocms/apps-vtex/sdk/slugCache` resolve slugs para productIds via Catalog API. Cacheado para evitar custo round-trip por hop no pathname.
+`@decocms/apps-vtex/utils/slugCache` resolve slugs para productIds via Catalog API. Cacheado para evitar custo round-trip por hop no pathname.
 
 ```ts
-import { slugCache } from "@decocms/apps-vtex/sdk/slugCache";
+import { slugCache } from "@decocms/apps-vtex/utils/slugCache";
 
 const productId = await slugCache.resolve("tenis-asics-gel-nimbus");
 ```
@@ -87,7 +87,7 @@ SLUG_CACHE_TTL=3600000 SLUG_CACHE_SIZE=10000
 
 ## Whitelist de sort
 
-`@decocms/apps-vtex/utils/sortwhitelist` aceita só esses valores:
+Os inline loaders de PLP validam o `sort` internamente contra um whitelist (`VALID_IS_SORTS`): a Intelligent Search rejeita valores desconhecidos com 400, então um valor inválido cai no default em vez de quebrar a página. Valores aceitos:
 
 - `score:desc` (default)
 - `price:asc`

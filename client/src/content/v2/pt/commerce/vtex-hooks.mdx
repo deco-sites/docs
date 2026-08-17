@@ -242,10 +242,10 @@ export function useCart() {
 
 ## Legacy: factories `createUse*`
 
-`@decocms/apps-vtex/hooks/legacy` ainda exporta:
+`@decocms/apps-vtex/hooks` ainda exporta:
 
 ```ts
-import { createUseCart, createUseUser } from "@decocms/apps-vtex/hooks/legacy";
+import { createUseCart, createUseUser } from "@decocms/apps-vtex/hooks";
 ```
 
 Eram a forma de extensibilidade no v1 (embrulhar o hook com transformação custom). Mantidas para compat de migração; **prefira embrulhar os hooks novos diretamente**.
@@ -287,7 +287,7 @@ Mitigação:
 - Defina `staleTime: 30_000` em `useCart` para mudança de UI ser bloqueada na primeira hidratação.
 - Em ambientes server-render-known-different, vire o hook com `enabled: false` e oba via `useState` na hidratação inicial.
 
-`@decocms/apps-vtex/middleware/cookies` cuida da maioria dos casos automaticamente — veja [VTEX gotchas](/v2/pt/commerce/vtex-gotchas).
+`@decocms/apps-vtex/utils/cookies` cuida da maioria dos casos automaticamente — veja [VTEX gotchas](/v2/pt/commerce/vtex-gotchas).
 
 ## Veja também
 

@@ -106,7 +106,7 @@ Esse drift está marcado para fix; até lá, eis o aviso oficial.
 
 IS exige cookies próprios (`segmentToken`, `binding`) que VTEX seta na primeira chamada bem-sucedida. Se loader IS não chega ao client (e.g. erro upstream em SSR), cookies não são setados, próxima chamada falha de novo. Loop infinito.
 
-`@decocms/apps-vtex/middleware/cookies` lida com geração explicitamente — gera cookies localmente quando upstream não está disponível, depois reconcilia. Não desabilite a menos que saiba o que está fazendo.
+`@decocms/apps-vtex/utils/cookies` lida com geração explicitamente — gera cookies localmente quando upstream não está disponível, depois reconcilia. Não desabilite a menos que saiba o que está fazendo.
 
 ## 8. Cookies HttpOnly
 

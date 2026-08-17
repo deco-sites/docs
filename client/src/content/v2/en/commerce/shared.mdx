@@ -116,7 +116,7 @@ Converts absolute URLs to relative + strips known noise params. Use for PDP `<a 
 ### `Image`
 
 ```tsx
-import { Image, registerImageCdnDomain } from "@decocms/apps-commerce/components/Image";
+import { Image, registerImageCdnDomain } from "@decocms/blocks/hooks";
 ```
 
 Optimized commerce image with width/height enforcement (CLS), responsive `srcSet`, and CDN URL transformation.
@@ -137,7 +137,7 @@ Required props: `src`, `width`. Recommended: `height` (improves CLS), `alt`. Opt
 If your CDN isn't auto-detected, register it once at site setup:
 
 ```ts
-import { registerImageCdnDomain } from "@decocms/apps-commerce/components/Image";
+import { registerImageCdnDomain } from "@decocms/blocks/hooks";
 
 registerImageCdnDomain("cdn.example.com", {
   buildUrl: ({ src, width, height, fit }) => `${src}?w=${width}&h=${height}`,
@@ -147,7 +147,7 @@ registerImageCdnDomain("cdn.example.com", {
 ### `Picture`
 
 ```tsx
-import { Picture, Source } from "@decocms/apps-commerce/components/Picture";
+import { Picture, Source } from "@decocms/blocks/hooks";
 
 <Picture preload>
   <Source src={mobileSrc} media="(max-width: 767px)" width={400} />
@@ -161,7 +161,7 @@ Use when you have art-directed responsive images (different crops or composition
 ### `JsonLd`
 
 ```tsx
-import { ProductJsonLd, BreadcrumbJsonLd, PLPJsonLd } from "@decocms/apps-commerce/components/JsonLd";
+import { ProductJsonLd, BreadcrumbJsonLd, PLPJsonLd } from "@decocms/blocks/hooks";
 
 <ProductJsonLd product={product} url={pageUrl} />
 <BreadcrumbJsonLd breadcrumbs={breadcrumbList} />
