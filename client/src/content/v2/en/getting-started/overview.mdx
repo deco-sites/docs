@@ -47,14 +47,14 @@ The CMS, decofile format, admin shell, and `.deco/blocks/*.json` content are **f
 - The **mental model**: pages are made of sections; sections are React components with typed props; blocks are JSON instances of those props.
 - The **admin**: `admin.deco.cx` talks to your storefront the same way — `_meta`, `decofile`, `render`, `invoke`.
 - The **content**: your `.deco/blocks/` directory works as-is.
-- The **commerce integrations**: VTEX and Shopify are now in [`@decocms/apps`](/v2/en/commerce/overview), but the loader / action / hook surface is broadly familiar.
+- The **commerce integrations**: VTEX and Shopify are now in [`@decocms/apps-*`](/v2/en/commerce/overview), but the loader / action / hook surface is broadly familiar.
 
 ## How these docs are organized
 
 - **[Getting started](/v2/en/getting-started/overview)** — install paths, project structure, the stack at 30,000 ft.
 - **[Concepts](/v2/en/concepts/sections)** — the mental model: sections, loaders, blocks, routes, deferred rendering.
-- **[Framework reference](/v2/en/framework/overview)** — `@decocms/start` API surface page by page.
-- **[Commerce reference](/v2/en/commerce/overview)** — `@decocms/apps`: VTEX, Shopify, Resend, shared types.
+- **[Framework reference](/v2/en/framework/overview)** — `@decocms/blocks` API surface page by page.
+- **[Commerce reference](/v2/en/commerce/overview)** — `@decocms/apps-*`: VTEX, Shopify, Resend, shared types.
 - **[Deployment](/v2/en/deployment/cloudflare-workers)** — Workers, caching, A/B testing, observability.
 - **[Migration](/v2/en/migration/overview)** — v1 → v2 playbook, automated script, manual fixes.
 - **[Reference appendix](/v2/en/reference/package-exports)** — exhaustive export tables and a glossary.

@@ -86,7 +86,7 @@ Você pode adicionar rotas customizadas ao lado da catch-all (por exemplo `/api/
 
 ## `src/server/cms/` (gerado)
 
-Vários arquivos, todos gerados por scripts em `@decocms/start`:
+Vários arquivos, todos gerados por scripts em `@decocms/blocks`:
 
 | Arquivo | Gerado por | Função |
 |---|---|---|
@@ -100,12 +100,12 @@ Vários arquivos, todos gerados por scripts em `@decocms/start`:
 Não edite na mão. Rode os geradores quando mexer em sections ou blocks.
 
 <Callout type="warning">
-**`blocks.gen.json` pode ser grande** (lojas em produção rotineiramente passam de 10 MB). O Vite plugin troca o re-export `.ts` por um `JSON.parse` rápido do `.json` em load time. Não tente chunk manual de `@decocms/start` ou `@decocms/apps` — re-exports circulares quebram em load.
+**`blocks.gen.json` pode ser grande** (lojas em produção rotineiramente passam de 10 MB). O Vite plugin troca o re-export `.ts` por um `JSON.parse` rápido do `.json` em load time. Não tente chunk manual de `@decocms/blocks` ou `@decocms/apps-*` — re-exports circulares quebram em load.
 </Callout>
 
 ## `src/setup.ts`
 
-O bootstrap do site. Chama `createSiteSetup` de `@decocms/start/setup`, faz glob-import das sections, registra loaders, configura matchers e commerce. **Tem que ser importado primeiro** em `server.ts` e `worker-entry.ts` para que o registro exista antes do TanStack Start dividir as server functions.
+O bootstrap do site. Chama `createSiteSetup` de `@decocms/blocks/setup`, faz glob-import das sections, registra loaders, configura matchers e commerce. **Tem que ser importado primeiro** em `server.ts` e `worker-entry.ts` para que o registro exista antes do TanStack Start dividir as server functions.
 
 Veja [Referência de setup](/v2/pt/framework/setup) para a assinatura completa.
 

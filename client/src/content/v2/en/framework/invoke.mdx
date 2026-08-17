@@ -59,7 +59,7 @@ const updated = await invoke.vtex.actions.cart.addItems({
 Regenerate after adding new loaders/actions:
 
 ```bash
-npx tsx node_modules/@decocms/start/scripts/generate-invoke.ts
+npx tsx node_modules/@decocms/blocks-cli/scripts/generate-invoke.ts
 # or via the npm script in your package.json:
 npm run generate:invoke
 ```
@@ -69,7 +69,7 @@ npm run generate:invoke
 Lower-level factory for building your own invoke client. Used by the generator; you rarely call it manually.
 
 ```ts
-import { createInvoke } from "@decocms/start/sdk/createInvoke";
+import { createInvoke } from "@decocms/tanstack/sdk/createInvoke";
 
 const invoke = createInvoke({
   baseUrl: "/deco/invoke",
@@ -205,4 +205,4 @@ Useful when debugging slow paths.
 - [Loaders (concept)](/v2/en/concepts/loaders)
 - [Caching](/v2/en/framework/caching)
 - [Admin protocol](/v2/en/concepts/admin-protocol)
-- [VTEX hooks](/v2/en/commerce/vtex-hooks)
+- [VTEX hooks](/v2/en/commerce/vtex/hooks)

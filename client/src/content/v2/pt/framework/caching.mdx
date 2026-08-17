@@ -16,7 +16,7 @@ Toda página de loja toca pelo menos as duas primeiras.
 
 ## Profiles de cache de borda
 
-`@decocms/start/sdk/cacheHeaders` contém um catálogo de profiles por padrão de URL. Quando um request entra em `createDecoWorkerEntry`, o framework casa a URL com um profile e usa seu TTL.
+`@decocms/blocks/sdk/cacheHeaders` contém um catálogo de profiles por padrão de URL. Quando um request entra em `createDecoWorkerEntry`, o framework casa a URL com um profile e usa seu TTL.
 
 Profiles default (extraídos de `cacheHeaders.ts`):
 
@@ -39,7 +39,7 @@ Profiles default (extraídos de `cacheHeaders.ts`):
 Substitua um profile inteiro:
 
 ```ts
-import { setCacheProfile } from "@decocms/start/sdk/cacheHeaders";
+import { setCacheProfile } from "@decocms/blocks/sdk/cacheHeaders";
 
 setCacheProfile("pdp", {
   maxAge: 30,
@@ -53,7 +53,7 @@ setCacheProfile("pdp", {
 Adicione um padrão custom:
 
 ```ts
-import { registerCachePattern } from "@decocms/start/sdk/cacheHeaders";
+import { registerCachePattern } from "@decocms/blocks/sdk/cacheHeaders";
 
 registerCachePattern("/coupons", "bypass");
 registerCachePattern(/^\/landing\/.*/, "home");
@@ -68,7 +68,7 @@ Mantenha as overrides num arquivo dedicado (por exemplo `src/cache-config.ts`) e
 Para sobrescrever em uma rota específica em vez de globalmente:
 
 ```tsx
-import { cacheHeaders } from "@decocms/start/sdk/cacheHeaders";
+import { cacheHeaders } from "@decocms/blocks/sdk/cacheHeaders";
 
 const config = cmsRouteConfig({
   siteName: "minha-loja",
@@ -83,7 +83,7 @@ const config = cmsRouteConfig({
 Embrulhe qualquer loader server-side para ganhar dedup in-flight + SWR:
 
 ```ts
-import { createCachedLoader } from "@decocms/start/sdk/cachedLoader";
+import { createCachedLoader } from "@decocms/blocks/sdk/cachedLoader";
 
 export const cachedProduct = createCachedLoader({
   key: ({ slug }: { slug: string }) => `product:${slug}`,
@@ -99,7 +99,7 @@ Comportamento:
 - **TTL por status HTTP** — 2xx cacheia pelo TTL; 4xx cacheia 1/10 do TTL; 5xx não cacheia.
 - **LRU eviction** — limite default de 1000 entradas por isolate.
 
-Veja `vtex-fetch-cache.ts` em `@decocms/apps` para a versão de fetch (`vtexFetchWithCache`).
+Veja `vtex-fetch-cache.ts` em `@decocms/apps-*` para a versão de fetch (`vtexFetchWithCache`).
 
 ### Tunning
 
@@ -118,7 +118,7 @@ createCachedLoader({
 Funde múltiplos cache-control headers, escolhendo o mais conservador (menor TTL):
 
 ```ts
-import { mergeCacheControl } from "@decocms/start/sdk/cacheHeaders";
+import { mergeCacheControl } from "@decocms/blocks/sdk/cacheHeaders";
 
 const merged = mergeCacheControl([
   "public, max-age=300",
@@ -160,7 +160,7 @@ Sections de layout (Header, Footer, Theme) são especiais. O framework cacheia o
 Habilite registrando os componentes:
 
 ```ts
-import { registerLayoutSections } from "@decocms/start/cms";
+import { registerLayoutSections } from "@decocms/blocks/cms";
 
 registerLayoutSections({
   Header: () => import("~/sections/Header/Header"),
@@ -169,14 +169,14 @@ registerLayoutSections({
 });
 ```
 
-Sem isso, o Header re-resolve a cada page load, disparando chamadas redundantes para a API VTEX. Veja [skill `deco-cms-layout-caching`](https://github.com/decocms/deco-start/tree/main/.agents/skills) para a investigação completa.
+Sem isso, o Header re-resolve a cada page load, disparando chamadas redundantes para a API VTEX. Veja [skill `deco-cms-layout-caching`](https://github.com/decocms/blocks/tree/main/.agents/skills) para a investigação completa.
 
 ## `urlUtils`
 
-`@decocms/start/sdk/urlUtils` exporta helpers de URL que respeitam `ignoreSearchParams`:
+`@decocms/blocks/sdk/urlUtils` exporta helpers de URL que respeitam `ignoreSearchParams`:
 
 ```ts
-import { stableUrl } from "@decocms/start/sdk/urlUtils";
+import { stableUrl } from "@decocms/blocks/sdk/urlUtils";
 
 const url = new URL(request.url);
 const cacheKey = stableUrl(url, ["skuId", "_branch"]);

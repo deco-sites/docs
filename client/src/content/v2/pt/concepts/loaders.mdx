@@ -31,7 +31,7 @@ export default function ProductCard({ product }: Props & { product: Product }) {
 
 Loaders reutilizáveis registrados no CMS para aparecerem nos pickers do admin (`__resolveType: "vtex/loaders/intelligentSearch/productDetailsPage.ts"`). Retornam shapes amigáveis ao CMS (`ProductDetailsPage`, `ProductListingPage`, etc.).
 
-`@decocms/apps` traz dezenas deles para VTEX e Shopify. Veja [Inline loaders VTEX](/v2/pt/commerce/vtex-inline-loaders).
+`@decocms/apps-*` traz dezenas deles para VTEX e Shopify. Veja [Inline loaders VTEX](/v2/pt/commerce/vtex/inline-loaders).
 
 ### 3. Top-level loader (`createInvoke`)
 
@@ -39,14 +39,14 @@ Expostos via `/deco/invoke/<path>` para que o browser os chame como endpoints fe
 
 ## Cache
 
-Embrulhe qualquer loader em `createCachedLoader` de `@decocms/start/sdk/cachedLoader` para ganhar:
+Embrulhe qualquer loader em `createCachedLoader` de `@decocms/blocks/sdk/cachedLoader` para ganhar:
 
 - **Deduplicação in-flight** — chamadas concorrentes com a mesma chave compartilham um único upstream.
 - **Stale-while-revalidate (SWR)** — respostas cacheadas servem na hora; dados frescos buscam em background.
 - **TTL por status HTTP** — respostas 2xx cacheiam mais que 4xx; 5xx nunca cacheia.
 
 ```ts
-import { createCachedLoader } from "@decocms/start/sdk/cachedLoader";
+import { createCachedLoader } from "@decocms/blocks/sdk/cachedLoader";
 
 export const cachedProduct = createCachedLoader({
   key: (props: { slug: string }) => `product:${props.slug}`,
@@ -62,7 +62,7 @@ Embrulhar loaders de commerce é um padrão comum — por exemplo, o loader de P
 Dentro de loaders, prefira `instrumentedFetch` ao `fetch` cru:
 
 ```ts
-import { createInstrumentedFetch } from "@decocms/start/sdk/instrumentedFetch";
+import { createInstrumentedFetch } from "@decocms/blocks/sdk/instrumentedFetch";
 
 const vtexFetch = createInstrumentedFetch("vtex");
 
@@ -74,14 +74,14 @@ Isso:
 - Adiciona Server-Timing headers na resposta.
 - Aparece em `wrangler tail` e dashboards com a label `vtex`.
 
-`@decocms/apps` já embrulha seus clients VTEX/Shopify com instrumented fetch por padrão.
+`@decocms/apps-*` já embrulha seus clients VTEX/Shopify com instrumented fetch por padrão.
 
 ## Request context
 
 Loaders rodam dentro de um `RequestContext` (AsyncLocalStorage) para que possam acessar o request sem ter que receber por parâmetro:
 
 ```ts
-import { RequestContext } from "@decocms/start/sdk/requestContext";
+import { RequestContext } from "@decocms/blocks/sdk/requestContext";
 
 export const loader = async (props: Props) => {
   const ctx = RequestContext.current;
@@ -90,7 +90,7 @@ export const loader = async (props: Props) => {
 };
 ```
 
-É assim que `@decocms/apps/vtex` propaga o cookie `vtex_segment` para APIs upstream sem o site ter que orquestrar manualmente.
+É assim que `@decocms/apps-vtex` propaga o cookie `vtex_segment` para APIs upstream sem o site ter que orquestrar manualmente.
 
 <Callout type="warning">
 **Não use `RequestContext` em código client** — só existe no servidor. Se seu componente precisa do request no client, passe via props da section ou via TanStack Query.

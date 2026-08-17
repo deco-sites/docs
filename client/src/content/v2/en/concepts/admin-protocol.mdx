@@ -17,7 +17,7 @@ The admin protocol is the contract between `admin.deco.cx` and your self-hosted 
 | `POST` | `/deco/render` | Render a section or page in the preview iframe |
 | `POST` | `/deco/invoke` | Run a loader or action and return its result |
 
-These all live in `@decocms/start/admin` and are wired into the worker via `createDecoWorkerEntry`.
+These all live in `@decocms/blocks-admin` and are wired into the worker via `createDecoWorkerEntry`.
 
 ## `/live/_meta`
 
@@ -97,13 +97,13 @@ The admin handlers live in `worker-entry.ts`, **not** in `server.ts`. This matte
 
 > Vite strips custom fetch logic from TanStack `createServerEntry` in production builds.
 >
-> — `@decocms/start/CLAUDE.md`
+> — `decocms/blocks/CLAUDE.md`
 
 If you put admin routes inside the framework's server entry, they work in dev but disappear in prod. Always wire them through `createDecoWorkerEntry`:
 
 ```ts
-import { createDecoWorkerEntry } from "@decocms/start/sdk/workerEntry";
-import { handleMeta, handleDecofile, handleRender, handleInvoke } from "@decocms/start/admin";
+import { createDecoWorkerEntry } from "@decocms/tanstack";
+import { handleMeta, handleDecofile, handleRender, handleInvoke } from "@decocms/blocks-admin";
 
 const decoWorker = createDecoWorkerEntry(serverEntry, {
   admin: { handleMeta, handleDecofile, handleRender, handleInvoke },
@@ -117,7 +117,7 @@ export default decoWorker;
 Admin runs on `admin.deco.cx`; your storefront runs on a different origin. The admin endpoints emit CORS headers permissive to admin's origin:
 
 ```ts
-import { applyCorsHeaders } from "@decocms/start/middleware";
+import { applyCorsHeaders } from "@decocms/blocks/middleware";
 ```
 
 `LiveControls` (loaded by the preview shell) uses `postMessage` to coordinate hover-highlight and section jumps with the parent admin frame.
@@ -143,7 +143,7 @@ The framework handles all of this — but if you customize the meta or decofile 
 - `@description` (TSDoc) → field description.
 - `@title` → field label.
 - `@default` → default value.
-- Widget types from `@decocms/start/types/widgets` → custom UI controls.
+- Widget types from `@decocms/blocks/types/widgets` → custom UI controls.
 
 The generator runs as part of the `generate:schema` npm script. The output (`meta.gen.json`) is what `/live/_meta` serves.
 

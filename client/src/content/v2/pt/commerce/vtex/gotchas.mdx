@@ -4,7 +4,7 @@ description: "Cookies, sales channel, expectedOrderFormSections, regionId, sanit
 icon: "AlertTriangle"
 ---
 
-import Callout from "../../../../components/ui/Callout.astro";
+import Callout from "../../../../../components/ui/Callout.astro";
 
 A integração VTEX cobre 90% dos casos automaticamente. Os 10% restantes são esses gotchas — coisas que mordem em produção e levam mais tempo de debug do que deveriam.
 
@@ -16,7 +16,7 @@ VTEX rastreia segmento, regionId, sessão e orderForm via cookies. Se você usar
 - Estoque vem vazio (regionId perdido).
 - Carrinho zumbi (orderFormId não persiste — usuário adiciona item, refresh, item some).
 
-**Correção**: sempre use `vtexFetch` ou `vtexFetchWithCookies` em loaders. `@decocms/apps/vtex/middleware` cuida automaticamente quando você usa loaders inline.
+**Correção**: sempre use `vtexFetch` ou `vtexFetchWithCookies` em loaders. `@decocms/apps-vtex/middleware` cuida automaticamente quando você usa loaders inline.
 
 Cookies relevantes:
 
@@ -36,7 +36,7 @@ Cookies relevantes:
 if (String(salesChannel) === "1") { /* ... */ }
 ```
 
-Outra: alguns endpoints VTEX usam `sc` em vez de `salesChannel` na query string. `@decocms/apps` cuida; chamadas custom não.
+Outra: alguns endpoints VTEX usam `sc` em vez de `salesChannel` na query string. `@decocms/apps-*` cuida; chamadas custom não.
 
 ## 3. `expectedOrderFormSections` faltando
 
@@ -56,7 +56,7 @@ Na hora de buscar carrinho, VTEX devolve só seções "leves" por default. Para 
 }
 ```
 
-`@decocms/apps/vtex/loaders/cart.ts` envia o pacote completo por default. Customizações que sobrescrevem precisam preservar — esquecer é a causa mais comum de "carrinho não atualiza UI".
+`@decocms/apps-vtex/loaders/cart.ts` envia o pacote completo por default. Customizações que sobrescrevem precisam preservar — esquecer é a causa mais comum de "carrinho não atualiza UI".
 
 ## 4. RegionId não setado
 
@@ -89,7 +89,7 @@ Veja `sortwhitelist.ts` para a lista exata.
 
 ## 6. Drift do README sobre `/vtex/invoke`
 
-O README atual de `@decocms/apps` em alguns lugares fala em endpoint `/vtex/invoke`. **Não existe.** Use `/deco/invoke` (a mesma para toda plataforma).
+O README atual de `@decocms/apps-*` em alguns lugares fala em endpoint `/vtex/invoke`. **Não existe.** Use `/deco/invoke` (a mesma para toda plataforma).
 
 ```ts
 // errado:
@@ -106,7 +106,7 @@ Esse drift está marcado para fix; até lá, eis o aviso oficial.
 
 IS exige cookies próprios (`segmentToken`, `binding`) que VTEX seta na primeira chamada bem-sucedida. Se loader IS não chega ao client (e.g. erro upstream em SSR), cookies não são setados, próxima chamada falha de novo. Loop infinito.
 
-`@decocms/apps/vtex/middleware/cookies` lida com geração explicitamente — gera cookies localmente quando upstream não está disponível, depois reconcilia. Não desabilite a menos que saiba o que está fazendo.
+`@decocms/apps-vtex/utils/cookies` lida com geração explicitamente — gera cookies localmente quando upstream não está disponível, depois reconcilia. Não desabilite a menos que saiba o que está fazendo.
 
 ## 8. Cookies HttpOnly
 
@@ -136,7 +136,7 @@ Algumas URLs VTEX inserem `?sc=N` automaticamente em redirects. Se você não wh
 
 ## 12. `account` vs `accountName`
 
-VTEX docs alternam livremente. Em `@decocms/apps` é sempre `account`. Cheque seu config block — usar `accountName` causa falha silenciosa.
+VTEX docs alternam livremente. Em `@decocms/apps-*` é sempre `account`. Cheque seu config block — usar `accountName` causa falha silenciosa.
 
 ## 13. Perda de sessão por opacidade de proxy
 
@@ -164,5 +164,5 @@ Race entre adicionar dois items rapidamente: VTEX serializa updates no orderForm
 
 ## Veja também
 
-- [VTEX overview](/v2/pt/commerce/vtex-overview)
-- [VTEX client e middleware](/v2/pt/commerce/vtex-client-and-middleware)
+- [VTEX overview](/v2/pt/commerce/vtex/overview)
+- [VTEX client e middleware](/v2/pt/commerce/vtex/client-and-middleware)

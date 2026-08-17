@@ -1,0 +1,313 @@
+---
+title: "VTEX hooks"
+description: "Cart v2 (createCart, useAddToCart, useCartSummary), plus useCart, useUser, useWishlist, useAutocomplete for the browser."
+icon: "Hook"
+---
+
+import Callout from "../../../../../components/ui/Callout.astro";
+
+`@decocms/apps-vtex/hooks` exports React hooks that wrap VTEX endpoints — caching, deduplication, optimistic updates. Use these in client components instead of calling fetch directly.
+
+<Callout type="info">
+**Two cart generations.** [**Cart v2**](#cart-v2-recommended) (the `createCart` factory + granular hooks) is the recommended path for new code — it is API-frugal, lazy, and framework-agnostic. The original `useCart` further down (["Legacy cart"](#legacy-cart-v1)) still works and is untouched, but creates a VTEX OrderForm for every visitor and always returns the full ~40 KB payload. `useUser`, `useWishlist`, and `useAutocomplete` are unchanged by this split.
+</Callout>
+
+## Cart v2 (recommended)
+
+Cart v2 makes cart traffic **granular and lazy**. Two independent knobs per operation:
+
+- **`sections`** — what you ask VTEX to compute (`expectedOrderFormSections`). Fewer sections = smaller VTEX payload.
+- **`projection`** — what the server actually sends to the browser, independent of `sections`.
+
+Every hook defaults to the cheapest option; asking for more is always explicit. **No OrderForm is created until the first add-to-cart** — a visitor who only browses generates zero calls to `/api/checkout/pub/orderForm`.
+
+### Setup — `createCart`
+
+Create the hooks once per site and inject your generated `invoke` proxy:
+
+```ts
+// src/hooks/cart.ts
+import { createCart } from "@decocms/apps-vtex/hooks/createCart";
+import { invoke } from "~/server/invoke"; // your generated TanStack / Next.js invoke
+
+export const {
+  useCart, useCartSummary, useAddToCart, useShipping, useGifts, useAttachments, resetCart,
+} = createCart({ invoke });
+```
+
+Each call to `createCart` returns an independent module-singleton — **call it once per site**, at module scope. Hooks from the same call share state; hooks from different calls are isolated.
+
+### Projections
+
+| `projection` | What reaches the browser | When to use |
+|---|---|---|
+| `"none"` | `{ ok: true }` | Pure optimistic update, no reconciliation |
+| `"summary"` | `{ orderFormId, totalItems, total }` | Badge-only refresh |
+| `"summary+items"` | summary + slim line items | **Default for add-to-cart** (toast) |
+| `"minicart"` | full canonical `Minicart` | Opening the drawer |
+| `"raw"` | untouched VTEX OrderForm | GTM / pixels / custom integrations |
+
+Rule of thumb: **badge → `summary`, toast → `summary+items`, drawer → `minicart`.** Section presets (`SECTIONS_MINIMAL`, `SECTIONS_DRAWER`, `SECTIONS_FULL`) and the contract types live in `@decocms/apps-commerce/types/cart`.
+
+### `useCartSummary()` — badge
+
+Reads local state; **never triggers a VTEX call by itself.**
+
+```tsx
+function CartBadge() {
+  const { totalItems, loading } = useCartSummary();
+  return <span>{loading ? "…" : totalItems}</span>;
+}
+```
+
+### `useAddToCart(opts?)` — add with built-in optimistic update
+
+```tsx
+function BuyButton({ id, seller }: { id: string; seller: string }) {
+  const { add, loading } = useAddToCart(); // default projection: "summary+items"
+  return (
+    <button disabled={loading} onClick={() => add({ id, seller, quantity: 1 })}>
+      Add to cart
+    </button>
+  );
+}
+```
+
+On `add(...)`: the badge increments optimistically → `getOrCreateCartV2` runs **only if no cart exists yet** (lazy) → `addItemsToCartV2` is called with `SECTIONS_MINIMAL` + your `projection` → the projected response reconciles the badge (or the full minicart) → on error the optimistic bump rolls back. `add()` **returns the projected payload**, so you can drive a toast without a second fetch:
+
+```tsx
+const res = await add({ id, seller }); // { totalItems, total, items: [slim] }
+if (res.items?.[0]) toast(`Added: ${res.items[0].item_name}`);
+```
+
+Pass `projection: "minicart"` to open the drawer straight from the response, or `projection: "none"` for a purely optimistic UI.
+
+### `useCart(opts?)` — drawer / full cart
+
+```tsx
+const { minicart, summary, loading, updateQuantity, removeItem, addCoupon } = useCart({
+  include: { full: open },   // only fetches the full cart when the drawer is open
+  freeShippingTarget: 15000,
+  locale: "pt-BR",
+  checkoutHref: "/checkout",
+  enableCoupon: true,
+});
+```
+
+`include.full: false` (default) exposes only the summary with no VTEX call. `updateQuantity`, `removeItem`, and `addCoupon` call the v2 actions with `projection: "minicart"` and reconcile the drawer.
+
+### On-demand extras
+
+- **`useShipping()`** — `estimate({ items, postalCode })` returns shipping options for the drawer.
+- **`useGifts()`** — `load()` returns selectable gifts / promotions (`ratesAndBenefits`).
+- **`useAttachments()`** — `load(itemIndex)` returns one line's attachments + offered slots.
+- **`resetCart()`** — clears singleton state after logout or a placed order.
+
+### Optional: TanStack Query adapter
+
+For sites already on `@tanstack/react-query`, `createCartQuery({ invoke })` from `@decocms/apps-vtex/hooks/cartQuery` exposes the same six hooks wired into a `QueryClient` (lazy `enabled: false` queries, `useShipping` keyed + `staleTime`-cached). Requires a `QueryClientProvider` in the tree.
+
+### Wiring
+
+- **TanStack Start** — the v2 actions are declared in the app's `invoke`; run `npm run generate` (or `generate:invoke`) to emit the site-local `createServerFn` bindings. The generated handler calls `forwardResponseCookies()` so the VTEX cart cookies reach the browser.
+- **Next.js** — loaders/actions resolve through `handleInvoke` (mounted at `app/deco/[[...deco]]/route.ts`); no extra generator step. Cookie forwarding is handled by `vtexFetchWithCookies` inside each action.
+
+<Callout type="warning">
+**All cart mutations must use `vtexFetchWithCookies`.** `vtexFetch` / `vtexCachedFetch` do not rotate the `checkout.vtex.com` / `CheckoutOrderFormOwnership` cookies, which drifts the storefront cart from VTEX's server-side state.
+</Callout>
+
+---
+
+## Legacy cart (v1)
+
+<Callout type="info">
+The `useCart` below is the **original cart**. It still works and is not deprecated, but prefer [Cart v2](#cart-v2-recommended) for new code — v1 creates an OrderForm on mount for every visitor and always returns the full OrderForm. During a gradual migration, keep **one source of truth for the badge**: don't run a v1 badge and a v2 badge side by side, or they diverge (the two systems hold independent state).
+</Callout>
+
+## Import
+
+```ts
+import {
+  useCart,
+  useUser,
+  useWishlist,
+  useAutocomplete,
+} from "@decocms/apps-vtex/hooks";
+```
+
+## `useCart`
+
+```ts
+const {
+  cart,           // OrderForm or null
+  minicart,       // SSR-shaped Minicart for UI
+  isLoading,
+  isError,
+  error,
+  refetch,
+  addItems,       // mutation
+  addCoupons,     // mutation
+  updateQuantity, // mutation
+  removeItem,     // mutation
+  itemCount,      // computed
+} = useCart();
+```
+
+### Where the data comes from
+
+`useCart` calls **`/api/checkout/pub/orderForm`** directly (relative URL, same origin) with `expectedOrderFormSections` matching `DEFAULT_EXPECTED_SECTIONS` from `vtex/actions/checkout.ts`. The cookies (`checkout.vtex.com__orderFormId`, `vtex_segment`) get sent automatically by the browser.
+
+For `salesChannel`, the hook reads the **`VTEXSC` cookie** from `document.cookie` so per-region behavior matches the user's session.
+
+### Mutations
+
+All mutations return promises and update the cached cart on success:
+
+```ts
+const { addItems } = useCart();
+
+await addItems({
+  lines: [{ id: "sku-123", quantity: 1 }],
+});
+```
+
+Mutations are not optimistic by default — the UI waits for the server roundtrip. If you want optimistic updates, wrap with your own state.
+
+### Options
+
+```ts
+useCart({
+  expectedOrderFormSections: [...],   // override the sections list
+  refetchOnFocus: false,              // disable refetch on tab focus
+  staleTime: 5_000,                   // ms
+});
+```
+
+<Callout type="warning">
+**`CartItem` is `@deprecated`.** The legacy type alias `CartItem` exists for backwards compatibility but is deprecated. Prefer `OrderFormItem` or `MinicartItem` from the same module.
+</Callout>
+
+## `useUser`
+
+```ts
+const { user, isLoggedIn, isLoading, isError, refetch } = useUser();
+```
+
+Calls **`/api/sessions?items=profile.*`** with `credentials: "include"`. Returns the customer's profile (name, email, phone, etc.) or `null` if not logged in.
+
+### HttpOnly limitation
+
+The VTEX auth cookie is `HttpOnly` — JavaScript can't read it directly. `useUser` infers logged-in state by whether `/api/sessions` returns profile data. If your storefront uses a custom auth proxy, make sure the session endpoint reachable from the storefront origin returns the right shape.
+
+### Refetch after auth flows
+
+Sign-in and sign-up actions don't automatically update `useUser`'s cache. Call `refetch()` or invalidate the query manually:
+
+```ts
+import { useQueryClient } from "@tanstack/react-query";
+import { useUser } from "@decocms/apps-vtex/hooks";
+
+const queryClient = useQueryClient();
+const { refetch } = useUser();
+
+await classicSignIn({ email, password });
+await refetch(); // or queryClient.invalidateQueries(["vtex", "user"])
+```
+
+## `useWishlist`
+
+```ts
+const {
+  items,
+  isInWishlist,    // (productId: string) => boolean
+  toggle,          // mutation: add if absent, remove if present
+  add,             // mutation
+  remove,          // mutation
+  isLoading,
+  refetch,
+} = useWishlist();
+```
+
+Calls **`/deco/invoke/vtex/loaders/wishlist`** for reads and **`/deco/invoke/vtex/actions/wishlist/...`** for mutations. The invoke endpoints handle authentication via cookies.
+
+```tsx
+<button
+  onClick={() => toggle(product.productID)}
+  aria-pressed={isInWishlist(product.productID)}
+>
+  ♥
+</button>
+```
+
+## `useAutocomplete`
+
+```ts
+const { searches, products, isLoading } = useAutocomplete(query, {
+  debounce: 300,
+});
+```
+
+Debounced TanStack Query around an autocomplete endpoint. Default endpoint: **`/api/vtex/suggestions?id={query}`** (override via `fetchSuggestions` option).
+
+```ts
+useAutocomplete(query, {
+  fetchSuggestions: (q) => fetch(`/my-custom-suggestions?q=${q}`).then((r) => r.json()),
+  debounce: 200,
+});
+```
+
+## Legacy factories (`createUseCart`, `createUseUser`, `createUseWishlist`)
+
+These are factories that build hooks bound to a specific invoke client. They predate the canonical `useCart` / `useUser` / `useWishlist` and remain for sites that need:
+
+- A signal-style API (`cart.value` instead of `cart`).
+- Custom invoke routing.
+- Backward compatibility with v1 patterns.
+
+```ts
+import { createUseCart } from "@decocms/apps-vtex/hooks";
+import { invoke } from "~/server/cms/invoke.gen";
+
+const useCustomCart = createUseCart({
+  invoke,
+  // signal-like config
+});
+```
+
+The factory hooks expect specific invoke shapes (e.g. `invoke.vtex.actions.checkout.addItemsToCart`). The headers in `vtex/hooks/createUseCart.ts` document the expected invoke surface.
+
+**For new code, use the canonical hooks**, not the factories.
+
+## Where to call from
+
+These hooks are **client-only** — they use React Query and call relative URLs. Wrap calling components with `"use client"` if your section is server-rendered:
+
+```tsx
+"use client";
+import { useCart } from "@decocms/apps-vtex/hooks";
+
+export default function MiniCart() {
+  const { cart, itemCount } = useCart();
+  return <button>Cart ({itemCount})</button>;
+}
+```
+
+For SSR cart rendering (initial badge count without a flash), use [`vtex/inline-loaders/minicart.ts`](/v2/en/commerce/vtex/inline-loaders) which composes the cart payload server-side from cookies.
+
+## Hydration concerns
+
+Three things can cause hydration mismatches with these hooks:
+
+1. **Cart badge count** — server renders without cookie context, client renders with cookie. Solution: SSR minicart loader provides the right count for the initial paint.
+2. **Logged-in state** — server renders "Sign in" link, client (after fetch) renders user menu. Solution: render a neutral placeholder in SSR, swap on hydration.
+3. **Wishlist heart state** — server renders empty heart, client renders filled heart. Solution: load wishlist data via SSR if it's above the fold; otherwise accept the brief flicker.
+
+See [VTEX gotchas](/v2/en/commerce/vtex/gotchas) for the full set.
+
+## See also
+
+- [VTEX overview](/v2/en/commerce/vtex/overview)
+- [VTEX loaders and actions](/v2/en/commerce/vtex/loaders-and-actions)
+- [VTEX inline loaders](/v2/en/commerce/vtex/inline-loaders)
+- [VTEX gotchas](/v2/en/commerce/vtex/gotchas)
+- [Invoke](/v2/en/framework/invoke)

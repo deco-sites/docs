@@ -6,7 +6,7 @@ icon: "Map"
 
 import Callout from "../../../../components/ui/Callout.astro";
 
-`@decocms/start/routes` expõe os helpers que conectam o TanStack Router ao resolver do CMS. Você toca em três arquivos: `src/routes/$.tsx` (catch-all), `src/routes/index.tsx` (home) e ocasionalmente `src/routes/__root.tsx` (shell global).
+`@decocms/tanstack` expõe os helpers que conectam o TanStack Router ao resolver do CMS. Você toca em três arquivos: `src/routes/$.tsx` (catch-all), `src/routes/index.tsx` (home) e ocasionalmente `src/routes/__root.tsx` (shell global).
 
 ## Import
 
@@ -17,7 +17,7 @@ import {
   loadCmsPage,
   loadDeferredSection,
   withSiteGlobals,
-} from "@decocms/start/routes";
+} from "@decocms/tanstack";
 ```
 
 ## `cmsRouteConfig`
@@ -27,7 +27,7 @@ Constrói uma config TanStack Router para uma rota catch-all do CMS.
 ```ts
 // src/routes/$.tsx
 import { createFileRoute } from "@tanstack/react-router";
-import { cmsRouteConfig } from "@decocms/start/routes";
+import { cmsRouteConfig } from "@decocms/tanstack";
 
 export const Route = createFileRoute("/$")(
   cmsRouteConfig({
@@ -92,7 +92,7 @@ Mesmo formato que `cmsRouteConfig`, mas amarrado a `/`:
 ```ts
 // src/routes/index.tsx
 import { createFileRoute } from "@tanstack/react-router";
-import { cmsHomeRouteConfig } from "@decocms/start/routes";
+import { cmsHomeRouteConfig } from "@decocms/tanstack";
 
 export const Route = createFileRoute("/")(
   cmsHomeRouteConfig({ siteName: "minha-loja" }),

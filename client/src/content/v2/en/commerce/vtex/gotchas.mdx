@@ -4,7 +4,7 @@ description: "Cookies, sales channel, expectedOrderFormSections, regionId, IS so
 icon: "AlertTriangle"
 ---
 
-import Callout from "../../../../components/ui/Callout.astro";
+import Callout from "../../../../../components/ui/Callout.astro";
 
 A grab-bag of VTEX-specific gotchas — things that are subtly wrong by default and bite in production. Treat this as a checklist when integrating.
 
@@ -20,7 +20,7 @@ VTEX uses `vtex_segment` to convey region (CEP-driven), sales channel, and curre
 
 `vtexFetch` auto-forwards `vtex_segment` **only when the caller didn't supply a `cookie` header**. If you supply your own `cookie` in `init.headers`, you also have to include `vtex_segment` yourself.
 
-For legacy catalog calls (which don't pass through `vtexFetch`), wrap a custom region-aware fetch — see [Region-aware fetch](/v2/en/commerce/vtex-client-and-middleware#region-aware-fetch-advanced).
+For legacy catalog calls (which don't pass through `vtexFetch`), wrap a custom region-aware fetch — see [Region-aware fetch](/v2/en/commerce/vtex/client-and-middleware#region-aware-fetch-advanced).
 
 ### IS session cookies (`vtex_is_session`, `vtex_is_anonymous`)
 
@@ -86,7 +86,7 @@ VTEX Intelligent Search rejects unknown `sort` values with a 400. Common cases t
 The inline-loader layer enforces a whitelist via `VALID_IS_SORTS`:
 
 ```ts
-import { VALID_IS_SORTS } from "@decocms/apps/vtex/utils/intelligentSearch";
+import { VALID_IS_SORTS } from "@decocms/apps-vtex/utils/intelligentSearch";
 
 if (!VALID_IS_SORTS.includes(sort)) sort = "";
 ```
@@ -115,9 +115,9 @@ If a product's slug changes in admin, the cached entry can serve the old SKU unt
 ## README drift
 
 <Callout type="warning">
-**`@decocms/apps/vtex/invoke` does not exist.**
+**`@decocms/apps-vtex/invoke` does not exist.**
 
-The `@decocms/apps` README references `@decocms/apps/vtex/invoke`, but it's not in `package.json` `exports`. Don't try to import from this path.
+The `@decocms/apps-*` README references `@decocms/apps-vtex/invoke`, but it's not in `package.json` `exports`. Don't try to import from this path.
 
 The real invoke surface is:
 1. **`/deco/invoke/...`** HTTP routes (handled automatically by the framework).
@@ -151,7 +151,7 @@ Three common patterns and their fixes:
 
 ## See also
 
-- [VTEX overview](/v2/en/commerce/vtex-overview)
-- [VTEX loaders and actions](/v2/en/commerce/vtex-loaders-and-actions)
-- [VTEX hooks](/v2/en/commerce/vtex-hooks)
-- [VTEX client and middleware](/v2/en/commerce/vtex-client-and-middleware)
+- [VTEX overview](/v2/en/commerce/vtex/overview)
+- [VTEX loaders and actions](/v2/en/commerce/vtex/loaders-and-actions)
+- [VTEX hooks](/v2/en/commerce/vtex/hooks)
+- [VTEX client and middleware](/v2/en/commerce/vtex/client-and-middleware)

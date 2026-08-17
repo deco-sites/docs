@@ -12,7 +12,7 @@ This is the entry point to the v1 → v2 migration. The full playbook lives acro
 
 1. **[Migration overview](/v2/en/migration/overview)** — you are here.
 2. **[Playbook](/v2/en/migration/playbook)** — the manual walkthrough, phase by phase.
-3. **[Migrate script](/v2/en/migration/migrate-script)** — what `npx -p @decocms/start deco-migrate` does.
+3. **[Migrate script](/v2/en/migration/migrate-script)** — what `npx -p @decocms/blocks-cli deco-migrate` does.
 4. **[Agent skills](/v2/en/migration/agent-skills)** — using AI coding tools to handle the long tail.
 5. **[Checklist](/v2/en/migration/checklist)** — verification steps before merging.
 
@@ -27,13 +27,16 @@ This is the entry point to the v1 → v2 migration. The full playbook lives acro
 
 ## Version compatibility
 
-The migration script targets the **current major** of `@decocms/start` (^2.x) and `@decocms/apps` (^1.x). Pin to specific versions in your migrated `package.json`:
+The migration script targets the **split framework packages** (`@decocms/blocks`, `@decocms/blocks-admin`, `@decocms/tanstack`) and the `@decocms/apps-*` integrations. The packages are released in lockstep — install the latest of each your app needs:
 
 ```jsonc
 {
   "dependencies": {
-    "@decocms/start": "^2.28.0",
-    "@decocms/apps": "^1.11.0",
+    "@decocms/blocks": "latest",
+    "@decocms/blocks-admin": "latest",
+    "@decocms/tanstack": "latest",
+    "@decocms/apps-commerce": "latest",
+    "@decocms/apps-vtex": "latest",
     "@tanstack/react-start": "^1.166.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
@@ -50,7 +53,7 @@ Pin to these versions (or the latest published ones at the time of migration).
 - **All `.deco/blocks/*.json` content** — the decofile is the same format.
 - **All section `Props` interfaces** — no schema rewrites.
 - **All matcher logic** — built-in matchers are 1:1 ported.
-- **Site SEO** — `configureWebsite({ seo })` from `@decocms/apps/website` mirrors v1 SEO config.
+- **Site SEO** — `configureWebsite({ seo })` from `@decocms/apps-website` mirrors v1 SEO config.
 - **VTEX/Shopify integration semantics** — same loader/action shapes; new package path.
 
 ## What you'll have to redo

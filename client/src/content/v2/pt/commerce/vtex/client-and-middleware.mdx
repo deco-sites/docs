@@ -4,7 +4,7 @@ description: "Família vtexFetch, intelligentSearch, fetchCache, extractVtexCont
 icon: "Network"
 ---
 
-import Callout from "../../../../components/ui/Callout.astro";
+import Callout from "../../../../../components/ui/Callout.astro";
 
 A camada de client é a parte da integração VTEX que conversa com APIs upstream. Esta página cobre os helpers que loaders e actions usam por baixo.
 
@@ -16,7 +16,7 @@ import {
   vtexFetchWithCookies,
   vtexFetchWithCache,
   setVtexFetch,
-} from "@decocms/apps/vtex/client";
+} from "@decocms/apps-vtex/client";
 ```
 
 ### `vtexFetch`
@@ -63,8 +63,8 @@ Na maior parte das vezes você não chama direto — loaders inline já embrulha
 Substitui a implementação interna de fetch (use para instrumentar):
 
 ```ts
-import { createInstrumentedFetch } from "@decocms/start/sdk/instrumentedFetch";
-import { setVtexFetch } from "@decocms/apps/vtex/client";
+import { createInstrumentedFetch } from "@decocms/blocks/sdk/instrumentedFetch";
+import { setVtexFetch } from "@decocms/apps-vtex/client";
 
 setVtexFetch(createInstrumentedFetch("vtex"));
 ```
@@ -73,10 +73,10 @@ Faça uma vez no `setup.ts`. Vira tracing OpenTelemetry de toda chamada VTEX.
 
 ## Cliente Intelligent Search
 
-`@decocms/apps/vtex/sdk/intelligentSearch` provê acesso de baixo nível aos endpoints IS:
+`@decocms/apps-vtex/utils/intelligentSearch` provê acesso de baixo nível aos endpoints IS:
 
 ```ts
-import { intelligentSearch } from "@decocms/apps/vtex/sdk/intelligentSearch";
+import { intelligentSearch } from "@decocms/apps-vtex/utils/intelligentSearch";
 
 const result = await intelligentSearch({
   query: "tênis",
@@ -95,13 +95,13 @@ Loaders usam internamente; raramente direto.
 
 ## Fetch cache
 
-`@decocms/apps/vtex/sdk/vtex-fetch-cache` é a camada que `vtexFetchWithCache` envolve:
+`@decocms/apps-vtex/utils/fetchCache` é a camada que `vtexFetchWithCache` envolve:
 
 ```ts
 import {
   fetchWithCache,
   vtexCachedFetch,
-} from "@decocms/apps/vtex/sdk/vtex-fetch-cache";
+} from "@decocms/apps-vtex/utils/fetchCache";
 ```
 
 Comportamento:
@@ -114,7 +114,7 @@ Ported de `@decocms/runtime` v1 — a mesma estratégia de cache que sites de pr
 ## `extractVtexContext`
 
 ```ts
-import { extractVtexContext } from "@decocms/apps/vtex/middleware";
+import { extractVtexContext } from "@decocms/apps-vtex/middleware";
 
 const ctx = extractVtexContext(request);
 // → { account, salesChannel, segment, regionId, orderFormId }
@@ -127,7 +127,7 @@ Lê a config do site + cookies do request e devolve um objeto VTEX-context-aware
 Quando você termina uma chamada IS, VTEX pode setar `vtex_segment` ou cookies relacionados na resposta. Para que isso reflita no browser:
 
 ```ts
-import { propagateISCookies } from "@decocms/apps/vtex/middleware";
+import { propagateISCookies } from "@decocms/apps-vtex/middleware";
 
 const upstream = await intelligentSearch(query);
 propagateISCookies(upstream, response);
@@ -142,7 +142,7 @@ Essencial — sem isso, sessões expiram silenciosamente e os usuários perdem s
 Built-in `buildSegment` para `createDecoWorkerEntry`:
 
 ```ts
-import { vtexCacheKeySuffix } from "@decocms/apps/vtex/middleware";
+import { vtexCacheKeySuffix } from "@decocms/apps-vtex/middleware";
 
 const decoWorker = createDecoWorkerEntry(serverEntry, {
   admin: { /* ... */ },
@@ -166,14 +166,14 @@ Request
 Response
 ```
 
-`@decocms/apps/vtex/middleware` aplica em ordem certa quando você usa as APIs default. Customização significa preservar essa ordem.
+`@decocms/apps-vtex/middleware` aplica em ordem certa quando você usa as APIs default. Customização significa preservar essa ordem.
 
 ## Fetch regional
 
 Padrão para sites multi-região: chamar VTEX com região atualizada do request:
 
 ```ts
-import { configure } from "@decocms/apps/vtex/client";
+import { configure } from "@decocms/apps-vtex/client";
 
 const country = request.headers.get("cf-ipcountry");
 const account = country === "BR" ? "loja-br" : "loja-us";
@@ -185,7 +185,7 @@ Um padrão comum é combinar essa abordagem com região default + override por C
 
 ## Veja também
 
-- [VTEX overview](/v2/pt/commerce/vtex-overview)
-- [VTEX gotchas](/v2/pt/commerce/vtex-gotchas)
+- [VTEX overview](/v2/pt/commerce/vtex/overview)
+- [VTEX gotchas](/v2/pt/commerce/vtex/gotchas)
 - [Caching](/v2/pt/framework/caching)
 - [Worker entry](/v2/pt/framework/worker-entry)

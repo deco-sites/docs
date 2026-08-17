@@ -60,7 +60,7 @@ This is what the framework actually loads at runtime. In production storefronts,
 A thin module that the [Vite plugin](/v2/en/framework/vite-plugin) replaces with `JSON.parse` of the sibling `.json` at load time. Don't hand-edit either file.
 
 <Callout type="warning">
-**Don't manually chunk `@decocms/start` or `@decocms/apps`** in `vite.config.ts`. The Vite plugin handles the JSON fast-path, and these packages have circular re-exports that crash if you split them across chunks.
+**Don't manually chunk `@decocms/blocks` or `@decocms/apps-*`** in `vite.config.ts`. The Vite plugin handles the JSON fast-path, and these packages have circular re-exports that crash if you split them across chunks.
 </Callout>
 
 ## How resolution works
@@ -68,7 +68,7 @@ A thin module that the [Vite plugin](/v2/en/framework/vite-plugin) replaces with
 When a request comes in for `/products/some-product`:
 
 1. The catch-all route runs `loadCmsPage({ siteName, pathname })`.
-2. `loadCmsPage` calls `resolveDecoPage` from `@decocms/start/cms`, which:
+2. `loadCmsPage` calls `resolveDecoPage` from `@decocms/blocks/cms`, which:
    - Looks up the page block by URL pattern.
    - Walks each section reference in the page's section list.
    - Resolves each section's `__resolveType` to a registered component.

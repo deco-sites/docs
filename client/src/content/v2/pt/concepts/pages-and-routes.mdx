@@ -17,7 +17,7 @@ Lida com toda URL não capturada por uma rota mais específica — PDPs, PLPs, p
 ```tsx
 // exemplo mínimo
 import { createFileRoute } from "@tanstack/react-router";
-import { cmsRouteConfig, loadCmsPage } from "@decocms/start/routes";
+import { cmsRouteConfig, loadCmsPage } from "@decocms/tanstack";
 
 export const Route = createFileRoute("/$")(
   cmsRouteConfig({
@@ -34,7 +34,7 @@ Mesmo formato, para a raiz `/`:
 
 ```tsx
 import { createFileRoute } from "@tanstack/react-router";
-import { cmsHomeRouteConfig } from "@decocms/start/routes";
+import { cmsHomeRouteConfig } from "@decocms/tanstack";
 
 export const Route = createFileRoute("/")(
   cmsHomeRouteConfig({ siteName: "minha-loja" }),
@@ -81,7 +81,7 @@ O identificador do site no admin. Tem que casar com o que está em `admin.deco.c
 
 ## Embrulhar com `withSiteGlobals`
 
-Alguns sites precisam injetar loaders ou heads globais por cima da rota CMS. `@decocms/start/routes` exporta `withSiteGlobals`:
+Alguns sites precisam injetar loaders ou heads globais por cima da rota CMS. `@decocms/tanstack` exporta `withSiteGlobals`:
 
 ```tsx
 const routeConfig = withSiteGlobals(
@@ -121,7 +121,7 @@ TanStack Router resolve caminhos mais específicos primeiro, então qualquer arq
 O shell que o framework provê cuida de fontes, preconnects e do iframe de preview do CMS:
 
 ```tsx
-import { DecoRootLayout } from "@decocms/start/hooks";
+import { DecoRootLayout } from "@decocms/blocks/hooks";
 
 export const Route = createRootRoute({
   component: () => (
@@ -135,7 +135,7 @@ export const Route = createRootRoute({
 
 ### Construir o seu
 
-Descarte `DecoRootLayout` e escreva um `__root.tsx` do zero quando precisar de carregamento de fontes específico, drawer de minicart no shell, ou qualquer markup que os defaults do framework não conseguem expressar. Copie os providers que precisar de `PreviewProviders` e `LiveControls` (ambos de `@decocms/start/hooks`).
+Descarte `DecoRootLayout` e escreva um `__root.tsx` do zero quando precisar de carregamento de fontes específico, drawer de minicart no shell, ou qualquer markup que os defaults do framework não conseguem expressar. Copie os providers que precisar de `PreviewProviders` e `LiveControls` (ambos de `@decocms/blocks/hooks`).
 
 ## Server functions e loaders
 

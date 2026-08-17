@@ -6,11 +6,11 @@ icon: "Library"
 
 import Callout from "../../../../components/ui/Callout.astro";
 
-`@decocms/apps/commerce/*` provides the platform-agnostic surface: types, SDK helpers, and components used by both VTEX and Shopify integrations. If you're building a custom commerce integration or a custom storefront component, this is the contract.
+`@decocms/apps-commerce/*` provides the platform-agnostic surface: types, SDK helpers, and components used by both VTEX and Shopify integrations. If you're building a custom commerce integration or a custom storefront component, this is the contract.
 
 ## Types
 
-`@decocms/apps/commerce/types` exports schema.org-aligned commerce shapes:
+`@decocms/apps-commerce/types` exports schema.org-aligned commerce shapes:
 
 | Type | Use |
 |---|---|
@@ -32,7 +32,7 @@ import type {
   ProductListingPage,
   AggregateOffer,
   BreadcrumbList,
-} from "@decocms/apps/commerce/types";
+} from "@decocms/apps-commerce/types";
 ```
 
 These mirror schema.org JSON-LD, so types double as both runtime data shapes and SEO payloads.
@@ -46,7 +46,7 @@ These mirror schema.org JSON-LD, so types double as both runtime data shapes and
 ### `useOffer`
 
 ```ts
-import { useOffer } from "@decocms/apps/commerce/sdk/useOffer";
+import { useOffer } from "@decocms/apps-commerce/sdk/useOffer";
 
 const { price, listPrice, availability, seller, installments, installment } = useOffer(
   product.offers,
@@ -64,7 +64,7 @@ Pulls the canonical offer from an `AggregateOffer`. Returns:
 ### `formatPrice`
 
 ```ts
-import { formatPrice, formatPriceRange } from "@decocms/apps/commerce/sdk/formatPrice";
+import { formatPrice, formatPriceRange } from "@decocms/apps-commerce/sdk/formatPrice";
 
 formatPrice(99.9, "BRL", "pt-BR");        // "R$ 99,90"
 formatPriceRange("100:200", "BRL");       // "R$ 100,00 — R$ 200,00"
@@ -75,7 +75,7 @@ formatPriceRange("100:200", "BRL");       // "R$ 100,00 — R$ 200,00"
 ### `analytics`
 
 ```ts
-import { mapProductToAnalyticsItem } from "@decocms/apps/commerce/sdk/analytics";
+import { mapProductToAnalyticsItem } from "@decocms/apps-commerce/sdk/analytics";
 
 const item = mapProductToAnalyticsItem({
   product,
@@ -93,7 +93,7 @@ window.dataLayer.push({ event: "view_item_list", items: [item] });
 ### `useVariantPossibilities`
 
 ```ts
-import { useVariantPossibilities } from "@decocms/apps/commerce/sdk/useVariantPossibilities";
+import { useVariantPossibilities } from "@decocms/apps-commerce/sdk/useVariantPossibilities";
 
 const possibilities = useVariantPossibilities(product.isVariantOf?.hasVariant ?? [], product);
 // → { Color: { Red: { url: "/p/red-version" }, Blue: ... }, Size: ... }
@@ -104,7 +104,7 @@ Builds a map of variant-property → option → URL for the variant picker UI. H
 ### `url`
 
 ```ts
-import { relative } from "@decocms/apps/commerce/sdk/url";
+import { relative } from "@decocms/apps-commerce/sdk/url";
 
 const cleanLink = relative(href, { stripSearchParams: ["idsku"] });
 ```
@@ -116,7 +116,7 @@ Converts absolute URLs to relative + strips known noise params. Use for PDP `<a 
 ### `Image`
 
 ```tsx
-import { Image, registerImageCdnDomain } from "@decocms/apps/commerce/components/Image";
+import { Image, registerImageCdnDomain } from "@decocms/blocks/hooks";
 ```
 
 Optimized commerce image with width/height enforcement (CLS), responsive `srcSet`, and CDN URL transformation.
@@ -137,7 +137,7 @@ Required props: `src`, `width`. Recommended: `height` (improves CLS), `alt`. Opt
 If your CDN isn't auto-detected, register it once at site setup:
 
 ```ts
-import { registerImageCdnDomain } from "@decocms/apps/commerce/components/Image";
+import { registerImageCdnDomain } from "@decocms/blocks/hooks";
 
 registerImageCdnDomain("cdn.example.com", {
   buildUrl: ({ src, width, height, fit }) => `${src}?w=${width}&h=${height}`,
@@ -147,7 +147,7 @@ registerImageCdnDomain("cdn.example.com", {
 ### `Picture`
 
 ```tsx
-import { Picture, Source } from "@decocms/apps/commerce/components/Picture";
+import { Picture, Source } from "@decocms/blocks/hooks";
 
 <Picture preload>
   <Source src={mobileSrc} media="(max-width: 767px)" width={400} />
@@ -161,7 +161,7 @@ Use when you have art-directed responsive images (different crops or composition
 ### `JsonLd`
 
 ```tsx
-import { ProductJsonLd, BreadcrumbJsonLd, PLPJsonLd } from "@decocms/apps/commerce/components/JsonLd";
+import { ProductJsonLd, BreadcrumbJsonLd, PLPJsonLd } from "@decocms/blocks/hooks";
 
 <ProductJsonLd product={product} url={pageUrl} />
 <BreadcrumbJsonLd breadcrumbs={breadcrumbList} />
@@ -175,7 +175,7 @@ Emits `<script type="application/ld+json">` with schema.org markup. Search engin
 ### `productToAnalyticsItem`
 
 ```ts
-import { mapProductToAnalyticsItem } from "@decocms/apps/commerce/utils/productToAnalyticsItem";
+import { mapProductToAnalyticsItem } from "@decocms/apps-commerce/utils/productToAnalyticsItem";
 ```
 
 Slightly different shape from `sdk/analytics`'s mapper — kept for compatibility with v1 sites. New code should prefer the SDK version.
@@ -183,7 +183,7 @@ Slightly different shape from `sdk/analytics`'s mapper — kept for compatibilit
 ### `canonical`
 
 ```ts
-import { canonicalFromBreadcrumblist } from "@decocms/apps/commerce/utils/canonical";
+import { canonicalFromBreadcrumblist } from "@decocms/apps-commerce/utils/canonical";
 
 const canonical = canonicalFromBreadcrumblist(breadcrumbs, baseUrl);
 ```
@@ -193,7 +193,7 @@ Builds the canonical URL for a PLP from its breadcrumb path. Useful when the dis
 ### `stateByZip` (Brazil-specific)
 
 ```ts
-import getStateFromZip from "@decocms/apps/commerce/utils/stateByZip";
+import getStateFromZip from "@decocms/apps-commerce/utils/stateByZip";
 
 const state = getStateFromZip("01310-100"); // → "SP"
 ```
@@ -203,7 +203,7 @@ Maps Brazilian CEPs to state UFs via Correios ranges. Handy for VTEX regional lo
 ### `filters`
 
 ```ts
-import { facetsToFilters } from "@decocms/apps/commerce/utils/filters";
+import { facetsToFilters } from "@decocms/apps-commerce/utils/filters";
 ```
 
 Helpers for transforming Intelligent Search facets into UI-friendly filter shapes.
@@ -214,10 +214,10 @@ Shared constants — currency codes, sort key constants, etc.
 
 ## App typing
 
-`@decocms/apps/commerce/app-types` exports the contracts apps must satisfy:
+`@decocms/apps-commerce/app-types` exports the contracts apps must satisfy:
 
 ```ts
-import type { AppDefinition, AppMiddleware, ResolveSecretFn } from "@decocms/apps/commerce/app-types";
+import type { AppDefinition, AppMiddleware, ResolveSecretFn } from "@decocms/apps-commerce/app-types";
 ```
 
 Used by anyone building a custom commerce app. End users don't touch this.
@@ -225,7 +225,7 @@ Used by anyone building a custom commerce app. End users don't touch this.
 ## `resolveApps`
 
 ```ts
-import { resolveApps } from "@decocms/apps/commerce/resolve";
+import { resolveApps } from "@decocms/apps-commerce/resolve";
 ```
 
 Composes multiple `AppDefinition`s into one — merging manifests, chaining middleware. Used internally by `autoconfigApps`. End users rarely call.
@@ -233,6 +233,6 @@ Composes multiple `AppDefinition`s into one — merging manifests, chaining midd
 ## See also
 
 - [Commerce overview](/v2/en/commerce/overview)
-- [VTEX overview](/v2/en/commerce/vtex-overview)
+- [VTEX overview](/v2/en/commerce/vtex/overview)
 - [Shopify](/v2/en/commerce/shopify)
 - [Sections](/v2/en/concepts/sections)

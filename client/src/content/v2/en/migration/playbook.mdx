@@ -51,13 +51,13 @@ Generate the v2 baseline files:
 - `src/worker-entry.ts` (calls `createDecoWorkerEntry`)
 - `src/routes/__root.tsx`, `src/routes/index.tsx`, `src/routes/$.tsx`
 
-The script generates these. If you're doing this by hand, copy from the templates in [`@decocms/start/.agents/skills/deco-to-tanstack-migration/templates/`](https://github.com/decocms/deco-start/tree/main/.agents/skills).
+The script generates these. If you're doing this by hand, copy from the templates in [`decocms/blocks/.agents/skills/deco-to-tanstack-migration/templates/`](https://github.com/decocms/blocks/tree/main/.agents/skills).
 
 ## Phase 3 — Transform
 
 This is the bulk-rewrite phase:
 
-- **Imports** — `preact/*` → `react`, `@preact/signals` → `@tanstack/store`, `$fresh/*` → `@tanstack/react-start`, `@deco/deco/*` → `@decocms/start/*` and `@decocms/apps/*`.
+- **Imports** — `preact/*` → `react`, `@preact/signals` → `@tanstack/store`, `$fresh/*` → `@tanstack/react-start`, `@deco/deco/*` → `@decocms/blocks/*` and `@decocms/apps-*`.
 - **JSX attributes** — `class` → `className`, `for` → `htmlFor`.
 - **Fresh APIs** — `defineRoute` / `defineApp` to TanStack Router patterns.
 - **Deno-isms** — `Deno.env.get(X)` to env bindings, `import.meta.url` to Vite-friendly equivalents.
@@ -139,12 +139,12 @@ Walk islands one at a time, deciding per island whether it can hoist into the se
 
 `useScript(fn)` was a Fresh pattern that extracted a function to an inline `<script>` tag. In v2 it doesn't hydrate cleanly. Replace with:
 
-- **`inlineScript`** from `@decocms/start/sdk/useScript` for static script content.
+- **`inlineScript`** from `@decocms/blocks/sdk/useScript` for static script content.
 - **A real client component** for anything that touches state or DOM.
 
 ### Platform hooks (`useCart`, `useUser`, `useWishlist`)
 
-If your v1 site had custom overrides, port them. The default implementations in `@decocms/apps/vtex/hooks` cover the common cases. See [VTEX hooks](/v2/en/commerce/vtex-hooks).
+If your v1 site had custom overrides, port them. The default implementations in `@decocms/apps-vtex/hooks` cover the common cases. See [VTEX hooks](/v2/en/commerce/vtex/hooks).
 
 ### Third-party `<head>` scripts
 

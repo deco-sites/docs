@@ -48,7 +48,7 @@ Essa é uma section completa. O CMS vai:
 Uma section pode declarar um loader server-side exportando uma função `loader`:
 
 ```tsx
-import type { LoaderProps } from "@decocms/start/types";
+import type { LoaderProps } from "@decocms/blocks/types";
 
 export interface Props {
   productSlug: string;
@@ -69,10 +69,10 @@ Para a API mais profunda, veja [Conceito de loaders](/v2/pt/concepts/loaders).
 
 ## Widgets e props
 
-O gerador de TS → JSON Schema entende anotações extras de `@decocms/start/types/widgets`:
+O gerador de TS → JSON Schema entende anotações extras de `@decocms/blocks/types/widgets`:
 
 ```tsx
-import type { ImageWidget, RichText, Color } from "@decocms/start/types/widgets";
+import type { ImageWidget, RichText, Color } from "@decocms/blocks/types/widgets";
 
 export interface Props {
   image: ImageWidget;       // admin mostra um picker de assets
@@ -85,7 +85,7 @@ Veja [Framework: tipos](/v2/pt/framework/sdk-utilities#types-and-widgets) para a
 
 ## Convenções
 
-`@decocms/start` aplica algumas convenções automáticas em sections no momento do registro. Veja `applySectionConventions`:
+`@decocms/blocks` aplica algumas convenções automáticas em sections no momento do registro. Veja `applySectionConventions`:
 
 - Sections são embrulhadas em error boundary, então uma section quebrada não derruba a página.
 - Sections abaixo da dobra renderizam lazy (veja [Deferred rendering](/v2/pt/concepts/deferred-rendering)).
@@ -96,7 +96,7 @@ Veja [Framework: tipos](/v2/pt/framework/sdk-utilities#types-and-widgets) para a
 O `setup.ts` do site faz glob-import do diretório `src/sections/` inteiro:
 
 ```ts
-import { createSiteSetup } from "@decocms/start/setup";
+import { createSiteSetup } from "@decocms/blocks/setup";
 import blocks from "./server/cms/blocks.gen";
 
 createSiteSetup({
@@ -106,14 +106,14 @@ createSiteSetup({
 });
 ```
 
-Você também pode registrar sections explicitamente via `registerSectionLoaders` de `@decocms/start/cms` se precisar de controle fino sobre a ordem ou quiser filtrar o glob.
+Você também pode registrar sections explicitamente via `registerSectionLoaders` de `@decocms/blocks/cms` se precisar de controle fino sobre a ordem ou quiser filtrar o glob.
 
 ## Sections de layout
 
 Header, Footer e Theme são especiais: aparecem em todas as páginas e só re-resolvem quando seu block muda. Registre via `registerLayoutSections` para que o framework cacheie entre requests.
 
 ```ts
-import { registerLayoutSections } from "@decocms/start/cms";
+import { registerLayoutSections } from "@decocms/blocks/cms";
 
 registerLayoutSections({
   Header: () => import("~/sections/Header/Header"),

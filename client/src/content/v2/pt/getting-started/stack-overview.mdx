@@ -14,15 +14,15 @@ Uma loja v2 é montada em três camadas componíveis. Saber qual camada é dona 
 ┌─────────────────────────────────────────────────┐
 │   Repositório do site (sua loja)                 │  ← Components, sections, rotas, estilos, contextos
 ├─────────────────────────────────────────────────┤
-│   @decocms/apps  (integrações de commerce)       │  ← VTEX, Shopify, Resend, tipos schema.org
+│   @decocms/apps-*  (integrações de commerce)       │  ← VTEX, Shopify, Resend, tipos schema.org
 ├─────────────────────────────────────────────────┤
-│   @decocms/start  (framework)                    │  ← Bridge do CMS, protocolo do admin, worker entry, cache
+│   @decocms/blocks  (framework)                    │  ← Bridge do CMS, protocolo do admin, worker entry, cache
 └─────────────────────────────────────────────────┘
               ↓ roda em ↓
    TanStack Start  +  React 19  +  Cloudflare Workers
 ```
 
-### Camada 1: `@decocms/start` — framework
+### Camada 1: `@decocms/blocks` — framework
 
 **Faz:** bridge do CMS, protocolo do admin, worker entry, cache de borda, geração de schema, plugin do Vite e um SDK pequeno.
 
@@ -30,7 +30,7 @@ Uma loja v2 é montada em três camadas componíveis. Saber qual camada é dona 
 
 [Referência →](/v2/pt/framework/overview)
 
-### Camada 2: `@decocms/apps` — commerce
+### Camada 2: `@decocms/apps-*` — commerce
 
 **Faz:** integrações VTEX e Shopify (loaders, actions, hooks, middleware, types), tipos schema.org de commerce compartilhados, utilities de SDK (`useOffer`, `formatPrice`), integração de email via Resend.
 
@@ -50,7 +50,7 @@ Uma loja v2 é montada em três camadas componíveis. Saber qual camada é dona 
 
 Por quê: melhor ergonomia React, file-based routing com type safety, server functions iguais em dev e prod, ecossistema maduro.
 
-O que você toca mais: `cmsRouteConfig` e `loadCmsPage` de `@decocms/start/routes` para URLs guiadas pelo CMS.
+O que você toca mais: `cmsRouteConfig` e `loadCmsPage` de `@decocms/tanstack` para URLs guiadas pelo CMS.
 
 ### React 19 + React Compiler (substitui Preact)
 

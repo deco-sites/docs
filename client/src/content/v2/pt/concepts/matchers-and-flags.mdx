@@ -31,7 +31,7 @@ O framework percorre os variants de cima para baixo; o primeiro que casar ganha;
 
 ## Matchers built-in
 
-`@decocms/start/matchers/builtins` traz matchers prontos:
+`@decocms/blocks/matchers/builtins` traz matchers prontos:
 
 | Matcher | O que faz |
 |---|---|
@@ -46,7 +46,7 @@ O framework percorre os variants de cima para baixo; o primeiro que casar ganha;
 Aparecem nos pickers do admin automaticamente quando `registerBuiltinMatchers()` roda no `setup.ts`:
 
 ```ts
-import { registerBuiltinMatchers } from "@decocms/start/matchers/builtins";
+import { registerBuiltinMatchers } from "@decocms/blocks/matchers/builtins";
 
 registerBuiltinMatchers({
   customMatchers: {
@@ -59,10 +59,10 @@ Registre matchers customizados em `setup.ts` depois que `createSiteSetup` rodar,
 
 ## Matcher PostHog
 
-`@decocms/start/matchers/posthog` conecta com feature flags do PostHog:
+`@decocms/blocks/matchers/posthog` conecta com feature flags do PostHog:
 
 ```ts
-import { matchPosthog } from "@decocms/start/matchers/posthog";
+import { matchPosthog } from "@decocms/blocks/matchers/posthog";
 ```
 
 Suporta:
@@ -78,7 +78,7 @@ Um matcher é só um arquivo no estilo de section em `src/matchers/`:
 
 ```ts
 // src/matchers/MatchHasCart.ts
-import type { MatcherFn } from "@decocms/start/types";
+import type { MatcherFn } from "@decocms/blocks/types";
 
 export interface Props {
   inverse?: boolean;
@@ -96,11 +96,11 @@ Pega o mesmo tratamento TS → JSON Schema das sections, então `Props` vira o e
 
 ## A/B no nível do worker
 
-`@decocms/start/sdk/abTesting` exporta `withABTesting`, um wrapper de worker que roda lógica de A/B antes do framework sequer ver o request — útil para comparar versões inteiras do site.
+`@decocms/blocks/sdk/abTesting` exporta `withABTesting`, um wrapper de worker que roda lógica de A/B antes do framework sequer ver o request — útil para comparar versões inteiras do site.
 
 ```ts
 // src/worker-entry.ts
-import { withABTesting } from "@decocms/start/sdk/abTesting";
+import { withABTesting } from "@decocms/blocks/sdk/abTesting";
 
 export default withABTesting(decoWorker, {
   kvBinding: "SITES_KV",

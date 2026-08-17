@@ -1,19 +1,19 @@
 ---
 title: "VTEX — inline loaders"
-description: "createVtexCommerceLoaders, formato amigável ao CMS, slugCache, sortwhitelist."
+description: "createVtexCommerceLoaders, formato amigável ao CMS, slugCache, whitelist de sort."
 icon: "Workflow"
 ---
 
-import Callout from "../../../../components/ui/Callout.astro";
+import Callout from "../../../../../components/ui/Callout.astro";
 
 "Inline loaders" são as funções que aparecem nos pickers do admin. Têm wrap de instância (props no JSON do block) e devolvem formas amigáveis ao CMS prontas para sections.
 
 ## Onde vivem
 
-`@decocms/apps/vtex/commerceLoaders` exporta `createVtexCommerceLoaders()` — fábrica que devolve o registro inteiro:
+`@decocms/apps-vtex/commerceLoaders` exporta `createVtexCommerceLoaders()` — fábrica que devolve o registro inteiro:
 
 ```ts
-import { createVtexCommerceLoaders } from "@decocms/apps/vtex/commerceLoaders";
+import { createVtexCommerceLoaders } from "@decocms/apps-vtex/commerceLoaders";
 
 const loaders = createVtexCommerceLoaders();
 // → Record<string, LoaderFn>
@@ -25,9 +25,9 @@ const loaders = createVtexCommerceLoaders();
 Em `src/setup.ts`:
 
 ```ts
-import { createSiteSetup } from "@decocms/start/setup";
-import { registerCommerceLoaders } from "@decocms/start/cms";
-import { createVtexCommerceLoaders } from "@decocms/apps/vtex/commerceLoaders";
+import { createSiteSetup } from "@decocms/blocks/setup";
+import { registerCommerceLoaders } from "@decocms/blocks/cms";
+import { createVtexCommerceLoaders } from "@decocms/apps-vtex/commerceLoaders";
 
 createSiteSetup({
   // ...
@@ -69,10 +69,10 @@ export default function ProductDetail({ page }: Props) {
 
 ## Slug cache
 
-`@decocms/apps/vtex/sdk/slugCache` resolve slugs para productIds via Catalog API. Cacheado para evitar custo round-trip por hop no pathname.
+`@decocms/apps-vtex/utils/slugCache` resolve slugs para productIds via Catalog API. Cacheado para evitar custo round-trip por hop no pathname.
 
 ```ts
-import { slugCache } from "@decocms/apps/vtex/sdk/slugCache";
+import { slugCache } from "@decocms/apps-vtex/utils/slugCache";
 
 const productId = await slugCache.resolve("tenis-asics-gel-nimbus");
 ```
@@ -87,7 +87,7 @@ SLUG_CACHE_TTL=3600000 SLUG_CACHE_SIZE=10000
 
 ## Whitelist de sort
 
-`@decocms/apps/vtex/utils/sortwhitelist` aceita só esses valores:
+Os inline loaders de PLP validam o `sort` internamente contra um whitelist (`VALID_IS_SORTS`): a Intelligent Search rejeita valores desconhecidos com 400, então um valor inválido cai no default em vez de quebrar a página. Valores aceitos:
 
 - `score:desc` (default)
 - `price:asc`
@@ -105,8 +105,8 @@ Migração v1: provavelmente seu site v1 normalizou strings de sort em algum ní
 Padrão comum: o loader de PDP padrão devolve o produto, mas você quer enriquecer com variantes cross-product (e.g. cores como produtos separados em VTEX). Envolva:
 
 ```ts
-import { createVtexCommerceLoaders } from "@decocms/apps/vtex/commerceLoaders";
-import { createCachedLoader } from "@decocms/start/sdk/cachedLoader";
+import { createVtexCommerceLoaders } from "@decocms/apps-vtex/commerceLoaders";
+import { createCachedLoader } from "@decocms/blocks/sdk/cachedLoader";
 
 const baseLoaders = createVtexCommerceLoaders();
 const basePdp = baseLoaders["vtex/loaders/intelligentSearch/productDetailsPage.ts"];
@@ -142,7 +142,7 @@ Recomendado para sites novos; sites existentes podem adotar incrementalmente qua
 
 ## Veja também
 
-- [VTEX loaders & actions](/v2/pt/commerce/vtex-loaders-and-actions)
-- [VTEX overview](/v2/pt/commerce/vtex-overview)
+- [VTEX loaders & actions](/v2/pt/commerce/vtex/loaders-and-actions)
+- [VTEX overview](/v2/pt/commerce/vtex/overview)
 - [Setup](/v2/pt/framework/setup)
 - [Caching](/v2/pt/framework/caching)

@@ -12,7 +12,7 @@ A short reference for the vocabulary that shows up across these docs. Where a te
 
 ### Action
 
-A server-side function that **mutates** state — adding to cart, signing in, sending an email. Mirror of a [loader](#loader) but for writes. Lives under `vtex/actions/`, `shopify/actions/`, etc. See [VTEX loaders and actions](/v2/en/commerce/vtex-loaders-and-actions).
+A server-side function that **mutates** state — adding to cart, signing in, sending an email. Mirror of a [loader](#loader) but for writes. Lives under `vtex/actions/`, `shopify/actions/`, etc. See [VTEX loaders and actions](/v2/en/commerce/vtex/loaders-and-actions).
 
 ### Admin
 
@@ -82,7 +82,7 @@ A section that renders a placeholder server-side and hydrates on scroll. See [De
 
 ### `defineTool`
 
-The pattern for declaring a typed, auditable tool — used in `@decocms/start` for admin handlers. Most app users don't author tools directly.
+The pattern for declaring a typed, auditable tool — used in `@decocms/blocks` for admin handlers. Most app users don't author tools directly.
 
 ## E
 
@@ -96,7 +96,7 @@ Cloudflare's `caches.default` — the regional cache layer between users and you
 
 ### `expectedOrderFormSections`
 
-The list of VTEX `orderForm` sections requested by a cart loader/action. The cart server-side and `useCart` client-side must request the same list. See [VTEX gotchas](/v2/en/commerce/vtex-gotchas).
+The list of VTEX `orderForm` sections requested by a cart loader/action. The cart server-side and `useCart` client-side must request the same list. See [VTEX gotchas](/v2/en/commerce/vtex/gotchas).
 
 ## F
 
@@ -108,7 +108,7 @@ In `setAsyncRenderingConfig`, the index of the first deferred section. Sections 
 
 ### Inline loader
 
-A CMS-shaped loader that composes multiple low-level fetches into one page payload (PDP, PLP, shelf, search). See [VTEX inline loaders](/v2/en/commerce/vtex-inline-loaders).
+A CMS-shaped loader that composes multiple low-level fetches into one page payload (PDP, PLP, shelf, search). See [VTEX inline loaders](/v2/en/commerce/vtex/inline-loaders).
 
 ### `instrumentedFetch`
 
@@ -170,7 +170,7 @@ A block of `__resolveType: "$live/pages/Page.ts"` with a `path` and a `sections`
 
 ### `pageType`
 
-VTEX's classification of a URL: `Department`, `Category`, `Brand`, `Product`, etc. Drives PLP routing. See [VTEX loaders and actions](/v2/en/commerce/vtex-loaders-and-actions).
+VTEX's classification of a URL: `Department`, `Category`, `Brand`, `Product`, etc. Drives PLP routing. See [VTEX loaders and actions](/v2/en/commerce/vtex/loaders-and-actions).
 
 ### Profile (cache)
 
@@ -190,7 +190,7 @@ The internal function that resolves a page block's section list into a renderabl
 
 ### Sales channel
 
-VTEX-specific concept: a numbered slot for products + prices + currency. Default `"1"`. See [VTEX gotchas](/v2/en/commerce/vtex-gotchas).
+VTEX-specific concept: a numbered slot for products + prices + currency. Default `"1"`. See [VTEX gotchas](/v2/en/commerce/vtex/gotchas).
 
 ### Section
 
@@ -210,7 +210,7 @@ Overrides a cache profile's TTLs. See [Caching strategy](/v2/en/deployment/cachi
 
 ### `setVtexFetch`
 
-Replaces the global VTEX fetch with a wrapped version (instrumented, region-aware). See [VTEX overview](/v2/en/commerce/vtex-overview).
+Replaces the global VTEX fetch with a wrapped version (instrumented, region-aware). See [VTEX overview](/v2/en/commerce/vtex/overview).
 
 ### `siteName`
 
@@ -218,7 +218,7 @@ The identifier used by `admin.deco.cx` to identify your storefront. Match what's
 
 ### Slug cache
 
-The map from product slug → canonical SKU, used to skip a round-trip on PDP. See [VTEX gotchas](/v2/en/commerce/vtex-gotchas).
+The map from product slug → canonical SKU, used to skip a round-trip on PDP. See [VTEX gotchas](/v2/en/commerce/vtex/gotchas).
 
 ### SWR (stale-while-revalidate)
 
@@ -234,17 +234,17 @@ The full-stack React framework v2 is built on. Replaces Fresh in v1.
 
 ### Vite plugin
 
-`decoVitePlugin()` from `@decocms/start/vite`. Required in every site's Vite config. Handles `blocks.gen` fast-path, server stubs, dev daemon. See [Vite plugin](/v2/en/framework/vite-plugin).
+`decoVitePlugin()` from `@decocms/tanstack/vite`. Required in every site's Vite config. Handles `blocks.gen` fast-path, server stubs, dev daemon. See [Vite plugin](/v2/en/framework/vite-plugin).
 
 ### `vtex_segment`
 
-The cookie that conveys a VTEX user's region, sales channel, and currency. Critical for regional commerce — must propagate from inbound request to upstream calls. See [VTEX client and middleware](/v2/en/commerce/vtex-client-and-middleware).
+The cookie that conveys a VTEX user's region, sales channel, and currency. Critical for regional commerce — must propagate from inbound request to upstream calls. See [VTEX client and middleware](/v2/en/commerce/vtex/client-and-middleware).
 
 ## W
 
 ### Widget
 
-A typed annotation in `@decocms/start/types/widgets` that tells the schema generator to render a custom admin UI control (image picker, color picker, rich text editor). See [Sections](/v2/en/concepts/sections).
+A typed annotation in `@decocms/blocks/types/widgets` that tells the schema generator to render a custom admin UI control (image picker, color picker, rich text editor). See [Sections](/v2/en/concepts/sections).
 
 ### `withABTesting`
 
@@ -264,6 +264,6 @@ The Cloudflare Workers config file. See [Cloudflare Workers deployment](/v2/en/d
 
 ## See also
 
-- [Package exports (@decocms/start)](/v2/en/reference/package-exports)
-- [Commerce exports (@decocms/apps)](/v2/en/reference/commerce-exports)
+- [Package exports (@decocms/blocks)](/v2/en/reference/package-exports)
+- [Commerce exports (@decocms/apps-*)](/v2/en/reference/commerce-exports)
 - [Stack overview](/v2/en/getting-started/stack-overview)

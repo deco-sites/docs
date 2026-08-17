@@ -12,7 +12,7 @@ Este é o ponto de entrada da migração v1 → v2. O playbook completo está es
 
 1. **[Visão geral da migração](/v2/pt/migration/overview)** — você está aqui.
 2. **[Playbook](/v2/pt/migration/playbook)** — passo a passo manual, fase por fase.
-3. **[Script de migração](/v2/pt/migration/migrate-script)** — o que `npx -p @decocms/start deco-migrate` faz.
+3. **[Script de migração](/v2/pt/migration/migrate-script)** — o que `npx -p @decocms/blocks-cli deco-migrate` faz.
 4. **[Agent skills](/v2/pt/migration/agent-skills)** — usar IA de coding para a cauda longa.
 5. **[Checklist](/v2/pt/migration/checklist)** — validação antes do merge.
 
@@ -29,13 +29,13 @@ Não há prazo. v1 segue mantida.
 
 ## Compatibilidade de versões
 
-O script de migração mira a **major atual** de `@decocms/start` (^2.x) e `@decocms/apps` (^1.x). Fixe versões específicas no `package.json` migrado:
+O script de migração mira a **major atual** de `@decocms/blocks` (^2.x) e `@decocms/apps-*` (^1.x). Fixe versões específicas no `package.json` migrado:
 
 ```jsonc
 {
   "dependencies": {
-    "@decocms/start": "^2.28.0",
-    "@decocms/apps": "^1.11.0",
+    "@decocms/blocks": "^2.28.0",
+    "@decocms/apps-*": "^1.11.0",
     "@tanstack/react-start": "^1.166.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
@@ -52,7 +52,7 @@ Fixe nessas versões (ou nas mais recentes publicadas no momento da migração).
 - **Todo o conteúdo `.deco/blocks/*.json`** — o decofile tem o mesmo formato.
 - **Todas as interfaces `Props` de section** — sem reescrita de schema.
 - **Toda a lógica de matcher** — built-ins portados 1:1.
-- **SEO do site** — `configureWebsite({ seo })` de `@decocms/apps/website` espelha o config do v1.
+- **SEO do site** — `configureWebsite({ seo })` de `@decocms/apps-website` espelha o config do v1.
 - **Semântica das integrações VTEX/Shopify** — mesmo formato de loader/action; novo path de pacote.
 
 ## O que você vai ter que refazer

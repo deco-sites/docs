@@ -17,7 +17,7 @@ O protocolo do admin é o contrato entre `admin.deco.cx` e a sua loja self-hoste
 | `POST` | `/deco/render` | Renderiza uma section ou página no iframe de preview |
 | `POST` | `/deco/invoke` | Roda um loader ou action e retorna o resultado |
 
-Todos vivem em `@decocms/start/admin` e são plugados no worker via `createDecoWorkerEntry`.
+Todos vivem em `@decocms/blocks-admin` e são plugados no worker via `createDecoWorkerEntry`.
 
 ## `/live/_meta`
 
@@ -97,13 +97,13 @@ Os handlers de admin moram em `worker-entry.ts`, **não** em `server.ts`. Import
 
 > O Vite remove lógica custom de `createServerEntry` em builds de produção.
 >
-> — `@decocms/start/CLAUDE.md`
+> — `decocms/blocks/CLAUDE.md`
 
 Se você puser rotas de admin dentro do server entry do framework, funciona em dev e some em prod. Sempre conecte via `createDecoWorkerEntry`:
 
 ```ts
-import { createDecoWorkerEntry } from "@decocms/start/sdk/workerEntry";
-import { handleMeta, handleDecofile, handleRender, handleInvoke } from "@decocms/start/admin";
+import { createDecoWorkerEntry } from "@decocms/tanstack";
+import { handleMeta, handleDecofile, handleRender, handleInvoke } from "@decocms/blocks-admin";
 
 const decoWorker = createDecoWorkerEntry(serverEntry, {
   admin: { handleMeta, handleDecofile, handleRender, handleInvoke },
@@ -117,7 +117,7 @@ export default decoWorker;
 Admin roda em `admin.deco.cx`; sua loja roda em outra origem. Os endpoints de admin emitem CORS permissivo para a origem do admin:
 
 ```ts
-import { applyCorsHeaders } from "@decocms/start/middleware";
+import { applyCorsHeaders } from "@decocms/blocks/middleware";
 ```
 
 `LiveControls` (carregado pelo shell de preview) usa `postMessage` para coordenar hover-highlight e jump entre sections com o frame pai do admin.
@@ -143,7 +143,7 @@ O framework cuida disso — mas se você customizar os handlers de meta ou decof
 - `@description` (TSDoc) → descrição do campo.
 - `@title` → label do campo.
 - `@default` → valor default.
-- Tipos widget de `@decocms/start/types/widgets` → controles de UI customizados.
+- Tipos widget de `@decocms/blocks/types/widgets` → controles de UI customizados.
 
 O gerador roda como parte do script `generate:schema`. A saída (`meta.gen.json`) é o que `/live/_meta` serve.
 

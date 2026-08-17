@@ -17,7 +17,7 @@ Handles every URL not matched by a more specific route — PDPs, PLPs, content p
 ```tsx
 // minimal example
 import { createFileRoute } from "@tanstack/react-router";
-import { cmsRouteConfig, loadCmsPage } from "@decocms/start/routes";
+import { cmsRouteConfig, loadCmsPage } from "@decocms/tanstack";
 
 export const Route = createFileRoute("/$")(
   cmsRouteConfig({
@@ -34,7 +34,7 @@ Same shape but for the root `/`:
 
 ```tsx
 import { createFileRoute } from "@tanstack/react-router";
-import { cmsHomeRouteConfig } from "@decocms/start/routes";
+import { cmsHomeRouteConfig } from "@decocms/tanstack";
 
 export const Route = createFileRoute("/")(
   cmsHomeRouteConfig({ siteName: "my-store" }),
@@ -81,7 +81,7 @@ The site identifier the admin uses. Match what's in `admin.deco.cx`.
 
 ## Wrapping with `withSiteGlobals`
 
-Some sites layer site-wide loaders or head defaults on top of the CMS route. `@decocms/start/routes` exports `withSiteGlobals` for this:
+Some sites layer site-wide loaders or head defaults on top of the CMS route. `@decocms/tanstack` exports `withSiteGlobals` for this:
 
 ```tsx
 const routeConfig = withSiteGlobals(
@@ -121,7 +121,7 @@ TanStack Router resolves more specific paths first, so any explicit file beats t
 The framework-provided shell handles fonts, preconnects, and the CMS preview iframe:
 
 ```tsx
-import { DecoRootLayout } from "@decocms/start/hooks";
+import { DecoRootLayout } from "@decocms/blocks/hooks";
 
 export const Route = createRootRoute({
   component: () => (
@@ -135,7 +135,7 @@ export const Route = createRootRoute({
 
 ### Roll your own
 
-Drop `DecoRootLayout` and write a `__root.tsx` from scratch when you need bespoke font loading, an in-shell minicart drawer, or any markup the framework defaults can't express. Copy the providers you need from `PreviewProviders` and `LiveControls` (both from `@decocms/start/hooks`).
+Drop `DecoRootLayout` and write a `__root.tsx` from scratch when you need bespoke font loading, an in-shell minicart drawer, or any markup the framework defaults can't express. Copy the providers you need from `PreviewProviders` and `LiveControls` (both from `@decocms/blocks/hooks`).
 
 ## Server functions and loaders
 

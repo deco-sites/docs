@@ -39,7 +39,7 @@ Toda loja v2 deploya como um Cloudflare Worker. Esta página cobre o config wran
 
 ### `nodejs_compat`
 
-Habilita APIs Node em Workers (`node:async_hooks`, `node:buffer`, `node:fs` em modo limitado). Necessária porque `@decocms/start` usa `AsyncLocalStorage` para `RequestContext`.
+Habilita APIs Node em Workers (`node:async_hooks`, `node:buffer`, `node:fs` em modo limitado). Necessária porque `@decocms/blocks` usa `AsyncLocalStorage` para `RequestContext`.
 
 ### `no_handle_cross_request_promise_resolution`
 
@@ -171,7 +171,7 @@ Bindings opcionais — não necessários para loja default. Se sua loja usa AI f
 
 ## Bundling
 
-`@decocms/start` é grande (~3 MB). `@decocms/apps` adiciona ~2 MB. `blocks.gen.json` adiciona 2-12 MB. No total: 7-17 MB por Worker.
+`@decocms/blocks` é grande (~3 MB). `@decocms/apps-*` adiciona ~2 MB. `blocks.gen.json` adiciona 2-12 MB. No total: 7-17 MB por Worker.
 
 O plano Bundled (default novo Workers) suporta bundles até 25 MB. Plano free é 10 MB e provavelmente não cabe — atualize.
 

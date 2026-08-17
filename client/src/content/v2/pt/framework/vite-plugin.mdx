@@ -11,7 +11,7 @@ Toda loja v2 usa `decoVitePlugin()` no Vite config. É obrigatório — sem ele,
 ## Import
 
 ```ts
-import decoVitePlugin from "@decocms/start/vite";
+import decoVitePlugin from "@decocms/tanstack/vite";
 ```
 
 ## Uso mínimo
@@ -23,7 +23,7 @@ import { cloudflare } from "@cloudflare/vite-plugin";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
-import decoVitePlugin from "@decocms/start/vite";
+import decoVitePlugin from "@decocms/tanstack/vite";
 
 export default defineConfig({
   plugins: [
@@ -41,8 +41,8 @@ export default defineConfig({
       "@tanstack/react-router",
       "@tanstack/react-start",
       "@tanstack/store",
-      "@decocms/start",
-      "@decocms/apps",
+      "@decocms/blocks",
+      "@decocms/apps-*",
     ],
   },
 });
@@ -54,7 +54,7 @@ Essa é a baseline canônica — lojas v2 em produção usam esse formato no má
 
 ### 1. Stubs de server-only
 
-Módulos que só existem no servidor (internos do registro `@decocms/start/cms`, `node:async_hooks`, `node:fs`) viram stubs no build do client. Sem isso, o bundle quebraria no import.
+Módulos que só existem no servidor (internos do registro `@decocms/blocks/cms`, `node:async_hooks`, `node:fs`) viram stubs no build do client. Sem isso, o bundle quebraria no import.
 
 ### 2. Fast-path do JSON `blocks.gen`
 
@@ -72,13 +72,13 @@ Importa: lojas em produção rotineiramente têm `blocks.gen.json` com vários M
 
 ### 4. Daemon de dev
 
-Em modo dev, o plugin sobe o daemon (file watcher, tunnel JWT-autenticado para o admin) para que `admin.deco.cx` consiga falar com seu server local. Veja `@decocms/start/daemon` para o motor.
+Em modo dev, o plugin sobe o daemon (file watcher, tunnel JWT-autenticado para o admin) para que `admin.deco.cx` consiga falar com seu server local. Veja `@decocms/tanstack/daemon` para o motor.
 
 ### 5. Dicas de chunk
 
 O plugin orienta o Vite a **não** dividir certos módulos em chunks separados:
 
-- `@decocms/start` e `@decocms/apps` têm re-exports circulares entre submódulos. Dividir em chunks causa crashes na ordem de load.
+- `@decocms/blocks` e `@decocms/apps-*` têm re-exports circulares entre submódulos. Dividir em chunks causa crashes na ordem de load.
 
 Você não configura — o plugin emite as `manualChunks` certas.
 
@@ -96,7 +96,7 @@ Na prática, defaults são o que você quer.
 ## O que NÃO fazer
 
 <Callout type="warning">
-**Não configure `manualChunks` manualmente para `@decocms/start` ou `@decocms/apps`.**
+**Não configure `manualChunks` manualmente para `@decocms/blocks` ou `@decocms/apps-*`.**
 
 Se você está tentado a quebrar para "chunks menores", não faça. Os pacotes têm re-exports circulares intencionais entre subpaths. Quebrar produz erro de runtime tipo:
 
@@ -112,7 +112,7 @@ O plugin opera dentro do ambiente SSR Cloudflare Workers (`viteEnvironment: { na
 | Import | Server | Client |
 |---|---|---|
 | `node:async_hooks` | ✓ | virou no-op |
-| `@decocms/start/cms` (registry interno) | ✓ | stub |
+| `@decocms/blocks/cms` (registry interno) | ✓ | stub |
 | Qualquer coisa lendo `RequestContext.current` | ✓ | undefined |
 
 Esse stubbing é automático. Se você importar código server-only num componente, vai ter "module not found" ou "is undefined" no browser — é o stub atuando.
@@ -158,8 +158,8 @@ deduplicate: [
   "@tanstack/react-router",
   "@tanstack/react-start",
   "@tanstack/store",
-  "@decocms/start",
-  "@decocms/apps",
+  "@decocms/blocks",
+  "@decocms/apps-*",
 ],
 ```
 
@@ -169,7 +169,7 @@ Se você adicionar uma peer dep que sobreponha as do framework, adicione também
 
 ### "Cannot access 'X' before initialization"
 
-Você está dividindo `@decocms/start` ou `@decocms/apps` em chunks. Remova seu override de `manualChunks`.
+Você está dividindo `@decocms/blocks` ou `@decocms/apps-*` em chunks. Remova seu override de `manualChunks`.
 
 ### "Module not found: `node:async_hooks`" no client
 

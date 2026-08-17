@@ -11,7 +11,7 @@ import Callout from "../../../../components/ui/Callout.astro";
 ## Import
 
 ```ts
-import { createSiteSetup } from "@decocms/start/setup";
+import { createSiteSetup } from "@decocms/blocks/setup";
 ```
 
 ## Uso mínimo
@@ -20,8 +20,8 @@ import { createSiteSetup } from "@decocms/start/setup";
 // src/setup.ts
 import "./cache-config";   // opcional: overrides de profile de cache
 
-import { createSiteSetup } from "@decocms/start/setup";
-import { applySectionConventions } from "@decocms/start/cms";
+import { createSiteSetup } from "@decocms/blocks/setup";
+import { applySectionConventions } from "@decocms/blocks/cms";
 
 import blocks from "./server/cms/blocks.gen";
 import sectionsGen from "./server/cms/sections.gen";
@@ -82,7 +82,7 @@ productionOrigins: [
 Bootstrap específico de plataforma. Para VTEX:
 
 ```ts
-import { initVtexFromBlocks } from "@decocms/apps/vtex/client";
+import { initVtexFromBlocks } from "@decocms/apps-vtex/client";
 
 createSiteSetup({
   // ...
@@ -94,10 +94,10 @@ Isso lê o block `deco-vtex` do decofile e chama `configureVtex` com o resultado
 
 ### `getCommerceLoaders`
 
-Devolve o registro de inline loaders. Conecta os loaders de `@decocms/apps/vtex` ou `@decocms/apps/shopify` aos `__resolveType` do CMS.
+Devolve o registro de inline loaders. Conecta os loaders de `@decocms/apps-vtex` ou `@decocms/apps-shopify` aos `__resolveType` do CMS.
 
 ```ts
-import { createVtexCommerceLoaders } from "@decocms/apps/vtex/commerceLoaders";
+import { createVtexCommerceLoaders } from "@decocms/apps-vtex/commerceLoaders";
 
 createSiteSetup({
   // ...
@@ -105,14 +105,14 @@ createSiteSetup({
 });
 ```
 
-Veja [Inline loaders VTEX](/v2/pt/commerce/vtex-inline-loaders).
+Veja [Inline loaders VTEX](/v2/pt/commerce/vtex/inline-loaders).
 
 ### `customMatchers`
 
 Mapa nome → função para lógica A/B específica do site.
 
 ```ts
-import { registerBuiltinMatchers } from "@decocms/start/matchers/builtins";
+import { registerBuiltinMatchers } from "@decocms/blocks/matchers/builtins";
 
 createSiteSetup({
   // ...
@@ -187,7 +187,7 @@ Pôr `import "./setup"` no topo de toda entry server-side garante que os registr
 Header, Footer e Theme são especiais. Aparecem em toda página; re-resolver a cada request é desperdício. Registre como layout sections:
 
 ```ts
-import { registerLayoutSections } from "@decocms/start/cms";
+import { registerLayoutSections } from "@decocms/blocks/cms";
 
 registerLayoutSections({
   Header: () => import("~/sections/Header/Header"),
@@ -203,13 +203,13 @@ O framework cacheia o layout resolvido entre requests (na mesma versão do decof
 Para sites com VTEX, o setup completo típico fica:
 
 ```ts
-import { createSiteSetup } from "@decocms/start/setup";
-import { applySectionConventions, registerCommerceLoaders, registerLayoutSections, setAsyncRenderingConfig } from "@decocms/start/cms";
-import { createInstrumentedFetch } from "@decocms/start/sdk/instrumentedFetch";
-import { initVtexFromBlocks, setVtexFetch } from "@decocms/apps/vtex/client";
-import { createVtexCommerceLoaders } from "@decocms/apps/vtex/commerceLoaders";
-import { configureWebsite } from "@decocms/apps/website";
-import { registerBuiltinMatchers } from "@decocms/start/matchers/builtins";
+import { createSiteSetup } from "@decocms/blocks/setup";
+import { applySectionConventions, registerCommerceLoaders, registerLayoutSections, setAsyncRenderingConfig } from "@decocms/blocks/cms";
+import { createInstrumentedFetch } from "@decocms/blocks/sdk/instrumentedFetch";
+import { initVtexFromBlocks, setVtexFetch } from "@decocms/apps-vtex/client";
+import { createVtexCommerceLoaders } from "@decocms/apps-vtex/commerceLoaders";
+import { configureWebsite } from "@decocms/apps-website";
+import { registerBuiltinMatchers } from "@decocms/blocks/matchers/builtins";
 
 import blocks from "./server/cms/blocks.gen";
 import sectionsGen from "./server/cms/sections.gen";
@@ -244,4 +244,4 @@ registerBuiltinMatchers({ customMatchers: {} });
 - [Vite plugin](/v2/pt/framework/vite-plugin)
 - [Routes](/v2/pt/framework/routes)
 - [Caching](/v2/pt/framework/caching)
-- [Visão geral VTEX](/v2/pt/commerce/vtex-overview)
+- [Visão geral VTEX](/v2/pt/commerce/vtex/overview)

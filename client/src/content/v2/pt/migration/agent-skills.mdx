@@ -6,7 +6,7 @@ icon: "Bot"
 
 import Callout from "../../../../components/ui/Callout.astro";
 
-`@decocms/start` traz um Agent Skill — um prompt estruturado + conjunto de referência — pensado para ferramentas de IA de coding (Claude Code, Cursor, Codex etc.). Depois de instalado, você pode dizer *"migre este projeto para TanStack Start"* e ele cuida da cauda longa de ajustes manuais.
+`@decocms/blocks` traz um Agent Skill — um prompt estruturado + conjunto de referência — pensado para ferramentas de IA de coding (Claude Code, Cursor, Codex etc.). Depois de instalado, você pode dizer *"migre este projeto para TanStack Start"* e ele cuida da cauda longa de ajustes manuais.
 
 ## Por que um skill (e não só um prompt)
 
@@ -22,7 +22,7 @@ O skill sabe o que é automático, o que é manual e onde ler para contexto.
 ## Instalação
 
 ```bash
-npx skills add decocms/deco-start
+npx skills add decocms/blocks
 ```
 
 Isso instala o skill no registro local de skills do seu editor. Editores suportados:
@@ -54,7 +54,7 @@ O agente vai:
 - **Correções mecânicas** — qualquer coisa regex-able (imports, atributos JSX, tokens Tailwind).
 - **Reconhecimento de padrões** — identificar `useScript(fn)`, decidir entre `"use client"` e içar estado.
 - **Cross-referência** — checar seu código contra os padrões canônicos do framework e as APIs documentadas.
-- **Consultar docs** — quando não sabe algo, lê os docs de `@decocms/start` antes de chutar.
+- **Consultar docs** — quando não sabe algo, lê os docs de `@decocms/blocks` antes de chutar.
 
 ## No que o skill NÃO é bom
 
@@ -64,7 +64,7 @@ O agente vai:
 
 ## O que tem no skill
 
-O bundle (em [`@decocms/start/.agents/skills/deco-to-tanstack-migration/`](https://github.com/decocms/deco-start/tree/main/.agents/skills/deco-to-tanstack-migration)) contém:
+O bundle (em [`decocms/blocks/.agents/skills/deco-to-tanstack-migration/`](https://github.com/decocms/blocks/tree/main/.agents/skills/deco-to-tanstack-migration)) contém:
 
 - **`SKILL.md`** — entry point que o agente lê primeiro.
 - **`templates/`** — arquivos de referência que o agente copia e customiza:
@@ -106,7 +106,7 @@ npx skills add decocms/deco-migrate-script
 ## Drift do skill
 
 <Callout type="info">
-O skill anda **com o framework**. Versões novas de `@decocms/start` podem incluir atualizações de skill. Re-rode `npx skills add decocms/deco-start` depois de atualizar o framework no projeto (ou antes de começar uma migração nova num projeto novo).
+O skill anda **com o framework**. Versões novas de `@decocms/blocks` podem incluir atualizações de skill. Re-rode `npx skills add decocms/blocks` depois de atualizar o framework no projeto (ou antes de começar uma migração nova num projeto novo).
 </Callout>
 
 ## Veja também

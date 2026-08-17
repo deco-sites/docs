@@ -6,7 +6,7 @@ icon: "Bot"
 
 import Callout from "../../../../components/ui/Callout.astro";
 
-`@decocms/start` ships an Agent Skill — a structured prompt + reference set — designed for AI coding tools (Claude Code, Cursor, Codex, etc.). Once installed, you can tell the agent *"migrate this project to TanStack Start"* and it handles the long tail of manual fixes.
+`@decocms/blocks` ships an Agent Skill — a structured prompt + reference set — designed for AI coding tools (Claude Code, Cursor, Codex, etc.). Once installed, you can tell the agent *"migrate this project to TanStack Start"* and it handles the long tail of manual fixes.
 
 ## Why a skill (not just a prompt)
 
@@ -22,7 +22,7 @@ The skill knows what's automated, what's manual, and where to read for context.
 ## Installation
 
 ```bash
-npx skills add decocms/deco-start
+npx skills add decocms/blocks
 ```
 
 This installs the skill into your editor's local skill registry. Supported editors:
@@ -54,7 +54,7 @@ The agent will:
 - **Mechanical fixes** — anything regex-able (imports, JSX attrs, Tailwind tokens).
 - **Pattern recognition** — spotting `useScript(fn)` calls, identifying islands that should hoist vs. become client components.
 - **Cross-referencing** — checking your code against the framework's canonical patterns and documented APIs.
-- **Documentation lookup** — when it doesn't know something, it reads `@decocms/start`'s docs first instead of guessing.
+- **Documentation lookup** — when it doesn't know something, it reads `@decocms/blocks`'s docs first instead of guessing.
 
 ## What the skill is not good at
 
@@ -64,7 +64,7 @@ The agent will:
 
 ## What's in the skill
 
-The skill bundle (lives at [`@decocms/start/.agents/skills/deco-to-tanstack-migration/`](https://github.com/decocms/deco-start/tree/main/.agents/skills/deco-to-tanstack-migration)) contains:
+The skill bundle (lives at [`decocms/blocks/.agents/skills/deco-to-tanstack-migration/`](https://github.com/decocms/blocks/tree/main/.agents/skills/deco-to-tanstack-migration)) contains:
 
 - **`SKILL.md`** — the entry point the agent reads first.
 - **`templates/`** — reference files the agent copies and customizes:
@@ -106,7 +106,7 @@ This is for **framework contributors** who want to extend the migration script �
 ## Skill drift
 
 <Callout type="info">
-The skill ships **with the framework**. New `@decocms/start` versions may include skill updates. Re-run `npx skills add decocms/deco-start` after upgrading the framework on your project (or before starting a fresh migration on a new project).
+The skill ships **with the framework**. New `@decocms/blocks` versions may include skill updates. Re-run `npx skills add decocms/blocks` after upgrading the framework on your project (or before starting a fresh migration on a new project).
 </Callout>
 
 ## See also
