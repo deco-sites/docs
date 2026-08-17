@@ -20,7 +20,7 @@ Each has its own knobs. Coordinate them or you'll spend afternoons debugging why
 
 ## Edge cache profiles
 
-`@decocms/start/sdk/cacheHeaders` ships these defaults:
+`@decocms/blocks/sdk/cacheHeaders` ships these defaults:
 
 | Profile | URL pattern | edge `s-maxage` | edge SWR | browser `max-age` |
 |---|---|---|---|---|
@@ -38,7 +38,7 @@ Override a profile's TTLs:
 
 ```ts
 // src/cache-config.ts
-import { setCacheProfile } from "@decocms/start/sdk/cacheHeaders";
+import { setCacheProfile } from "@decocms/blocks/sdk/cacheHeaders";
 
 setCacheProfile("static", {
   edge: { fresh: 1800, swr: 7200, sie: 43200 },
@@ -59,7 +59,7 @@ Import the file from `setup.ts` so the overrides apply before the framework read
 ```ts
 // src/setup.ts
 import "./cache-config";
-import { createSiteSetup } from "@decocms/start/setup";
+import { createSiteSetup } from "@decocms/blocks/setup";
 // ...
 ```
 
@@ -78,7 +78,7 @@ For commerce: `fresh` short, `swr` long. Users get instant responses; data stays
 Add a new URL pattern → profile mapping without overwriting built-ins:
 
 ```ts
-import { registerCachePattern } from "@decocms/start/sdk/cacheHeaders";
+import { registerCachePattern } from "@decocms/blocks/sdk/cacheHeaders";
 
 registerCachePattern({
   test: (pathname) => pathname === "/sitemap.xml",
@@ -122,7 +122,7 @@ cmsRouteConfig({
 When multiple middleware each set `Cache-Control`, you need a deterministic merger:
 
 ```ts
-import { mergeCacheControl } from "@decocms/start/sdk/mergeCacheControl";
+import { mergeCacheControl } from "@decocms/blocks/sdk/mergeCacheControl";
 
 const merged = mergeCacheControl([
   "public, max-age=300, s-maxage=600",

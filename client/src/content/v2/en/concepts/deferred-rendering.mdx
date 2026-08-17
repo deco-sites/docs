@@ -26,7 +26,7 @@ Set a fold threshold during setup; sections after that index render lazily:
 
 ```ts
 // src/setup.ts
-import { setAsyncRenderingConfig } from "@decocms/start/cms";
+import { setAsyncRenderingConfig } from "@decocms/blocks/cms";
 
 setAsyncRenderingConfig({
   foldThreshold: 3,
@@ -56,7 +56,7 @@ Sections with `alwaysEager: true` ignore the fold threshold.
 
 ## The `LazySection` component
 
-Under the hood, deferred sections are wrapped in `<LazySection>` from `@decocms/start/hooks`. It:
+Under the hood, deferred sections are wrapped in `<LazySection>` from `@decocms/blocks/hooks`. It:
 
 1. Renders a `<LoadingFallback />` placeholder server-side.
 2. Sets up an `IntersectionObserver` on the placeholder.

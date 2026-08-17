@@ -51,13 +51,13 @@ Gere os arquivos baseline da v2:
 - `src/worker-entry.ts` (chama `createDecoWorkerEntry`)
 - `src/routes/__root.tsx`, `src/routes/index.tsx`, `src/routes/$.tsx`
 
-O script gera todos. Se for fazer na mão, copie dos templates em [`@decocms/start/.agents/skills/deco-to-tanstack-migration/templates/`](https://github.com/decocms/deco-start/tree/main/.agents/skills).
+O script gera todos. Se for fazer na mão, copie dos templates em [`decocms/blocks/.agents/skills/deco-to-tanstack-migration/templates/`](https://github.com/decocms/blocks/tree/main/.agents/skills).
 
 ## Fase 3 — Transformação
 
 Esta é a fase de reescrita em massa:
 
-- **Imports** — `preact/*` → `react`, `@preact/signals` → `@tanstack/store`, `$fresh/*` → `@tanstack/react-start`, `@deco/deco/*` → `@decocms/start/*` e `@decocms/apps/*`.
+- **Imports** — `preact/*` → `react`, `@preact/signals` → `@tanstack/store`, `$fresh/*` → `@tanstack/react-start`, `@deco/deco/*` → `@decocms/blocks/*` e `@decocms/apps-*`.
 - **Atributos JSX** — `class` → `className`, `for` → `htmlFor`.
 - **APIs Fresh** — `defineRoute` / `defineApp` para padrões TanStack Router.
 - **Deno-isms** — `Deno.env.get(X)` para bindings, `import.meta.url` para equivalentes Vite.
@@ -139,12 +139,12 @@ Caminhe pelas islands uma a uma, decidindo por island se ela pode subir para a s
 
 `useScript(fn)` era um padrão Fresh que extraía uma função para uma `<script>` inline. Em v2 não hidrata limpo. Substitua por:
 
-- **`inlineScript`** de `@decocms/start/sdk/useScript` para conteúdo estático.
+- **`inlineScript`** de `@decocms/blocks/sdk/useScript` para conteúdo estático.
 - **Um componente client de verdade** para qualquer coisa que toque estado ou DOM.
 
 ### Hooks de plataforma (`useCart`, `useUser`, `useWishlist`)
 
-Se sua loja v1 tinha overrides custom, porte. As implementações default em `@decocms/apps/vtex/hooks` cobrem os casos comuns. Veja [Hooks VTEX](/v2/pt/commerce/vtex-hooks).
+Se sua loja v1 tinha overrides custom, porte. As implementações default em `@decocms/apps-vtex/hooks` cobrem os casos comuns. Veja [Hooks VTEX](/v2/pt/commerce/vtex-hooks).
 
 ### Scripts de terceiros no `<head>`
 

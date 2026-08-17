@@ -82,7 +82,7 @@ A section that renders a placeholder server-side and hydrates on scroll. See [De
 
 ### `defineTool`
 
-The pattern for declaring a typed, auditable tool — used in `@decocms/start` for admin handlers. Most app users don't author tools directly.
+The pattern for declaring a typed, auditable tool — used in `@decocms/blocks` for admin handlers. Most app users don't author tools directly.
 
 ## E
 
@@ -234,7 +234,7 @@ The full-stack React framework v2 is built on. Replaces Fresh in v1.
 
 ### Vite plugin
 
-`decoVitePlugin()` from `@decocms/start/vite`. Required in every site's Vite config. Handles `blocks.gen` fast-path, server stubs, dev daemon. See [Vite plugin](/v2/en/framework/vite-plugin).
+`decoVitePlugin()` from `@decocms/tanstack/vite`. Required in every site's Vite config. Handles `blocks.gen` fast-path, server stubs, dev daemon. See [Vite plugin](/v2/en/framework/vite-plugin).
 
 ### `vtex_segment`
 
@@ -244,7 +244,7 @@ The cookie that conveys a VTEX user's region, sales channel, and currency. Criti
 
 ### Widget
 
-A typed annotation in `@decocms/start/types/widgets` that tells the schema generator to render a custom admin UI control (image picker, color picker, rich text editor). See [Sections](/v2/en/concepts/sections).
+A typed annotation in `@decocms/blocks/types/widgets` that tells the schema generator to render a custom admin UI control (image picker, color picker, rich text editor). See [Sections](/v2/en/concepts/sections).
 
 ### `withABTesting`
 
@@ -264,6 +264,6 @@ The Cloudflare Workers config file. See [Cloudflare Workers deployment](/v2/en/d
 
 ## See also
 
-- [Package exports (@decocms/start)](/v2/en/reference/package-exports)
-- [Commerce exports (@decocms/apps)](/v2/en/reference/commerce-exports)
+- [Package exports (@decocms/blocks)](/v2/en/reference/package-exports)
+- [Commerce exports (@decocms/apps-*)](/v2/en/reference/commerce-exports)
 - [Stack overview](/v2/en/getting-started/stack-overview)

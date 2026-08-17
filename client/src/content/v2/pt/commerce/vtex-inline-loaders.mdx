@@ -10,10 +10,10 @@ import Callout from "../../../../components/ui/Callout.astro";
 
 ## Onde vivem
 
-`@decocms/apps/vtex/commerceLoaders` exporta `createVtexCommerceLoaders()` — fábrica que devolve o registro inteiro:
+`@decocms/apps-vtex/commerceLoaders` exporta `createVtexCommerceLoaders()` — fábrica que devolve o registro inteiro:
 
 ```ts
-import { createVtexCommerceLoaders } from "@decocms/apps/vtex/commerceLoaders";
+import { createVtexCommerceLoaders } from "@decocms/apps-vtex/commerceLoaders";
 
 const loaders = createVtexCommerceLoaders();
 // → Record<string, LoaderFn>
@@ -25,9 +25,9 @@ const loaders = createVtexCommerceLoaders();
 Em `src/setup.ts`:
 
 ```ts
-import { createSiteSetup } from "@decocms/start/setup";
-import { registerCommerceLoaders } from "@decocms/start/cms";
-import { createVtexCommerceLoaders } from "@decocms/apps/vtex/commerceLoaders";
+import { createSiteSetup } from "@decocms/blocks/setup";
+import { registerCommerceLoaders } from "@decocms/blocks/cms";
+import { createVtexCommerceLoaders } from "@decocms/apps-vtex/commerceLoaders";
 
 createSiteSetup({
   // ...
@@ -69,10 +69,10 @@ export default function ProductDetail({ page }: Props) {
 
 ## Slug cache
 
-`@decocms/apps/vtex/sdk/slugCache` resolve slugs para productIds via Catalog API. Cacheado para evitar custo round-trip por hop no pathname.
+`@decocms/apps-vtex/sdk/slugCache` resolve slugs para productIds via Catalog API. Cacheado para evitar custo round-trip por hop no pathname.
 
 ```ts
-import { slugCache } from "@decocms/apps/vtex/sdk/slugCache";
+import { slugCache } from "@decocms/apps-vtex/sdk/slugCache";
 
 const productId = await slugCache.resolve("tenis-asics-gel-nimbus");
 ```
@@ -87,7 +87,7 @@ SLUG_CACHE_TTL=3600000 SLUG_CACHE_SIZE=10000
 
 ## Whitelist de sort
 
-`@decocms/apps/vtex/utils/sortwhitelist` aceita só esses valores:
+`@decocms/apps-vtex/utils/sortwhitelist` aceita só esses valores:
 
 - `score:desc` (default)
 - `price:asc`
@@ -105,8 +105,8 @@ Migração v1: provavelmente seu site v1 normalizou strings de sort em algum ní
 Padrão comum: o loader de PDP padrão devolve o produto, mas você quer enriquecer com variantes cross-product (e.g. cores como produtos separados em VTEX). Envolva:
 
 ```ts
-import { createVtexCommerceLoaders } from "@decocms/apps/vtex/commerceLoaders";
-import { createCachedLoader } from "@decocms/start/sdk/cachedLoader";
+import { createVtexCommerceLoaders } from "@decocms/apps-vtex/commerceLoaders";
+import { createCachedLoader } from "@decocms/blocks/sdk/cachedLoader";
 
 const baseLoaders = createVtexCommerceLoaders();
 const basePdp = baseLoaders["vtex/loaders/intelligentSearch/productDetailsPage.ts"];

@@ -1,174 +1,143 @@
 ---
-title: "@decocms/apps exports"
-description: "Full export table for @decocms/apps with corrected paths."
+title: "Commerce app exports"
+description: "Generated export tables for the @decocms/apps-* commerce and website packages."
 icon: "Package"
 ---
 
 import Callout from "../../../../components/ui/Callout.astro";
 
-The complete export table for `@decocms/apps` (version `^1.11`). Generated from `package.json` `exports` map.
+Commerce and website capabilities ship as `@decocms/apps-*` packages (formerly subpaths of `@decocms/apps`).
 
-<Callout type="warning">
-**Drift watch.** The `@decocms/apps` README references `@decocms/apps/vtex/invoke` — this subpath does **not** exist in `package.json`. Use `/deco/invoke/...` HTTP routes (handled by your generated `invoke.gen.ts`) and the `createUseCart` / `createUseUser` / `createUseWishlist` factories from `@decocms/apps/vtex/hooks` instead.
+<Callout type="info">
+**Generated file.** This page is produced by `scripts/gen-exports-reference.ts` from each package's `package.json` `exports` map. Do not edit by hand — re-run the generator against a blocks checkout instead.
 </Callout>
 
-## Shared commerce
+## `@decocms/apps-commerce`
 
-| Subpath | What it exports |
+| Subpath | Exports / resolves to |
 |---|---|
-| `@decocms/apps/commerce/types` | `Product`, `ProductLeaf`, `AggregateOffer`, `Offer`, `ProductDetailsPage`, `ProductListingPage`, `BreadcrumbList`, `Minicart`, `SiteNavigationElement`, `UnitPriceSpecification`, etc. (schema.org-aligned) |
-| `@decocms/apps/commerce/app-types` | `AppDefinition`, `AppMiddleware`, `ResolveSecretFn` |
-| `@decocms/apps/commerce/resolve` | `resolveApps` (compose multiple `AppDefinition`s) |
-| `@decocms/apps/commerce/manifest-utils` | Manifest helpers (rarely used directly) |
-| `@decocms/apps/commerce/components/JsonLd` | `ProductJsonLd`, `BreadcrumbJsonLd`, `PLPJsonLd` |
-| `@decocms/apps/commerce/components/Image` | `Image`, `registerImageCdnDomain` |
-| `@decocms/apps/commerce/components/Picture` | `Picture`, `Source` |
-| `@decocms/apps/commerce/utils/*` | `productToAnalyticsItem`, `canonical`, `stateByZip`, `filters`, `constants` |
-| `@decocms/apps/commerce/sdk/*` | `useOffer`, `formatPrice`, `formatPriceRange`, `analytics`, `useVariantPossibilities`, `url` (relative) |
+| `@decocms/apps-commerce/types` | schema.org-aligned commerce types (`Product`, `ProductDetailsPage`, `Minicart`, …). |
+| `@decocms/apps-commerce/types/cart` | Cart v2 contract: `CartProjection`, `CartSection`, `SECTIONS_*`, `defaultSectionsFor`. |
+| `@decocms/apps-commerce/app-types` | `AppDefinition`, `AppMiddleware`, `ResolveSecretFn`. |
+| `@decocms/apps-commerce/resolve` | `resolveApps` (compose `AppDefinition`s). |
+| `@decocms/apps-commerce/manifest-utils` | `src/manifest-utils.ts` |
+| `@decocms/apps-commerce/utils/*` | `src/utils/*.ts` |
+| `@decocms/apps-commerce/sdk/*` | `src/sdk/*.ts` |
+| `@decocms/apps-commerce/registry` | `APP_REGISTRY` for `autoconfigApps`. |
 
-## Registry
+## `@decocms/apps-website`
 
-| Subpath | What it exports |
+| Subpath | Exports / resolves to |
 |---|---|
-| `@decocms/apps/registry` | `APP_REGISTRY` array used by `autoconfigApps` |
+| `@decocms/apps-website` | SEO/fonts/theme utility belt barrel. |
+| `@decocms/apps-website/mod` | `src/mod.ts` |
+| `@decocms/apps-website/client` | `src/client.ts` |
+| `@decocms/apps-website/types` | `src/types.ts` |
+| `@decocms/apps-website/components/*` | `src/components/*.tsx` |
+| `@decocms/apps-website/loaders/*` | `src/loaders/*.ts` |
+| `@decocms/apps-website/loaders/fonts/*` | `src/loaders/fonts/*.ts` |
+| `@decocms/apps-website/utils/*` | `configureWebsite`, `configureSeo`, … |
+| `@decocms/apps-website/sections/*` | `src/sections/*.tsx` |
+| `@decocms/apps-website/sections/Seo/*` | `src/sections/Seo/*.tsx` |
 
-## Shopify
+## `@decocms/apps-vtex`
 
-| Subpath | What it exports |
+| Subpath | Exports / resolves to |
 |---|---|
-| `@decocms/apps/shopify` | Barrel index |
-| `@decocms/apps/shopify/mod` | `configure` (app entry point) |
-| `@decocms/apps/shopify/client` | `setShopifyFetch`, GraphQL client helpers |
-| `@decocms/apps/shopify/loaders/*` | `ProductDetailsPage`, `ProductListingPage`, `ProductList`, `RelatedProducts`, `cart`, `user`, `shop` |
-| `@decocms/apps/shopify/actions/*` | (action root) |
-| `@decocms/apps/shopify/actions/cart/*` | `addItems`, `updateItems`, `updateCoupons` |
-| `@decocms/apps/shopify/actions/user/*` | `signIn`, `signUp` |
-| `@decocms/apps/shopify/utils/*` | `transform`, `cart`, `cookies`, `user`, `graphql`, `storefront/queries`, `admin/admin` |
+| `@decocms/apps-vtex` | VTEX barrel index. |
+| `@decocms/apps-vtex/commerceLoaders` | `createVtexCommerceLoaders`. |
+| `@decocms/apps-vtex/mod` | `src/mod.ts` |
+| `@decocms/apps-vtex/schemas` | `src/schemas.ts` |
+| `@decocms/apps-vtex/client` | `vtexFetch`, `vtexFetchWithCookies`, `intelligentSearch`, `configureVtex`, `setVtexFetch`, … |
+| `@decocms/apps-vtex/types` | `src/types.ts` |
+| `@decocms/apps-vtex/actions` | `src/actions/index.ts` |
+| `@decocms/apps-vtex/actions/*` | `src/actions/*.ts` |
+| `@decocms/apps-vtex/actions/analytics/*` | `src/actions/analytics/*.ts` |
+| `@decocms/apps-vtex/loaders` | `src/loaders/index.ts` |
+| `@decocms/apps-vtex/loaders/*` | `src/loaders/*.ts` |
+| `@decocms/apps-vtex/utils` | `src/utils/index.ts` |
+| `@decocms/apps-vtex/utils/*` | `src/utils/*.ts` |
+| `@decocms/apps-vtex/loaders/intelligentSearch/*` | `src/loaders/intelligentSearch/*.ts` |
+| `@decocms/apps-vtex/loaders/legacy/*` | `src/loaders/legacy/*.ts` |
+| `@decocms/apps-vtex/loaders/workflow/*` | `src/loaders/workflow/*.ts` |
+| `@decocms/apps-vtex/inline-loaders/productDetailsPage` | `src/loaders/intelligentSearch/productDetailsPage.ts` |
+| `@decocms/apps-vtex/inline-loaders/productListingPage` | `src/loaders/intelligentSearch/productListingPage.ts` |
+| `@decocms/apps-vtex/inline-loaders/productList` | `src/loaders/productListFull.ts` |
+| `@decocms/apps-vtex/inline-loaders/productListShelf` | `src/loaders/intelligentSearch/productList.ts` |
+| `@decocms/apps-vtex/inline-loaders/relatedProducts` | `src/loaders/legacy/relatedProductsLoader.ts` |
+| `@decocms/apps-vtex/inline-loaders/suggestions` | `src/loaders/intelligentSearch/suggestions.ts` |
+| `@decocms/apps-vtex/inline-loaders/minicart` | `src/loaders/minicart.ts` |
+| `@decocms/apps-vtex/inline-loaders/workflowProducts` | `src/loaders/workflow/products.ts` |
+| `@decocms/apps-vtex/hooks` | Cart/user/wishlist hooks + factories: `useCart`, `useUser`, `useWishlist`, `createCart`, `createUseUser`, `createUseWishlist`. |
+| `@decocms/apps-vtex/hooks/*` | `src/hooks/*.ts` |
+| `@decocms/apps-vtex/middleware` | `extractVtexContext`, `vtexCacheControl`, `propagateISCookies`, … |
+| `@decocms/apps-vtex/registry` | `src/registry.ts` |
 
-## VTEX
+## `@decocms/apps-shopify`
 
-| Subpath | What it exports |
+| Subpath | Exports / resolves to |
 |---|---|
-| `@decocms/apps/vtex` | Barrel index |
-| `@decocms/apps/vtex/commerceLoaders` | `createVtexCommerceLoaders` |
-| `@decocms/apps/vtex/mod` | `configure` (app entry point) |
-| `@decocms/apps/vtex/client` | `vtexFetch`, `vtexFetchResponse`, `vtexCachedFetch`, `vtexFetchWithCookies`, `intelligentSearch`, `vtexIOGraphQL`, `pageTypesFromPath`, `filtersFromPageTypes`, `toFacetPath`, `setVtexFetch`, `initVtexFromBlocks`, `configureVtex` |
-| `@decocms/apps/vtex/types` | VTEX-specific TS types |
-| `@decocms/apps/vtex/actions` | Barrel of all actions |
-| `@decocms/apps/vtex/actions/*` | `auth`, `checkout`, `session`, `profile`, `address`, `wishlist`, `masterData`, `newsletter`, `orders`, `misc`, `userTracking` |
-| `@decocms/apps/vtex/actions/analytics/*` | `sendEvent` |
-| `@decocms/apps/vtex/loaders` | Barrel of all loaders |
-| `@decocms/apps/vtex/loaders/*` | `address`, `autocomplete`, `brands`, `cart`, `catalog`, `collections`, `legacy`, `logistics`, `navbar`, `orders`, `pageType`, `payment`, `profile`, `promotion`, `search`, `session`, `user`, `wishlist`, `wishlistProducts`, `workflow` |
-| `@decocms/apps/vtex/utils` | Barrel |
-| `@decocms/apps/vtex/utils/*` | `segment`, `intelligentSearch`, `cookies`, `slugCache`, `transform`, `enrichment`, `vtexId`, `sitemap`, `fetchCache` |
-| `@decocms/apps/vtex/inline-loaders/*` | All inline loaders below |
-| `@decocms/apps/vtex/inline-loaders/productDetailsPage` | PDP composer |
-| `@decocms/apps/vtex/inline-loaders/productListingPage` | PLP composer |
-| `@decocms/apps/vtex/inline-loaders/productList` | Shelf composer |
-| `@decocms/apps/vtex/inline-loaders/productListShelf` | Shelf with shelf-specific defaults |
-| `@decocms/apps/vtex/inline-loaders/relatedProducts` | PDP cross-sell |
-| `@decocms/apps/vtex/inline-loaders/suggestions` | Autocomplete inline |
-| `@decocms/apps/vtex/inline-loaders/minicart` | SSR minicart payload |
-| `@decocms/apps/vtex/inline-loaders/workflowProducts` | Workflow product grids |
-| `@decocms/apps/vtex/hooks` | Barrel: `useCart`, `useUser`, `useWishlist`, `useAutocomplete`, `createUseCart`, `createUseUser`, `createUseWishlist` |
-| `@decocms/apps/vtex/hooks/*` | Per-hook subpaths (e.g. `@decocms/apps/vtex/hooks/createUseCart`) |
-| `@decocms/apps/vtex/middleware` | `extractVtexContext`, `vtexCacheControl`, `propagateISCookies`, `vtexCacheKeySuffix`, `buildSegmentSetCookie`, `createVtexCheckoutProxy` |
+| `@decocms/apps-shopify` | `src/index.ts` |
+| `@decocms/apps-shopify/mod` | `src/mod.ts` |
+| `@decocms/apps-shopify/client` | `setShopifyFetch`, GraphQL client helpers. |
+| `@decocms/apps-shopify/loaders/*` | `src/loaders/*.ts` |
+| `@decocms/apps-shopify/actions/*` | `src/actions/*.ts` |
+| `@decocms/apps-shopify/actions/cart/*` | `src/actions/cart/*.ts` |
+| `@decocms/apps-shopify/actions/user/*` | `src/actions/user/*.ts` |
+| `@decocms/apps-shopify/utils/*` | `src/utils/*.ts` |
+| `@decocms/apps-shopify/registry` | `src/registry.ts` |
 
-## Resend
+## `@decocms/apps-magento`
 
-| Subpath | What it exports |
+| Subpath | Exports / resolves to |
 |---|---|
-| `@decocms/apps/resend` | Barrel |
-| `@decocms/apps/resend/mod` | `configure` (app entry point) |
-| `@decocms/apps/resend/client` | Resend HTTP client helpers |
-| `@decocms/apps/resend/types` | TS types |
-| `@decocms/apps/resend/actions/send` | `sendEmail` |
+| `@decocms/apps-magento` | `src/index.ts` |
+| `@decocms/apps-magento/client` | `src/client.ts` |
+| `@decocms/apps-magento/types` | `src/types.ts` |
+| `@decocms/apps-magento/middleware` | `src/middleware.ts` |
+| `@decocms/apps-magento/loaders/*` | `src/loaders/*.ts` |
+| `@decocms/apps-magento/actions/*` | `src/actions/*.ts` |
+| `@decocms/apps-magento/utils/*` | `src/utils/*.ts` |
+| `@decocms/apps-magento/hooks/*` | `src/hooks/*.ts` |
 
-## Website (utility app)
+## `@decocms/apps-salesforce`
 
-| Subpath | What it exports |
+| Subpath | Exports / resolves to |
 |---|---|
-| `@decocms/apps/website` | Barrel |
-| `@decocms/apps/website/mod` | `configure` (app entry point) |
-| `@decocms/apps/website/client` | Site client helpers |
-| `@decocms/apps/website/types` | TS types (Seo, Site, GlobalSection) |
-| `@decocms/apps/website/components/*` | Generic components (Seo, Image, etc.) |
-| `@decocms/apps/website/loaders/*` | `redirectsFromCsv`, `seo` |
-| `@decocms/apps/website/loaders/fonts/*` | Font loaders (Google, custom CDN) |
-| `@decocms/apps/website/matchers/*` | Site-level matchers (`MatchSite`, etc.) |
-| `@decocms/apps/website/flags/*` | Multivariate flag helpers |
-| `@decocms/apps/website/flags/multivariate/*` | Multivariate primitives |
-| `@decocms/apps/website/utils/*` | `configureWebsite`, `configureSeo` |
-| `@decocms/apps/website/sections/*` | Generic sections (Seo, Theme placeholders) |
-| `@decocms/apps/website/sections/Seo/*` | SEO-specific sections |
+| `@decocms/apps-salesforce` | `src/index.ts` |
+| `@decocms/apps-salesforce/types` | `src/types.ts` |
+| `@decocms/apps-salesforce/utils/*` | `src/utils/*.ts` |
+| `@decocms/apps-salesforce/loaders/products/*` | `src/loaders/products/*.ts` |
 
-The Website app provides utilities every storefront uses (Seo config, font loading, redirect-from-CSV). It's not "commerce" — it's the generic site-level utility belt.
+## `@decocms/apps-algolia`
 
-## Peer dependencies
+| Subpath | Exports / resolves to |
+|---|---|
+| `@decocms/apps-algolia` | `src/index.ts` |
+| `@decocms/apps-algolia/client` | `src/client.ts` |
+| `@decocms/apps-algolia/types` | `src/types.ts` |
+| `@decocms/apps-algolia/loaders/*` | `src/loaders/*.ts` |
 
-```json
-{
-  "@decocms/start": ">=0.19.0",
-  "@tanstack/react-query": ">=5",
-  "react": ">=18",
-  "react-dom": ">=18"
-}
-```
+## `@decocms/apps-blog`
 
-The published peer floor is React 18, but the v2 stack assumes React 19 + the Compiler.
+| Subpath | Exports / resolves to |
+|---|---|
+| `@decocms/apps-blog` | `src/index.ts` |
+| `@decocms/apps-blog/mod` | `src/mod.ts` |
+| `@decocms/apps-blog/types` | `src/types.ts` |
+| `@decocms/apps-blog/loaderMap` | `src/loaderMap.ts` |
+| `@decocms/apps-blog/loaders/*` | `src/loaders/*.ts` |
+| `@decocms/apps-blog/core/*` | `src/core/*.ts` |
+| `@decocms/apps-blog/registry` | `src/registry.ts` |
 
-## Files included in the published tarball
+## `@decocms/apps-resend`
 
-- `commerce/`
-- `shopify/`
-- `vtex/`
-- `resend/`
-- `website/`
-- `registry.ts`
+| Subpath | Exports / resolves to |
+|---|---|
+| `@decocms/apps-resend` | `src/index.ts` |
+| `@decocms/apps-resend/mod` | `src/mod.ts` |
+| `@decocms/apps-resend/client` | `src/client.ts` |
+| `@decocms/apps-resend/types` | `src/types.ts` |
+| `@decocms/apps-resend/actions/send` | `src/actions/send.ts` |
+| `@decocms/apps-resend/registry` | `src/registry.ts` |
 
-Excludes `__tests__/` and `scripts/`.
-
-## Import patterns at a glance
-
-### VTEX, full setup
-
-```ts
-import { initVtexFromBlocks, setVtexFetch } from "@decocms/apps/vtex/client";
-import { createVtexCommerceLoaders } from "@decocms/apps/vtex/commerceLoaders";
-import { useCart, useUser } from "@decocms/apps/vtex/hooks";
-import { extractVtexContext, vtexCacheControl } from "@decocms/apps/vtex/middleware";
-```
-
-### Shopify, full setup
-
-```ts
-import { configure } from "@decocms/apps/shopify/mod";
-import { setShopifyFetch } from "@decocms/apps/shopify/client";
-import productDetailsPageLoader from "@decocms/apps/shopify/loaders/ProductDetailsPage";
-import { addItems } from "@decocms/apps/shopify/actions/cart/addItems";
-```
-
-### Shared types
-
-```ts
-import type {
-  Product,
-  ProductDetailsPage,
-  ProductListingPage,
-  AggregateOffer,
-} from "@decocms/apps/commerce/types";
-```
-
-### SEO + fonts
-
-```ts
-import { configureWebsite } from "@decocms/apps/website";
-```
-
-## See also
-
-- [Commerce overview](/v2/en/commerce/overview)
-- [VTEX overview](/v2/en/commerce/vtex-overview)
-- [Shopify](/v2/en/commerce/shopify)
-- [Package exports (@decocms/start)](/v2/en/reference/package-exports)
-- [Glossary](/v2/en/reference/glossary)

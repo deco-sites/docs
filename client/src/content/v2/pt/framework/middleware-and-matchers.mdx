@@ -10,7 +10,7 @@ Middleware e matchers são as duas formas como o framework injeta comportamento 
 
 ## Middleware
 
-`@decocms/start/middleware` exporta funções que rodam contra o request/response.
+`@decocms/blocks/middleware` exporta funções que rodam contra o request/response.
 
 ### `decoState`
 
@@ -21,7 +21,7 @@ Provê o `MeshContext`-style state que loaders e sections leem via `RequestConte
 Liga tracing OpenTelemetry e Server-Timing. Habilitado por default.
 
 ```ts
-import { observability } from "@decocms/start/middleware";
+import { observability } from "@decocms/blocks/middleware";
 ```
 
 A maioria dos sites não toca; só envolva manualmente para customização avançada (custom span attributes etc.).
@@ -44,7 +44,7 @@ Middlewares se combinam. O framework já compõe na ordem certa em `createDecoWo
 
 ## Matchers built-in
 
-`@decocms/start/matchers/builtins` provê matchers prontos para A/B, segmentação e flags:
+`@decocms/blocks/matchers/builtins` provê matchers prontos para A/B, segmentação e flags:
 
 | Matcher | Casa por |
 |---|---|
@@ -60,7 +60,7 @@ Middlewares se combinam. O framework já compõe na ordem certa em `createDecoWo
 Registre tudo de uma vez:
 
 ```ts
-import { registerBuiltinMatchers } from "@decocms/start/matchers/builtins";
+import { registerBuiltinMatchers } from "@decocms/blocks/matchers/builtins";
 
 registerBuiltinMatchers({
   customMatchers: {
@@ -91,10 +91,10 @@ A persistência da sessão usa cookies; setado uma vez, expira em 30 dias por de
 
 ## Matcher PostHog
 
-`@decocms/start/matchers/posthog` integra com flags do PostHog:
+`@decocms/blocks/matchers/posthog` integra com flags do PostHog:
 
 ```ts
-import { matchPosthog } from "@decocms/start/matchers/posthog";
+import { matchPosthog } from "@decocms/blocks/matchers/posthog";
 ```
 
 Setup:
@@ -106,7 +106,7 @@ O matcher posta no edge endpoint do PostHog em request time, então respeita as 
 
 ### Sticky sessions
 
-Por padrão, `matchPosthog` lê o ID `distinct` do PostHog do cookie. Sem cookie, gera um por request. Para sticky entre sessões, garanta que o cookie do PostHog é setado pelo seu snippet PostHog client-side ou via `setPosthogCookie` (`@decocms/apps/posthog`).
+Por padrão, `matchPosthog` lê o ID `distinct` do PostHog do cookie. Sem cookie, gera um por request. Para sticky entre sessões, garanta que o cookie do PostHog é setado pelo seu snippet PostHog client-side ou via `setPosthogCookie` (`@decocms/blocks/matchers/posthog`).
 
 ### Por ambiente
 
@@ -125,7 +125,7 @@ Um matcher é um arquivo no estilo de section em `src/matchers/`:
 
 ```ts
 // src/matchers/MatchHasCart.ts
-import type { MatcherFn } from "@decocms/start/types";
+import type { MatcherFn } from "@decocms/blocks/types";
 
 export interface Props {
   inverse?: boolean;

@@ -6,7 +6,7 @@ icon: "Component"
 
 import Callout from "../../../../components/ui/Callout.astro";
 
-`@decocms/start/hooks` exporta componentes e hooks React que conectam dados resolvidos do CMS à página. O carro-chefe é `DecoPageRenderer`; o resto preenche em volta.
+`@decocms/blocks/hooks` exporta componentes e hooks React que conectam dados resolvidos do CMS à página. O carro-chefe é `DecoPageRenderer`; o resto preenche em volta.
 
 ## Import
 
@@ -19,7 +19,7 @@ import {
   NavigationProgress,
   useDevice,
   useHydrated,
-} from "@decocms/start/hooks";
+} from "@decocms/blocks/hooks";
 ```
 
 ## `DecoPageRenderer`
@@ -27,7 +27,7 @@ import {
 Renderiza uma árvore de página CMS. Percorre as sections resolvidas, embrulha as deferred em lazy, anexa error boundaries e emite live controls em modo preview do admin.
 
 ```tsx
-import { DecoPageRenderer } from "@decocms/start/hooks";
+import { DecoPageRenderer } from "@decocms/blocks/hooks";
 
 export default function Page() {
   return <DecoPageRenderer />;
@@ -52,7 +52,7 @@ Você usa `DecoPageRenderer` quase sempre como `component` da rota CMS.
 Um shell `__root.tsx` pré-pronto. Use a menos que precise de controle que o shell padrão não dá.
 
 ```tsx
-import { DecoRootLayout } from "@decocms/start/hooks";
+import { DecoRootLayout } from "@decocms/blocks/hooks";
 
 export const Route = createRootRoute({
   component: () => (
@@ -75,7 +75,7 @@ Cuida de:
 - Provider do React Query.
 - Container de toast.
 
-Faça o seu quando precisar de carregamento de fontes específico, drawer de minicart no shell, ou qualquer markup que os defaults do framework não conseguem expressar — descarte `DecoRootLayout` e escreva um `__root.tsx` do zero, copiando só os providers que precisar de `PreviewProviders` e `LiveControls` (ambos de `@decocms/start/hooks`).
+Faça o seu quando precisar de carregamento de fontes específico, drawer de minicart no shell, ou qualquer markup que os defaults do framework não conseguem expressar — descarte `DecoRootLayout` e escreva um `__root.tsx` do zero, copiando só os providers que precisar de `PreviewProviders` e `LiveControls` (ambos de `@decocms/blocks/hooks`).
 
 ## `LazySection`
 
@@ -84,7 +84,7 @@ Embrulha uma section que deve hidratar ao rolar. Você normalmente não instanci
 Se quiser controle manual:
 
 ```tsx
-import { LazySection } from "@decocms/start/hooks";
+import { LazySection } from "@decocms/blocks/hooks";
 
 <LazySection
   pageId={pageId}
@@ -105,7 +105,7 @@ Comportamento:
 Script que permite o iframe de preview do admin se comunicar com a loja. Hover-highlight, click-to-source. Carregado por `DecoRootLayout` automaticamente; só plugue manualmente em shell custom.
 
 ```tsx
-import { LiveControls } from "@decocms/start/hooks";
+import { LiveControls } from "@decocms/blocks/hooks";
 
 <LiveControls />
 ```
@@ -117,7 +117,7 @@ Só emite conteúdo em modo preview do admin (`?_admin=1`). Em produção é no-
 Barra de progresso no topo do viewport que ativa em transições do TanStack Router. Cosmético mas melhora a percepção de performance.
 
 ```tsx
-import { NavigationProgress } from "@decocms/start/hooks";
+import { NavigationProgress } from "@decocms/blocks/hooks";
 
 <NavigationProgress />
 ```
@@ -129,7 +129,7 @@ Monte uma vez no root layout. A barra aparece automaticamente quando `useRouterS
 Devolve `{ type: "mobile" | "tablet" | "desktop" }` baseado no user-agent.
 
 ```tsx
-import { useDevice } from "@decocms/start/hooks";
+import { useDevice } from "@decocms/blocks/hooks";
 
 function Hero() {
   const device = useDevice();
@@ -150,7 +150,7 @@ O padrão mais seguro é usar `useDevice` num loader de section (server-only) e 
 Devolve `true` após a primeira renderização client-side, `false` durante SSR.
 
 ```tsx
-import { useHydrated } from "@decocms/start/hooks";
+import { useHydrated } from "@decocms/blocks/hooks";
 
 function Counter() {
   const hydrated = useHydrated();
@@ -168,7 +168,7 @@ Não use isso quando puder usar `"use client"` — produz flicker. Use só quand
 Mais low-level que `DecoPageRenderer`. Renderiza uma única section resolvida isolada. Usado internamente; raramente direto.
 
 ```tsx
-import { RenderSection } from "@decocms/start/hooks";
+import { RenderSection } from "@decocms/blocks/hooks";
 
 <RenderSection section={resolvedSection} />
 ```
@@ -191,7 +191,7 @@ Se o loader da section lançar, o framework renderiza `ErrorFallback` em vez de 
 Wrapper do `<Outlet />` do TanStack Router que evita flicker em navegação mantendo a renderização anterior visível até os dados da nova rota chegarem.
 
 ```tsx
-import { StableOutlet } from "@decocms/start/hooks";
+import { StableOutlet } from "@decocms/blocks/hooks";
 
 <StableOutlet />
 ```

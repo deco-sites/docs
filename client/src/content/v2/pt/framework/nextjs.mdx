@@ -1,0 +1,154 @@
+---
+title: "Binding Next.js"
+description: "@decocms/nextjs — o irmão App Router do @decocms/tanstack. Config, route handlers, preview RSC, setup."
+icon: "Layers"
+---
+
+import Callout from "../../../../components/ui/Callout.astro";
+
+`@decocms/nextjs` é o binding do Next.js App Router — o **irmão do `@decocms/tanstack`**. Ambos compõem o mesmo core `@decocms/blocks` e o protocolo `@decocms/blocks-admin`; diferem só na cola de framework. Escolha o binding que combina com seu app; o conteúdo do CMS, sections, loaders e apps de commerce são idênticos nos dois.
+
+## TanStack vs. Next.js num relance
+
+| Aspecto | `@decocms/tanstack` | `@decocms/nextjs` |
+|---|---|---|
+| Runtime alvo | Cloudflare Workers | Node / RSC |
+| Build | Vite (`decoVitePlugin`) | bundler do próprio Next (sem Vite) |
+| Montagem do admin | dentro de `createDecoWorkerEntry` | `createDecoRouteHandlers` em `app/deco/[[...deco]]/route.ts` |
+| Live preview | `handleRender` (HTML puro) | **página** RSC de preview em `/deco/preview` |
+| Registro de sections | `import.meta.glob` (Vite) | `generate-sections --registry` → `sectionImports` |
+| Fast Deploy (KV) | ✅ disponível | ❌ não se aplica (alvo Node/RSC) |
+| Setup | `createSiteSetup` + `createAdminSetup` | `createNextSetup` (uma chamada) |
+
+<Callout type="info">
+**Fast Deploy é só TanStack.** Conteúdo KV-first e cache de edge da Cloudflare são uma preocupação de Workers; o `@decocms/nextjs` deliberadamente não os carrega.
+</Callout>
+
+## As quatro superfícies
+
+`@decocms/nextjs` compõe quatro exports:
+
+- **`@decocms/nextjs/config`** — `withDeco(nextConfig)`, um wrapper de `next.config` que adiciona os rewrites e o `transpilePackages` que o protocolo admin precisa.
+- **`@decocms/nextjs/routeHandlers`** — `createDecoRouteHandlers({ setup })`, um único dispatcher catch-all para todo o protocolo admin do Studio.
+- **`@decocms/nextjs`** — `createDecoPreviewPage({ setup })` e `DecoRootLayout`, renderizados pelo pipeline RSC do Next.
+- **`@decocms/nextjs/setup`** — `createNextSetup(options)`, o análogo Next.js do `createSiteSetup` + `createAdminSetup` + `import.meta.glob` do Vite.
+
+## Instalação
+
+```bash
+bun add @decocms/nextjs @decocms/blocks @decocms/blocks-admin
+```
+
+`next`, `react` e `react-dom` são peer dependencies.
+
+## 1. `next.config` — `withDeco`
+
+`withDeco` adiciona os rewrites do protocolo Studio (mapeando `/.decofile`, `/live/_meta`, `/live/previews/*` para `/deco/*`) e acrescenta os pacotes `@decocms/*` ao `transpilePackages` (eles publicam TypeScript cru, não um `dist/` pré-buildado). Ele faz merge com sua config — nunca substitui.
+
+```ts
+// next.config.ts
+import type { NextConfig } from "next";
+import { withDeco } from "@decocms/nextjs/config";
+
+const nextConfig: NextConfig = {
+  // ...sua própria config
+};
+
+export default withDeco(nextConfig);
+```
+
+## 2. A rota catch-all + a página de preview RSC
+
+Monte `createDecoRouteHandlers` em `app/deco/[[...deco]]/route.ts` — ela serve todo o protocolo admin (decofile, meta, invoke, previews).
+
+```ts
+// src/app/deco/[[...deco]]/route.ts
+import { createDecoRouteHandlers } from "@decocms/nextjs/routeHandlers";
+import { ensureSetup } from "../../../deco/setup";
+
+export const dynamic = "force-dynamic";
+
+export const { GET, POST, OPTIONS } = createDecoRouteHandlers({ setup: ensureSetup });
+```
+
+GETs de preview são redirecionados do catch-all para uma **página** App Router dedicada no caminho `/deco/preview`, de propriedade do framework (esse caminho não é configurável). Monte-a:
+
+```tsx
+// src/app/deco/preview/[[...path]]/page.tsx
+import { createDecoPreviewPage } from "@decocms/nextjs";
+import { ensureSetup } from "../../../../deco/setup";
+
+export const dynamic = "force-dynamic";
+
+export default createDecoPreviewPage({ setup: ensureSetup });
+```
+
+<Callout type="warning">
+**Duas regras críticas para o preview.**
+
+1. **O preview tem que ser uma página, não um route handler.** `react-dom/server.renderToString` (usado por um handler simples) não consegue executar os client-reference proxies que o Next cria para módulos `"use client"` — só o renderer RSC do App Router compõe Server Components com Client Components e emite os metadados de hidratação. **Não** conserte uma falha de preview removendo `"use client"` de componentes que precisam de hooks, eventos ou APIs de browser.
+2. **No `route.ts`, importe só dos subpaths** (`/routeHandlers`, `/config`, `/setup`) — nunca do barrel raiz. Route handlers avaliam todo o grafo de módulos contra o build react-server do React; o barrel raiz puxa componentes de render que usam APIs client-only do React em escopo de módulo e quebram no import. O barrel raiz é ok em `page.tsx` e `layout.tsx` (são Server Components, não handlers).
+</Callout>
+
+## 3. `createNextSetup`
+
+`createNextSetup` devolve um `ensureSetup()` **memoizado**. Os artefatos de codegen vão por padrão para `.deco/` na raiz do site; importe-os por um path alias `deco/*` do tsconfig (`"deco/*": [".deco/*"]`).
+
+```ts
+// src/deco/setup.ts
+import { createNextSetup } from "@decocms/nextjs/setup";
+import blocks from "deco/blocksManifest.gen";
+import { sectionImports, sectionMeta, syncComponents, loadingFallbacks } from "deco/sections.gen";
+
+export const ensureSetup = createNextSetup({
+  blocks,
+  blocksDir: false, // o manifest de import estático é a única fonte de blocks
+  sections: sectionImports,
+  conventions: { meta: sectionMeta, syncComponents, loadingFallbacks },
+  meta: () => import("deco/meta.gen.json").then((m) => m.default),
+});
+```
+
+`ensureSetup()` é aguardado em três lugares: a rota catch-all (acima), a página de preview RSC (acima) e o **root layout** — a renderização de página não tem hook de setup próprio, então `app/layout.tsx` precisa aguardá-lo diretamente:
+
+```tsx
+// src/app/layout.tsx
+import { DecoRootLayout } from "@decocms/nextjs";
+import { ensureSetup } from "../deco/setup";
+
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  await ensureSetup();
+  return <DecoRootLayout siteName="my-site">{children}</DecoRootLayout>;
+}
+```
+
+### Fonte de blocks recomendada: o manifest de import estático
+
+`generate-blocks-manifest` (do `@decocms/blocks-cli`) emite `.deco/blocksManifest.gen.ts`, um módulo que importa estaticamente todo `.deco/blocks/*.json`. Passar o default export dele como `blocks` com `blocksDir: false` torna-o a única fonte de blocks e o bootstrap puro (sem leitura de filesystem). Benefícios: o conteúdo do CMS faz hot-reload no `next dev` (os JSONs fazem parte do grafo de módulos do Next) e deploys não precisam do hack `outputFileTracingIncludes`. Trade-off: o conteúdo é assado em build time (o `POST /.decofile` do Studio ainda sobrescreve o snapshot em memória em runtime), e adicionar/remover um *arquivo* de block exige rodar o gerador de novo.
+
+## 4. Scripts de codegen — nomes que não colidem
+
+```json
+{
+  "scripts": {
+    "generate:deco-meta": "tsx node_modules/@decocms/blocks-cli/scripts/generate-schema.ts",
+    "generate:deco-sections": "tsx node_modules/@decocms/blocks-cli/scripts/generate-sections.ts --registry",
+    "generate:deco-blocks": "tsx node_modules/@decocms/blocks-cli/scripts/generate-blocks-manifest.ts"
+  }
+}
+```
+
+<Callout type="warning">
+**Não nomeie nenhum deles como `generate:schema`.** Sites FastStore já usam esse nome de script para o codegen do próprio schema de commerce; uma colisão silenciosamente sombreia um dos dois geradores. `generate-sections` precisa de **`--registry`** para emitir `sectionImports` (o Next não tem `import.meta.glob`). Os três usam `.deco/` como saída padrão.
+</Callout>
+
+## Verificando seu setup
+
+`examples/nextjs-smoke` no monorepo é um build App Router mínimo e real que exercita as quatro superfícies ponta a ponta (rewrites, rota catch-all, página de preview RSC, `createNextSetup`, um render de página resolvido), com um Client Component interativo real na fixture de preview. Use como referência de trabalho.
+
+## Veja também
+
+- [Visão geral do framework](/v2/pt/framework/overview)
+- [Setup](/v2/pt/framework/setup)
+- [Worker entry](/v2/pt/framework/worker-entry) (o equivalente TanStack)
+- [Exports dos pacotes](/v2/pt/reference/package-exports)

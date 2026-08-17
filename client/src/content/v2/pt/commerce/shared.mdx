@@ -6,7 +6,7 @@ icon: "Package"
 
 import Callout from "../../../../components/ui/Callout.astro";
 
-`@decocms/apps` expõe utilities neutras à plataforma — tipos, helpers de formatação e componentes — em subpaths sob `commerce/`. Use sempre que possível: você fica trocando de provider para sempre.
+`@decocms/apps-*` expõe utilities neutras à plataforma — tipos, helpers de formatação e componentes — em subpaths sob `commerce/`. Use sempre que possível: você fica trocando de provider para sempre.
 
 ## Tipos
 
@@ -20,7 +20,7 @@ import type {
   AggregateOffer,
   Cart,
   CartItem,
-} from "@decocms/apps/commerce/types";
+} from "@decocms/apps-commerce/types";
 ```
 
 Alinhados ao schema.org. VTEX e Shopify mapeiam para essas formas em loaders.
@@ -38,7 +38,7 @@ Alinhados ao schema.org. VTEX e Shopify mapeiam para essas formas em loaders.
 ## `useOffer`
 
 ```ts
-import { useOffer } from "@decocms/apps/commerce/sdk/useOffer";
+import { useOffer } from "@decocms/apps-commerce/sdk/useOffer";
 
 const offer = useOffer(product.offers);
 // → { price, listPrice, seller, availability, hasDrawnOutOfStockLabel }
@@ -56,7 +56,7 @@ Usado em todo PDP card e prateleira de produto.
 ## `formatPrice`
 
 ```ts
-import { formatPrice } from "@decocms/apps/commerce/sdk/format";
+import { formatPrice } from "@decocms/apps-commerce/sdk/format";
 
 formatPrice(1234.56, "BRL", "pt-BR");
 // → "R$ 1.234,56"
@@ -67,7 +67,7 @@ Wrapper em volta de `Intl.NumberFormat` com defaults de currency / locale via en
 ## `useVariantPossibilities`
 
 ```ts
-import { useVariantPossibilities } from "@decocms/apps/commerce/sdk/useVariantPossibilities";
+import { useVariantPossibilities } from "@decocms/apps-commerce/sdk/useVariantPossibilities";
 
 const variants = useVariantPossibilities(product);
 // → mapa de eixo → [{ value, link, available }]
@@ -82,7 +82,7 @@ Para PDPs com múltiplas variantes (cor, tamanho), produz um mapa estruturado pa
 ## Componente `Image`
 
 ```tsx
-import Image from "@decocms/apps/commerce/components/Image";
+import Image from "@decocms/apps-commerce/components/Image";
 
 <Image
   src="https://..."
@@ -104,7 +104,7 @@ Wrapper em volta de `<img>` que automaticamente:
 ## Componente `Picture`
 
 ```tsx
-import Picture from "@decocms/apps/commerce/components/Picture";
+import Picture from "@decocms/apps-commerce/components/Picture";
 
 <Picture src="https://..." alt="Tênis">
   <Source media="(max-width: 768px)" src="https://.../mobile.jpg" />
@@ -117,7 +117,7 @@ import Picture from "@decocms/apps/commerce/components/Picture";
 ## `JsonLd`
 
 ```tsx
-import { JsonLd } from "@decocms/apps/commerce/components/JsonLd";
+import { JsonLd } from "@decocms/apps-commerce/components/JsonLd";
 
 <JsonLd data={product} />
 <JsonLd data={breadcrumbList} />
@@ -132,7 +132,7 @@ import {
   sendEvent,
   trackEvent,
   initAnalytics,
-} from "@decocms/apps/commerce/sdk/analytics";
+} from "@decocms/apps-commerce/sdk/analytics";
 ```
 
 Wrapper estilo GTM. Empurra eventos para `window.dataLayer`:
@@ -150,10 +150,10 @@ sendEvent({
 
 ## `useScript` patterns
 
-`@decocms/apps/commerce/components/Script` provê um wrapper para inserir scripts third-party com setup correto:
+`@decocms/apps-commerce/components/Script` provê um wrapper para inserir scripts third-party com setup correto:
 
 ```tsx
-import { Script } from "@decocms/apps/commerce/components/Script";
+import { Script } from "@decocms/apps-commerce/components/Script";
 
 <Script src="https://..." strategy="afterInteractive" />
 ```
@@ -173,7 +173,7 @@ import {
   toBreadcrumbList,
   toProduct,
   toProductDetailsPage,
-} from "@decocms/apps/commerce/sdk/transform";
+} from "@decocms/apps-commerce/sdk/transform";
 ```
 
 Funções de transformação que convertem responses brutos VTEX/Shopify para tipos schema.org. Loaders usam internamente; código de site raramente.
@@ -185,7 +185,7 @@ import {
   getISCookies,
   getRegionId,
   buildProductUrl,
-} from "@decocms/apps/commerce/sdk/url";
+} from "@decocms/apps-commerce/sdk/url";
 ```
 
 Helpers para tarefas comuns de URL específicas de commerce — extrair regionId de cookies, construir URLs de PDP a partir de slugs.

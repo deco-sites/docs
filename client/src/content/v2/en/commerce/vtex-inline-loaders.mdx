@@ -24,8 +24,8 @@ In practice: when the CMS configures a page like `{ "__resolveType": "vtex/loade
 Returns a registry mapping CMS `__resolveType` keys to inline loader functions:
 
 ```ts
-import { createVtexCommerceLoaders } from "@decocms/apps/vtex/commerceLoaders";
-import { registerCommerceLoaders } from "@decocms/start/cms";
+import { createVtexCommerceLoaders } from "@decocms/apps-vtex/commerceLoaders";
+import { registerCommerceLoaders } from "@decocms/blocks/cms";
 
 const commerceLoaders = createVtexCommerceLoaders();
 registerCommerceLoaders(commerceLoaders);
@@ -51,7 +51,7 @@ The full registration logic lives in `vtex/commerceLoaders.ts`.
 
 ## Caching layer
 
-Every inline loader is wrapped in `createCachedLoader` from `@decocms/start/sdk/cachedLoader`:
+Every inline loader is wrapped in `createCachedLoader` from `@decocms/blocks/sdk/cachedLoader`:
 
 - **In-flight dedup** — multiple sections requesting the same shelf data share one fetch.
 - **SWR** — cached responses serve immediately; fresh data refreshes in background.
@@ -112,7 +112,7 @@ The empty-cart guard is the difference between a healthy VTEX account and one dr
 VTEX Intelligent Search rejects unknown `sort` values with a 400. The inline loaders enforce a whitelist:
 
 ```ts
-import { VALID_IS_SORTS } from "@decocms/apps/vtex/utils/intelligentSearch";
+import { VALID_IS_SORTS } from "@decocms/apps-vtex/utils/intelligentSearch";
 
 if (!VALID_IS_SORTS.includes(sort)) sort = ""; // fall back to default
 ```
@@ -134,7 +134,7 @@ By default, every inline loader appears in your generated `loaders.gen.ts`. For 
 The npm script becomes:
 
 ```jsonc
-"generate:loaders": "tsx node_modules/@decocms/start/scripts/generate-loaders.ts --exclude vtex/loaders,vtex/actions --decofile-dir .deco/blocks"
+"generate:loaders": "tsx node_modules/@decocms/blocks-cli/generate-loaders.ts --exclude vtex/loaders,vtex/actions --decofile-dir .deco/blocks"
 ```
 
 Loaders not referenced by any block in `.deco/blocks/` are excluded from the generated registry. The framework still resolves them on demand — but the generated client is lean.
@@ -144,7 +144,7 @@ Loaders not referenced by any block in `.deco/blocks/` are excluded from the gen
 To add fields, change cache keys, or enrich responses:
 
 ```ts
-import { createVtexCommerceLoaders } from "@decocms/apps/vtex/commerceLoaders";
+import { createVtexCommerceLoaders } from "@decocms/apps-vtex/commerceLoaders";
 
 const baseLoaders = createVtexCommerceLoaders();
 

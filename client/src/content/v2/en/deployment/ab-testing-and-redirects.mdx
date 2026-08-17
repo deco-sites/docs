@@ -14,7 +14,7 @@ CMS matchers swap content within a page. `withABTesting` swaps **entire site ver
 
 ```ts
 // src/worker-entry.ts
-import { withABTesting } from "@decocms/start/sdk/abTesting";
+import { withABTesting } from "@decocms/blocks/sdk/abTesting";
 
 export default withABTesting(decoWorker, {
   kvBinding: "SITES_KV",
@@ -94,8 +94,8 @@ Three patterns in increasing complexity:
 ### 1. Per-block redirects from the CMS
 
 ```ts
-import { loadBlocks } from "@decocms/start/cms";
-import { loadRedirects, matchRedirect } from "@decocms/start/sdk/redirects";
+import { loadBlocks } from "@decocms/blocks/cms";
+import { loadRedirects, matchRedirect } from "@decocms/blocks/sdk/redirects";
 
 const cmsRedirects = loadRedirects(loadBlocks());
 
@@ -155,7 +155,7 @@ Format:
 The Vite `?raw` import inlines the CSV at build time. The worker parses it once at module load (zero runtime cost on requests). Add to the proxy handler:
 
 ```ts
-import { addRedirects } from "@decocms/start/sdk/redirects";
+import { addRedirects } from "@decocms/blocks/sdk/redirects";
 
 addRedirects(parseSemicolonRedirectsCsv(redirectsCsv));
 ```

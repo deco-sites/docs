@@ -6,7 +6,7 @@ icon: "GitMerge"
 
 import Callout from "../../../../components/ui/Callout.astro";
 
-Middleware in `@decocms/start/middleware` is **composable function helpers** — not TanStack's `createMiddleware()` directly. You compose them into your own TanStack middleware stack. Matchers in `@decocms/start/matchers/*` are A/B and targeting primitives that plug into multivariate blocks.
+Middleware in `@decocms/blocks/middleware` is **composable function helpers** — not TanStack's `createMiddleware()` directly. You compose them into your own TanStack middleware stack. Matchers in `@decocms/blocks/matchers/*` are A/B and targeting primitives that plug into multivariate blocks.
 
 ## Middleware functions
 
@@ -15,7 +15,7 @@ Middleware in `@decocms/start/middleware` is **composable function helpers** —
 Builds the state object the framework injects into TanStack Start request context: site name, env bindings, request, segment.
 
 ```ts
-import { buildDecoState } from "@decocms/start/middleware";
+import { buildDecoState } from "@decocms/blocks/middleware";
 
 const decoState = buildDecoState({ request, env, siteName: "my-store" });
 ```
@@ -27,7 +27,7 @@ You rarely call this directly — `cmsRouteConfig` wires it into route loaders. 
 Health probe handler. Returns 200 with a JSON body containing version + uptime.
 
 ```ts
-import { liveness } from "@decocms/start/middleware";
+import { liveness } from "@decocms/blocks/middleware";
 
 // inside worker entry, before the framework
 if (url.pathname === "/_health") return liveness(request);
@@ -35,12 +35,12 @@ if (url.pathname === "/_health") return liveness(request);
 
 Use as a Cloudflare Workers liveness probe target.
 
-### `healthMetrics` (from `@decocms/start/middleware/healthMetrics`)
+### `healthMetrics` (from `@decocms/blocks/middleware/healthMetrics`)
 
 Emits health metrics (request rate, error rate, p50/p95/p99 latency) to OpenTelemetry. Attach to your TanStack middleware:
 
 ```ts
-import { healthMetrics } from "@decocms/start/middleware/healthMetrics";
+import { healthMetrics } from "@decocms/blocks/middleware/healthMetrics";
 
 createMiddleware().middleware([healthMetrics]);
 ```
@@ -50,25 +50,25 @@ createMiddleware().middleware([healthMetrics]);
 Wraps a handler in OpenTelemetry tracing. Spans cover the full request lifecycle (route resolution, loader execution, render).
 
 ```ts
-import { observability } from "@decocms/start/middleware";
+import { observability } from "@decocms/blocks/middleware";
 
 const tracedHandler = observability(myHandler, { name: "my-route" });
 ```
 
 Auto-applied to CMS routes by `cmsRouteConfig`.
 
-### `hydrationContext` (from `@decocms/start/middleware/hydrationContext`)
+### `hydrationContext` (from `@decocms/blocks/middleware/hydrationContext`)
 
 Binds the React render to a per-request hydration context. Required for `LazySection` and deferred rendering to work — it's how the server-side render and the client-side `loadDeferredSection` call share state.
 
 Auto-applied by `cmsRouteConfig`. You only touch this if you build a custom route component that uses lazy sections.
 
-### `validateSection` (from `@decocms/start/middleware/validateSection`)
+### `validateSection` (from `@decocms/blocks/middleware/validateSection`)
 
 Validates a section's resolved props against its `Props` schema before rendering. Off by default in production (overhead); on in dev.
 
 ```ts
-import { validateSection } from "@decocms/start/middleware/validateSection";
+import { validateSection } from "@decocms/blocks/middleware/validateSection";
 ```
 
 Useful when debugging "this section renders blank" issues — flips on validation so the loader's malformed return values surface as errors.
@@ -78,7 +78,7 @@ Useful when debugging "this section renders blank" issues — flips on validatio
 Adds `Server-Timing` headers to a response based on collected timings during the request.
 
 ```ts
-import { applyServerTiming } from "@decocms/start/middleware";
+import { applyServerTiming } from "@decocms/blocks/middleware";
 
 return applyServerTiming(response, requestContext);
 ```
@@ -90,16 +90,16 @@ Browser DevTools (Network tab → Timing) shows these. Invaluable for production
 CORS for admin endpoints. Returns the right `Access-Control-Allow-Origin` etc. based on the request's `Origin` header and `productionOrigins`.
 
 ```ts
-import { applyCorsHeaders } from "@decocms/start/middleware";
+import { applyCorsHeaders } from "@decocms/blocks/middleware";
 
 return applyCorsHeaders(response, request, productionOrigins);
 ```
 
 ## Matchers
 
-Matchers live at `@decocms/start/matchers/*`. They're functions that return true/false for a given request, used inside multivariate blocks to swap variants.
+Matchers live at `@decocms/blocks/matchers/*`. They're functions that return true/false for a given request, used inside multivariate blocks to swap variants.
 
-### `@decocms/start/matchers/builtins`
+### `@decocms/blocks/matchers/builtins`
 
 Ships these matchers ready to use in admin:
 
@@ -116,7 +116,7 @@ Ships these matchers ready to use in admin:
 Register all of them with `registerBuiltinMatchers()`:
 
 ```ts
-import { registerBuiltinMatchers } from "@decocms/start/matchers/builtins";
+import { registerBuiltinMatchers } from "@decocms/blocks/matchers/builtins";
 
 registerBuiltinMatchers({
   customMatchers: {
@@ -127,12 +127,12 @@ registerBuiltinMatchers({
 
 After this call, all built-ins plus your customs appear in admin pickers.
 
-### `@decocms/start/matchers/posthog`
+### `@decocms/blocks/matchers/posthog`
 
 Connects the multivariate system to PostHog feature flags:
 
 ```ts
-import { matchPosthog } from "@decocms/start/matchers/posthog";
+import { matchPosthog } from "@decocms/blocks/matchers/posthog";
 ```
 
 Configure via the `deco-posthog` app block in admin. Once set up, PostHog flags (boolean and multivariate) become matchers admin can pick. Sticky sessions are handled by PostHog's distinct ID + a session cookie.
@@ -143,7 +143,7 @@ A matcher is a default-exporting `.ts` file under `src/matchers/`:
 
 ```ts
 // src/matchers/MatchHasCart.ts
-import type { MatcherFn } from "@decocms/start/types";
+import type { MatcherFn } from "@decocms/blocks/types";
 
 export interface Props {
   inverse?: boolean;
@@ -175,7 +175,7 @@ For a custom TanStack middleware:
 
 ```ts
 import { createMiddleware } from "@tanstack/react-start";
-import { observability, healthMetrics } from "@decocms/start/middleware";
+import { observability, healthMetrics } from "@decocms/blocks/middleware";
 
 export const myMiddleware = createMiddleware().middleware([
   observability,

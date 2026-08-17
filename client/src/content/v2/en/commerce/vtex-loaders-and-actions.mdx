@@ -6,14 +6,14 @@ icon: "Database"
 
 import Callout from "../../../../components/ui/Callout.astro";
 
-`@decocms/apps/vtex/loaders/*` and `@decocms/apps/vtex/actions/*` are the server-side surface for VTEX. Loaders read; actions mutate. Both run inside the `RequestContext` with cookie propagation, instrumented fetch, and tracing.
+`@decocms/apps-vtex/loaders/*` and `@decocms/apps-vtex/actions/*` are the server-side surface for VTEX. Loaders read; actions mutate. Both run inside the `RequestContext` with cookie propagation, instrumented fetch, and tracing.
 
 ## Loaders
 
-Imported individually or via the barrel `@decocms/apps/vtex/loaders`:
+Imported individually or via the barrel `@decocms/apps-vtex/loaders`:
 
 ```ts
-import { searchProducts, getCart, getUser } from "@decocms/apps/vtex/loaders";
+import { searchProducts, getCart, getUser } from "@decocms/apps-vtex/loaders";
 ```
 
 ### `address`
@@ -163,10 +163,10 @@ import {
   addItemsToCart,
   classicSignIn,
   notifyMe,
-} from "@decocms/apps/vtex/actions";
+} from "@decocms/apps-vtex/actions";
 ```
 
-`analytics/sendEvent` is a separate subpath: `@decocms/apps/vtex/actions/analytics/sendEvent`.
+`analytics/sendEvent` is a separate subpath: `@decocms/apps-vtex/actions/analytics/sendEvent`.
 
 ### `checkout` (cart)
 
@@ -237,7 +237,7 @@ Catch-all module: `notifyMe` (back-in-stock notifications), reviews, payment tok
 ### `analytics/sendEvent`
 
 ```ts
-import sendEvent from "@decocms/apps/vtex/actions/analytics/sendEvent";
+import sendEvent from "@decocms/apps-vtex/actions/analytics/sendEvent";
 ```
 
 POSTs to VTEX analytics endpoints from the server side (so cookies and request context are correct). Use sparingly — most analytics is fine to send client-side.

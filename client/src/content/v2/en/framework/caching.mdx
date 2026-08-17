@@ -10,7 +10,7 @@ Caching in v2 spans three layers: the **Cloudflare edge cache** (Cache API), the
 
 ## Edge cache profiles
 
-`@decocms/start/sdk/cacheHeaders` ships URL-to-profile detection. Default profiles:
+`@decocms/blocks/sdk/cacheHeaders` ships URL-to-profile detection. Default profiles:
 
 | URL pattern | Profile | Edge `s-maxage` | Edge SWR |
 |---|---|---|---|
@@ -23,7 +23,7 @@ Caching in v2 spans three layers: the **Cloudflare edge cache** (Cache API), the
 The Worker entry consults this map and writes the right `Cache-Control` (and Cache API entry) for each request.
 
 ```ts
-import { detectCacheProfile, cacheHeaders } from "@decocms/start/sdk";
+import { detectCacheProfile, cacheHeaders } from "@decocms/blocks/sdk";
 
 const profile = detectCacheProfile(url.pathname, url.searchParams);
 const headers = cacheHeaders(profile);
@@ -31,11 +31,11 @@ const headers = cacheHeaders(profile);
 
 ## Customizing profiles
 
-Override the built-in profiles with `setCacheProfile` from `@decocms/start/sdk/cacheHeaders`:
+Override the built-in profiles with `setCacheProfile` from `@decocms/blocks/sdk/cacheHeaders`:
 
 ```ts
 // src/cache-config.ts
-import { setCacheProfile } from "@decocms/start/sdk/cacheHeaders";
+import { setCacheProfile } from "@decocms/blocks/sdk/cacheHeaders";
 
 setCacheProfile("static", {
   edge: { fresh: 1800, swr: 7200, sie: 43200 },
@@ -56,7 +56,7 @@ Import the file from `setup.ts` so the overrides apply before the framework read
 ```ts
 // src/setup.ts
 import "./cache-config";
-import { createSiteSetup } from "@decocms/start/setup";
+import { createSiteSetup } from "@decocms/blocks/setup";
 // ...
 ```
 
@@ -65,7 +65,7 @@ import { createSiteSetup } from "@decocms/start/setup";
 Add new URL → profile mappings without overwriting the built-ins:
 
 ```ts
-import { registerCachePattern } from "@decocms/start/sdk/cacheHeaders";
+import { registerCachePattern } from "@decocms/blocks/sdk/cacheHeaders";
 
 registerCachePattern({
   test: (pathname) => pathname === "/sitemap.xml",
@@ -77,7 +77,7 @@ This is the canonical way to route the sitemap to the `static` profile.
 
 ## Cache API mechanics
 
-`@decocms/start/sdk/workerEntry` interacts with `caches.default` directly:
+`@decocms/tanstack` interacts with `caches.default` directly:
 
 1. Compute cache key: URL + segment.
 2. Probe `caches.default.match(key)`.
@@ -113,7 +113,7 @@ In-process cache for loader functions. Provides:
 - **LRU eviction** — bounded memory.
 
 ```ts
-import { createCachedLoader } from "@decocms/start/sdk/cachedLoader";
+import { createCachedLoader } from "@decocms/blocks/sdk/cachedLoader";
 
 export const cachedProduct = createCachedLoader({
   key: (props: { slug: string }) => `product:${props.slug}`,
@@ -141,14 +141,14 @@ The key function is critical. If two semantically-different requests produce the
 
 ### Where it's used
 
-`@decocms/apps` wraps every commerce inline loader with `createCachedLoader`. PDP, PLP, shelves, suggestions — all cached and deduped automatically. See `createVtexCommerceLoaders`.
+`@decocms/apps-*` wraps every commerce inline loader with `createCachedLoader`. PDP, PLP, shelves, suggestions — all cached and deduped automatically. See `createVtexCommerceLoaders`.
 
 ## `mergeCacheControl`
 
 Combines multiple `Cache-Control` headers into the most-restrictive merged value. Used when chaining middleware that each set their own headers.
 
 ```ts
-import { mergeCacheControl } from "@decocms/start/sdk/mergeCacheControl";
+import { mergeCacheControl } from "@decocms/blocks/sdk/mergeCacheControl";
 
 const merged = mergeCacheControl(["max-age=300", "private, max-age=60"]);
 // → "private, max-age=60"
@@ -158,10 +158,10 @@ The merger always takes the shortest TTL, the most restrictive privacy directive
 
 ## `instrumentedFetch` and caching
 
-`createInstrumentedFetch` (from `@decocms/start/sdk/instrumentedFetch`) wraps `fetch` with tracing and metrics. Use it inside loaders:
+`createInstrumentedFetch` (from `@decocms/blocks/sdk/instrumentedFetch`) wraps `fetch` with tracing and metrics. Use it inside loaders:
 
 ```ts
-import { createInstrumentedFetch } from "@decocms/start/sdk/instrumentedFetch";
+import { createInstrumentedFetch } from "@decocms/blocks/sdk/instrumentedFetch";
 
 const vtexFetch = createInstrumentedFetch("vtex");
 
@@ -181,7 +181,7 @@ The instrumented fetch:
 Helpers for URL canonicalization, used by the cache key builder and by SEO:
 
 ```ts
-import { canonicalUrl, normalizeUrl } from "@decocms/start/sdk/urlUtils";
+import { canonicalUrl, normalizeUrl } from "@decocms/blocks/sdk/urlUtils";
 
 const canonical = canonicalUrl(url);
 const normalized = normalizeUrl(url, { stripTrackingParams: true });
@@ -194,7 +194,7 @@ Used internally to ensure `/products?utm_source=x` and `/products?utm_source=y` 
 Bulk URL normalization for sitemaps, redirect tables, and analytics. Strips known tracking params, normalizes trailing slashes, lowercases the host.
 
 ```ts
-import { normalizeUrls } from "@decocms/start/sdk/normalizeUrls";
+import { normalizeUrls } from "@decocms/blocks/sdk/normalizeUrls";
 
 const cleaned = normalizeUrls([
   "https://my-store.com/products?utm_source=fb",

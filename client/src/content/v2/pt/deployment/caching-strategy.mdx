@@ -50,7 +50,7 @@ Estão deliberadamente conservadores. Quando você confiar na invalidação por 
 Substitua um profile inteiro:
 
 ```ts
-import { setCacheProfile } from "@decocms/start/sdk/cacheHeaders";
+import { setCacheProfile } from "@decocms/blocks/sdk/cacheHeaders";
 
 setCacheProfile("pdp", {
   maxAge: 30,
@@ -66,7 +66,7 @@ Faça em `setup.ts` ou em arquivo `cache-config.ts` separado importado de `setup
 Adicione padrão custom:
 
 ```ts
-import { registerCachePattern } from "@decocms/start/sdk/cacheHeaders";
+import { registerCachePattern } from "@decocms/blocks/sdk/cacheHeaders";
 
 registerCachePattern("/coupons", "bypass");
 registerCachePattern(/^\/landing\/.*/, "home");
@@ -119,14 +119,14 @@ const config = cmsRouteConfig({
 
 Para troca de variant na PDP, `staleTime` evita re-fetch quando usuário troca SKU. Junto com `replaceState` em vez de `navigate`, troca de variant fica instantânea.
 
-Veja [skill `deco-variant-selection-perf`](https://github.com/decocms/deco-start/tree/main/.agents/skills) para o padrão.
+Veja [skill `deco-variant-selection-perf`](https://github.com/decocms/blocks/tree/main/.agents/skills) para o padrão.
 
 ## Layout caching
 
 Sections de layout (Header, Footer, Theme) cacheiam separado da page principal:
 
 ```ts
-import { registerLayoutSections } from "@decocms/start/cms";
+import { registerLayoutSections } from "@decocms/blocks/cms";
 
 registerLayoutSections({
   Header: () => import("~/sections/Header/Header"),
@@ -135,7 +135,7 @@ registerLayoutSections({
 });
 ```
 
-Sem isso, Header re-resolve em cada page load e dispara chamada de "shelves de products no header" para VTEX em cada hop de URL. Veja [skill `deco-cms-layout-caching`](https://github.com/decocms/deco-start/tree/main/.agents/skills) para a investigação.
+Sem isso, Header re-resolve em cada page load e dispara chamada de "shelves de products no header" para VTEX em cada hop de URL. Veja [skill `deco-cms-layout-caching`](https://github.com/decocms/blocks/tree/main/.agents/skills) para a investigação.
 
 ## Endpoint de purge
 
@@ -163,7 +163,7 @@ Cache de borda Cloudflare emite `cf-cache-status`:
 
 Inspect com `curl -I` ou em devtools tab Network.
 
-`@decocms/start` adiciona `x-deco-cache: profile=pdp;ttl=300;state=fresh` para profile + TTL aplicado.
+`@decocms/blocks` adiciona `x-deco-cache: profile=pdp;ttl=300;state=fresh` para profile + TTL aplicado.
 
 ## Cardinalidade vs hit rate
 

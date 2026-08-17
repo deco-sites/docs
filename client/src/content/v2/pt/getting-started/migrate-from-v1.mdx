@@ -24,7 +24,7 @@ Não há prazo. v1 segue recebendo manutenção.
 ## O que é automático vs manual
 
 **Automatizado pelo `deco-migrate`:**
-- Reescrita de imports (Preact → React, `$fresh/*` → TanStack, `@deco/deco/*` → `@decocms/start/*`).
+- Reescrita de imports (Preact → React, `$fresh/*` → TanStack, `@deco/deco/*` → `@decocms/blocks/*`).
 - Scaffolding de Vite + Wrangler.
 - Geração do worker entry e do setup file.
 - Correções Tailwind v3 → v4.
@@ -43,7 +43,7 @@ Não há prazo. v1 segue recebendo manutenção.
 
 ```bash
 # de dentro do diretório da loja v1
-npx -p @decocms/start deco-migrate
+npx -p @decocms/blocks-cli deco-migrate
 ```
 
 Roda a migração em 7 fases no próprio lugar e gera um `MIGRATION_REPORT.md` com os TODOs manuais. Veja [Referência do script de migração](/v2/pt/migration/migrate-script).
@@ -53,7 +53,7 @@ Roda a migração em 7 fases no próprio lugar e gera um `MIGRATION_REPORT.md` c
 Se você usa Claude Code, Cursor ou Codex, instale o skill de migração e deixe o agente conduzir:
 
 ```bash
-npx skills add decocms/deco-start
+npx skills add decocms/blocks
 ```
 
 No editor: *"migre este projeto para TanStack Start"*. O skill sabe o que é automático e o que não é, e percorre os ajustes manuais junto com você. Veja [Agent skills](/v2/pt/migration/agent-skills).

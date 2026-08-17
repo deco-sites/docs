@@ -29,9 +29,9 @@ export const versions: VersionConfig[] = [
   },
   {
     id: "v2",
-    label: "v2 — TanStack / React",
+    label: "v2 — TanStack + Next.js / React",
     shortLabel: "v2",
-    description: "Preview docs for the TanStack-based deco.cx",
+    description: "Preview docs for the React-based deco.cx (TanStack Start or Next.js)",
     isLatest: false,
     root: "getting-started/overview",
     urlPrefix: "/v2",

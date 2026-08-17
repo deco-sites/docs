@@ -6,7 +6,7 @@ icon: "Sparkles"
 
 import Callout from "../../../../components/ui/Callout.astro";
 
-This page walks you from zero to a deployed v2 storefront by hand-creating the minimum set of files that `@decocms/start` and `@decocms/apps` need to boot.
+This page walks you from zero to a deployed v2 storefront by hand-creating the minimum set of files that `@decocms/blocks` and `@decocms/apps-*` need to boot.
 
 <Callout type="info">
 **A scaffold command is coming soon.** A dedicated `npm create deco@v2` (or equivalent) is on the roadmap and will collapse all of these steps into a single prompt. Until it ships, the manual recipe below is the supported path.
@@ -28,9 +28,12 @@ git init
 
 ```bash
 npm install \
-  @decocms/start \
-  @decocms/apps \
-  @tanstack/react-start @tanstack/react-router \
+  @decocms/blocks \
+  @decocms/blocks-admin \
+  @decocms/tanstack \
+  @decocms/apps-commerce \
+  @decocms/apps-vtex \
+  @tanstack/react-start @tanstack/react-router @tanstack/react-query @tanstack/store \
   react@^19 react-dom@^19
 
 npm install -D \
@@ -40,10 +43,12 @@ npm install -D \
   @cloudflare/workers-types
 ```
 
-The two deco packages are versioned independently. Pin to the latest published versions:
+The framework packages are versioned and released in lockstep. Install the ones your app needs:
 
-- `@decocms/start ^2.x` — framework + CMS bridge.
-- `@decocms/apps ^1.x` — commerce integrations (VTEX, Shopify, Resend).
+- `@decocms/blocks` — framework-agnostic CMS core.
+- `@decocms/blocks-admin` — admin protocol handlers + `createAdminSetup`.
+- `@decocms/tanstack` — TanStack Start + Cloudflare Workers binding (worker entry, routes, Vite plugin).
+- `@decocms/apps-*` — commerce integrations (`@decocms/apps-vtex`, `@decocms/apps-shopify`, `@decocms/apps-commerce` for shared types, …).
 
 ## 3. Add the build files
 
@@ -55,7 +60,7 @@ import { cloudflare } from "@cloudflare/vite-plugin";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
-import { decoVitePlugin } from "@decocms/start/sdk/vitePlugin";
+import decoVitePlugin from "@decocms/tanstack/vite";
 
 export default defineConfig({
   plugins: [
@@ -84,8 +89,8 @@ export default defineConfig({
 `src/setup.ts` — the central configuration. It must run **before** any module imports your sections, loaders, or matchers:
 
 ```ts
-import { createSiteSetup } from "@decocms/start/setup";
-import { autoconfigApps } from "@decocms/start/apps";
+import { createSiteSetup } from "@decocms/blocks/setup";
+import { autoconfigApps } from "@decocms/blocks-admin/apps";
 
 export const setup = createSiteSetup({
   siteName: "my-store",
@@ -99,13 +104,13 @@ export const setup = createSiteSetup({
 ```ts
 import "./setup";
 
-import { createDecoWorkerEntry } from "@decocms/start/sdk/workerEntry";
+import { createDecoWorkerEntry } from "@decocms/tanstack";
 import {
   handleMeta,
   handleDecofile,
   handleRender,
   handleInvoke,
-} from "@decocms/start/admin";
+} from "@decocms/blocks-admin";
 import serverEntry from "./server";
 
 export default createDecoWorkerEntry(serverEntry, {
@@ -128,7 +133,7 @@ export default createServerEntry({ createRouter });
 `src/routes/__root.tsx` — the global shell:
 
 ```tsx
-import { DecoRootLayout } from "@decocms/start/hooks";
+import { DecoRootLayout } from "@decocms/blocks/hooks";
 import { createRootRouteWithContext, Outlet } from "@tanstack/react-router";
 
 export const Route = createRootRouteWithContext()({
@@ -144,7 +149,7 @@ export const Route = createRootRouteWithContext()({
 
 ```tsx
 import { createFileRoute } from "@tanstack/react-router";
-import { cmsHomeRouteConfig } from "@decocms/start/routes";
+import { cmsHomeRouteConfig } from "@decocms/tanstack";
 
 export const Route = createFileRoute("/")(
   cmsHomeRouteConfig({ siteName: "my-store" }),
@@ -155,7 +160,7 @@ export const Route = createFileRoute("/")(
 
 ```tsx
 import { createFileRoute } from "@tanstack/react-router";
-import { cmsRouteConfig } from "@decocms/start/routes";
+import { cmsRouteConfig } from "@decocms/tanstack";
 
 export const Route = createFileRoute("/$")(
   cmsRouteConfig({

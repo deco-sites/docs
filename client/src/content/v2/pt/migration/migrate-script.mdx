@@ -1,18 +1,18 @@
 ---
 title: "Script de migração"
-description: "O que npx -p @decocms/start deco-migrate faz de fato."
+description: "O que npx -p @decocms/blocks-cli deco-migrate faz de fato."
 icon: "Terminal"
 ---
 
 import Callout from "../../../../components/ui/Callout.astro";
 
-`@decocms/start` provê três binários CLI sob `bin`. O carro-chefe é `deco-migrate`, que roda a migração v1 → v2 de ponta a ponta. Esta página documenta o que ele faz, quais flags aceita e o que não faz.
+`@decocms/blocks` provê três binários CLI sob `bin`. O carro-chefe é `deco-migrate`, que roda a migração v1 → v2 de ponta a ponta. Esta página documenta o que ele faz, quais flags aceita e o que não faz.
 
 ## Início rápido
 
 ```bash
 # de dentro do diretório da loja v1
-npx -p @decocms/start deco-migrate
+npx -p @decocms/blocks-cli deco-migrate
 ```
 
 Pronto. O script analisa o layout, gera arquivos v2, transforma imports/JSX/APIs, limpa código morto, gera relatório, verifica e instala dependências.
@@ -72,7 +72,7 @@ Após um run real:
 - **Listas completas** de arquivos por categoria.
 - **Inventário de loaders** — todo `loaders/*.ts` e `actions/*.ts` encontrado, com status de port.
 - **Pegadinhas Tailwind v3 → v4** — `z-index` negativo, migrações de opacidade, reescritas de `@apply`.
-- **Boilerplate duplicado de `@decocms/start`** — lugares onde o código migrado se sobrepõe a helpers do framework (candidatos a limpeza).
+- **Boilerplate duplicado de `@decocms/blocks`** — lugares onde o código migrado se sobrepõe a helpers do framework (candidatos a limpeza).
 - **Próximos passos concretos** — comandos exatos para rodar.
 
 O relatório fica commitado no seu repositório, no caminho onde você rodou o script — mantenha versionado para que os reviewers possam auditar o que mudou.
@@ -98,17 +98,17 @@ A maioria não precisa; defaults são razoáveis.
 Rode após a migração para limpar boilerplate que o framework já absorveu:
 
 ```bash
-npx -p @decocms/start deco-post-cleanup
+npx -p @decocms/blocks-cli deco-post-cleanup
 ```
 
 É read + write — revise o diff antes de commitar.
 
 ### `deco-htmx-analyze`
 
-Para sites que usavam HTMX no v1. Reporta uso para você planejar a conversão para padrões React. HTMX **não vem** em `@decocms/start` — sites que dependiam precisam reescrever para React.
+Para sites que usavam HTMX no v1. Reporta uso para você planejar a conversão para padrões React. HTMX **não vem** em `@decocms/blocks` — sites que dependiam precisam reescrever para React.
 
 ```bash
-npx -p @decocms/start deco-htmx-analyze
+npx -p @decocms/blocks-cli deco-htmx-analyze
 ```
 
 ## O que o script NÃO faz

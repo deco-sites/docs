@@ -25,8 +25,8 @@ Esta página cobre dois temas operacionais: **A/B testing** (servir variants alt
 
 ```ts
 // src/worker-entry.ts
-import { createDecoWorkerEntry } from "@decocms/start/sdk/workerEntry";
-import { withABTesting } from "@decocms/start/sdk/abTesting";
+import { createDecoWorkerEntry } from "@decocms/tanstack";
+import { withABTesting } from "@decocms/blocks/sdk/abTesting";
 
 const decoWorker = createDecoWorkerEntry(serverEntry, { admin: { /* ... */ } });
 
@@ -123,8 +123,8 @@ Padrão preferido. Edita redirects no admin como blocks; framework carrega:
 
 ```ts
 // src/worker-entry.ts
-import { loadBlocks } from "@decocms/start/cms";
-import { loadRedirects, matchRedirect } from "@decocms/start/sdk/redirects";
+import { loadBlocks } from "@decocms/blocks/cms";
+import { loadRedirects, matchRedirect } from "@decocms/blocks/sdk/redirects";
 
 const cmsRedirects = loadRedirects(loadBlocks());
 

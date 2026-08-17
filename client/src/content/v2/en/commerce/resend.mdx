@@ -6,7 +6,7 @@ icon: "Mail"
 
 import Callout from "../../../../components/ui/Callout.astro";
 
-`@decocms/apps/resend` is a small email integration around the [Resend](https://resend.com) API. It exposes one action — `sendEmail` — that you can invoke from any server-side context (form handlers, post-checkout flows, contact forms).
+`@decocms/apps-resend` is a small email integration around the [Resend](https://resend.com) API. It exposes one action — `sendEmail` — that you can invoke from any server-side context (form handlers, post-checkout flows, contact forms).
 
 ## Configuration
 
@@ -24,7 +24,7 @@ import Callout from "../../../../components/ui/Callout.astro";
 If you use `autoconfigApps()`, no extra wiring needed — the registry includes `deco-resend`. If not, configure manually:
 
 ```ts
-import * as resendApp from "@decocms/apps/resend/mod";
+import * as resendApp from "@decocms/apps-resend/mod";
 
 const resend = await resendApp.configure(
   { apiKey: { secret: "RESEND_API_KEY" } },
@@ -56,7 +56,7 @@ await invoke.resend.actions.emails.send({
 ### Direct call
 
 ```ts
-import { sendEmail } from "@decocms/apps/resend/actions/send";
+import { sendEmail } from "@decocms/apps-resend/actions/send";
 
 await sendEmail({
   from: "noreply@my-store.com",
@@ -131,7 +131,7 @@ The Resend `mod.ts` registers a custom invoke handler for `resend/actions/emails
 If you build custom email flows on top of Resend, you can register your own handlers:
 
 ```ts
-import { configureResend } from "@decocms/apps/resend/mod";
+import { configureResend } from "@decocms/apps-resend/mod";
 
 // inside your custom configure
 const handlers = {
@@ -157,7 +157,7 @@ return new Response("OK", { status: 200 });
 
 ## Stability
 
-Resend ships in `@decocms/apps` like VTEX and Shopify, but its `preview` field in `mod.ts` is `undefined` — meaning admin preview integration isn't fully built out yet. The runtime action is stable and production-used.
+Resend ships in `@decocms/apps-*` like VTEX and Shopify, but its `preview` field in `mod.ts` is `undefined` — meaning admin preview integration isn't fully built out yet. The runtime action is stable and production-used.
 
 ## See also
 

@@ -6,7 +6,7 @@ icon: "Send"
 
 import Callout from "../../../../components/ui/Callout.astro";
 
-`/deco/invoke` é o endpoint que o browser usa para chamar loaders e actions server-side. `@decocms/start/sdk/invoke` provê o cliente — bruto e tipado — para que seu código React converse com ele sem montar URLs na mão.
+`/deco/invoke` é o endpoint que o browser usa para chamar loaders e actions server-side. `@decocms/blocks/sdk/invoke` provê o cliente — bruto e tipado — para que seu código React converse com ele sem montar URLs na mão.
 
 ## Os três níveis
 
@@ -19,7 +19,7 @@ import Callout from "../../../../components/ui/Callout.astro";
 ## Invoke bruto
 
 ```ts
-import { invoke } from "@decocms/start/sdk/invoke";
+import { invoke } from "@decocms/blocks/sdk/invoke";
 
 const result = await invoke("vtex/loaders/cart.ts", {});
 ```
@@ -34,7 +34,7 @@ Devolve o que o loader devolver.
 
 ## Invoke tipado (cliente gerado)
 
-`scripts/generate-invoke.ts` em `@decocms/start` lê seu `loaders.gen.ts` e emite um `invoke.gen.ts` com cliente tipado:
+`scripts/generate-invoke.ts` em `@decocms/blocks` lê seu `loaders.gen.ts` e emite um `invoke.gen.ts` com cliente tipado:
 
 ```ts
 // gerado
@@ -82,7 +82,7 @@ const { user, cart, wishlist } = await invoke.batch({
 Para construir o cliente em runtime (e.g. para multi-tenancy ou previews que apontam para hosts diferentes):
 
 ```ts
-import { createInvoke } from "@decocms/start/sdk/invoke";
+import { createInvoke } from "@decocms/blocks/sdk/invoke";
 
 const customInvoke = createInvoke({
   endpoint: "https://staging.minha-loja.com/deco/invoke",
@@ -98,7 +98,7 @@ A maioria dos sites usa o `invoke` default e nunca toca em `createInvoke`.
 Conecta o registro de loaders no setup:
 
 ```ts
-import { setInvokeLoaders } from "@decocms/start/sdk/invoke";
+import { setInvokeLoaders } from "@decocms/blocks/sdk/invoke";
 import invokeLoaders from "./server/cms/invoke.gen";
 
 setInvokeLoaders(invokeLoaders);
@@ -108,7 +108,7 @@ Faça uma vez no `setup.ts`. Sem isso, `/deco/invoke` retorna 404 para tudo.
 
 ## Quando usar invoke vs hooks
 
-`@decocms/apps/vtex/hooks` provê hooks prontos (`useCart`, `useUser`, `useWishlist`) que embrulham `invoke` com TanStack Query (cache + refetch + estados otimistas).
+`@decocms/apps-vtex/hooks` provê hooks prontos (`useCart`, `useUser`, `useWishlist`) que embrulham `invoke` com TanStack Query (cache + refetch + estados otimistas).
 
 Use **hooks** para padrões CRUD comuns — eles cuidam de tudo.
 

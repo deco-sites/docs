@@ -32,7 +32,7 @@ Install the Cloudflare OTel package:
 npm install @microlabs/otel-cf-workers @opentelemetry/api
 ```
 
-Both are listed as **optional** peer deps of `@decocms/start` — install only if you want OTel export.
+Both are listed as **optional** peer deps of `@decocms/blocks` — install only if you want OTel export.
 
 Initialize in `worker-entry.ts`:
 
@@ -40,7 +40,7 @@ Initialize in `worker-entry.ts`:
 // src/worker-entry.ts
 import "./setup";
 import { instrument } from "@microlabs/otel-cf-workers";
-import { initTelemetry } from "@decocms/start/sdk/otel";
+import { initTelemetry } from "@decocms/blocks/sdk/otel";
 
 const config = initTelemetry({
   serviceName: "my-store",
@@ -84,8 +84,8 @@ Click into the slow spans to find the bottleneck. Most of the time, it's a slow 
 Add server timings to the response so they show in the browser's DevTools Network tab:
 
 ```ts
-import { applyServerTiming } from "@decocms/start/middleware";
-import { measure } from "@decocms/start/sdk/serverTimings";
+import { applyServerTiming } from "@decocms/blocks/middleware";
+import { measure } from "@decocms/blocks/sdk/serverTimings";
 
 const products = await measure("fetchProducts", () => fetchProducts());
 // ...
@@ -132,10 +132,10 @@ This is invaluable during incidents. Production errors appear within a few secon
 
 ## Health endpoints
 
-`@decocms/start/middleware` exposes `liveness` for Workers liveness probes:
+`@decocms/blocks/middleware` exposes `liveness` for Workers liveness probes:
 
 ```ts
-import { liveness } from "@decocms/start/middleware";
+import { liveness } from "@decocms/blocks/middleware";
 
 // inside worker entry, before the framework
 if (url.pathname === "/_health") return liveness(request);
@@ -161,10 +161,10 @@ if (url.pathname === "/_health/deep") {
 
 ## Health metrics middleware
 
-`@decocms/start/middleware/healthMetrics` emits standard health metrics (request rate, error rate, p50/p95/p99 latency):
+`@decocms/blocks/middleware/healthMetrics` emits standard health metrics (request rate, error rate, p50/p95/p99 latency):
 
 ```ts
-import { healthMetrics } from "@decocms/start/middleware/healthMetrics";
+import { healthMetrics } from "@decocms/blocks/middleware/healthMetrics";
 
 createMiddleware().middleware([healthMetrics, /* others */]);
 ```

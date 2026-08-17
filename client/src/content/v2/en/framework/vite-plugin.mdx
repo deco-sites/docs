@@ -11,7 +11,7 @@ Every v2 site uses `decoVitePlugin()` in its Vite config. It's required — with
 ## Import
 
 ```ts
-import decoVitePlugin from "@decocms/start/vite";
+import decoVitePlugin from "@decocms/tanstack/vite";
 ```
 
 ## Minimum usage
@@ -23,7 +23,7 @@ import { cloudflare } from "@cloudflare/vite-plugin";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
-import decoVitePlugin from "@decocms/start/vite";
+import decoVitePlugin from "@decocms/tanstack/vite";
 
 export default defineConfig({
   plugins: [
@@ -41,8 +41,8 @@ export default defineConfig({
       "@tanstack/react-router",
       "@tanstack/react-start",
       "@tanstack/store",
-      "@decocms/start",
-      "@decocms/apps",
+      "@decocms/blocks",
+      "@decocms/apps-*",
     ],
   },
 });
@@ -54,7 +54,7 @@ That's the canonical baseline — production v2 storefronts use this shape with 
 
 ### 1. Server-only stubs
 
-Modules that only exist server-side (`@decocms/start/cms` registry internals, `node:async_hooks`, `node:fs`) are stubbed on the client build. Without this, the client bundle would crash on import.
+Modules that only exist server-side (`@decocms/blocks/cms` registry internals, `node:async_hooks`, `node:fs`) are stubbed on the client build. Without this, the client bundle would crash on import.
 
 ### 2. `blocks.gen` JSON fast-path
 
@@ -72,13 +72,13 @@ This matters: production storefronts routinely have multi-megabyte (sometimes >1
 
 ### 4. Dev daemon
 
-In dev mode, the plugin starts the daemon (file watcher, JWT-authenticated tunnel to admin) so `admin.deco.cx` can talk to your local server. See `@decocms/start/daemon` for the underlying machinery.
+In dev mode, the plugin starts the daemon (file watcher, JWT-authenticated tunnel to admin) so `admin.deco.cx` can talk to your local server. See `@decocms/tanstack/daemon` for the underlying machinery.
 
 ### 5. Chunk hints
 
 The plugin instructs Vite **not** to split certain modules across chunks:
 
-- `@decocms/start` and `@decocms/apps` have circular re-exports between submodules. Splitting them causes load-order crashes.
+- `@decocms/blocks` and `@decocms/apps-*` have circular re-exports between submodules. Splitting them causes load-order crashes.
 
 You don't need to configure this — the plugin emits the right `manualChunks` hints automatically.
 
@@ -97,7 +97,7 @@ In practice, the default options are what you want.
 ## What you must NOT do
 
 <Callout type="warning">
-**Don't manually configure `manualChunks` for `@decocms/start` or `@decocms/apps`.**
+**Don't manually configure `manualChunks` for `@decocms/blocks` or `@decocms/apps-*`.**
 
 If you're tempted to split them for "smaller chunks", don't. The packages have intentional circular re-exports between subpath modules. Splitting them across chunks produces a runtime error like:
 
@@ -113,7 +113,7 @@ The plugin works inside the Cloudflare Workers SSR environment (`viteEnvironment
 | Import | Server | Client |
 |---|---|---|
 | `node:async_hooks` | ✓ | stubbed to no-op |
-| `@decocms/start/cms` (registry internals) | ✓ | stubbed |
+| `@decocms/blocks/cms` (registry internals) | ✓ | stubbed |
 | Anything reading `RequestContext.current` | ✓ | undefined |
 
 This stubbing happens automatically. If you import server-only code in a component, you'll get a "module not found" or "is undefined" error in the browser — that's the stub kicking in.
@@ -159,8 +159,8 @@ deduplicate: [
   "@tanstack/react-router",
   "@tanstack/react-start",
   "@tanstack/store",
-  "@decocms/start",
-  "@decocms/apps",
+  "@decocms/blocks",
+  "@decocms/apps-*",
 ],
 ```
 
@@ -170,7 +170,7 @@ If you add a peer dep that overlaps the framework's, add it to this list too.
 
 ### "Cannot access 'X' before initialization"
 
-You're splitting `@decocms/start` or `@decocms/apps` into chunks. Remove your `manualChunks` override.
+You're splitting `@decocms/blocks` or `@decocms/apps-*` into chunks. Remove your `manualChunks` override.
 
 ### "Module not found: `node:async_hooks`" on client
 

@@ -1,18 +1,18 @@
 ---
 title: "Migrate script"
-description: "What npx -p @decocms/start deco-migrate actually does."
+description: "What npx -p @decocms/blocks-cli deco-migrate actually does."
 icon: "Terminal"
 ---
 
 import Callout from "../../../../components/ui/Callout.astro";
 
-`@decocms/start` ships three CLI binaries under `bin`. The headliner is `deco-migrate`, which runs the v1 → v2 migration end-to-end. This page documents what it does, what flags it accepts, and what it doesn't.
+`@decocms/blocks` ships three CLI binaries under `bin`. The headliner is `deco-migrate`, which runs the v1 → v2 migration end-to-end. This page documents what it does, what flags it accepts, and what it doesn't.
 
 ## Quick start
 
 ```bash
 # from your v1 site directory
-npx -p @decocms/start deco-migrate
+npx -p @decocms/blocks-cli deco-migrate
 ```
 
 That's it. The script analyzes the source layout, scaffolds v2 files, transforms imports/JSX/APIs, cleans up dead code, generates a report, verifies the result, and bootstraps deps.
@@ -72,7 +72,7 @@ After a real run, the report has:
 - **Full file lists** for each category.
 - **Loader inventory** — every `loaders/*.ts` and `actions/*.ts` found, with port status.
 - **Tailwind v3 → v4 pitfalls** — negative `z-index`, opacity migrations, `@apply` rewrites.
-- **`@decocms/start` boilerplate duplication** — places where the migrated code overlaps with framework-provided helpers (candidates for cleanup).
+- **`@decocms/blocks` boilerplate duplication** — places where the migrated code overlaps with framework-provided helpers (candidates for cleanup).
 - **Concrete next steps** — exact commands to run.
 
 The report is checked into your repo at the path you ran the script in — keep it under version control so reviewers can audit what changed.
@@ -98,17 +98,17 @@ Most users don't need this; the defaults are sane.
 Run after the migration to clean up leftover boilerplate the framework has since absorbed:
 
 ```bash
-npx -p @decocms/start deco-post-cleanup
+npx -p @decocms/blocks-cli deco-post-cleanup
 ```
 
 This is read + write — review the diff before committing.
 
 ### `deco-htmx-analyze`
 
-Specifically for sites that used HTMX during the v1 era. Reports HTMX usage so you can plan the conversion to React patterns. HTMX is **not shipped in `@decocms/start`** — sites that depended on it need to rewrite to React.
+Specifically for sites that used HTMX during the v1 era. Reports HTMX usage so you can plan the conversion to React patterns. HTMX is **not shipped in `@decocms/blocks`** — sites that depended on it need to rewrite to React.
 
 ```bash
-npx -p @decocms/start deco-htmx-analyze
+npx -p @decocms/blocks-cli deco-htmx-analyze
 ```
 
 ## What the script doesn't do

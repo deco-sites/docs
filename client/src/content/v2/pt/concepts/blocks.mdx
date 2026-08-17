@@ -60,7 +60,7 @@ npm run generate:blocks
 Um módulo fino que o [Vite plugin](/v2/pt/framework/vite-plugin) substitui por `JSON.parse` do `.json` irmão em load time. Não edite na mão nenhum dos dois.
 
 <Callout type="warning">
-**Não tente chunk manual de `@decocms/start` ou `@decocms/apps`** no `vite.config.ts`. O Vite plugin cuida do fast path do JSON, e esses pacotes têm re-exports circulares que crasham se forem divididos em chunks.
+**Não tente chunk manual de `@decocms/blocks` ou `@decocms/apps-*`** no `vite.config.ts`. O Vite plugin cuida do fast path do JSON, e esses pacotes têm re-exports circulares que crasham se forem divididos em chunks.
 </Callout>
 
 ## Como a resolução funciona
@@ -68,7 +68,7 @@ Um módulo fino que o [Vite plugin](/v2/pt/framework/vite-plugin) substitui por 
 Quando chega uma requisição para `/produtos/algum-produto`:
 
 1. A rota catch-all chama `loadCmsPage({ siteName, pathname })`.
-2. `loadCmsPage` chama `resolveDecoPage` de `@decocms/start/cms`, que:
+2. `loadCmsPage` chama `resolveDecoPage` de `@decocms/blocks/cms`, que:
    - Procura o block da página por padrão de URL.
    - Percorre cada referência de section na lista da página.
    - Resolve o `__resolveType` de cada section para um componente registrado.

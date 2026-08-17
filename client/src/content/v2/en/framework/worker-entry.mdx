@@ -11,7 +11,7 @@ import Callout from "../../../../components/ui/Callout.astro";
 ## Import
 
 ```ts
-import { createDecoWorkerEntry } from "@decocms/start/sdk/workerEntry";
+import { createDecoWorkerEntry } from "@decocms/tanstack";
 ```
 
 ## Minimum usage
@@ -20,13 +20,13 @@ import { createDecoWorkerEntry } from "@decocms/start/sdk/workerEntry";
 // src/worker-entry.ts
 import "./setup";   // MUST be first
 
-import { createDecoWorkerEntry } from "@decocms/start/sdk/workerEntry";
+import { createDecoWorkerEntry } from "@decocms/tanstack";
 import {
   handleMeta,
   handleDecofile,
   handleRender,
   handleInvoke,
-} from "@decocms/start/admin";
+} from "@decocms/blocks-admin";
 import serverEntry from "./server";
 
 const decoWorker = createDecoWorkerEntry(serverEntry, {
@@ -79,7 +79,7 @@ type WorkerEntryOptions = {
 
 ### `admin`
 
-Pass the four admin handlers from `@decocms/start/admin`. **Without these, admin can't talk to your storefront.**
+Pass the four admin handlers from `@decocms/blocks-admin`. **Without these, admin can't talk to your storefront.**
 
 If you want to extend admin behavior (custom auth, custom CORS rules), wrap the handlers:
 
@@ -97,7 +97,7 @@ Runs after admin routes and after the cache check, but before the server entry. 
 A common use is the VTEX checkout proxy:
 
 ```ts
-import { createVtexCheckoutProxy } from "@decocms/apps/vtex/middleware";
+import { createVtexCheckoutProxy } from "@decocms/apps-vtex/middleware";
 
 const proxyHandler = createVtexCheckoutProxy({
   checkoutOrigin: "https://www.example.com.br",
@@ -117,7 +117,7 @@ Another common use is legacy URL redirects loaded from a CSV file — see [Redir
 Returns a key-value object mixed into the cache key. Used for cache segmentation by region, device, or user state.
 
 ```ts
-import { detectDevice } from "@decocms/start/sdk/useDevice";
+import { detectDevice } from "@decocms/blocks/sdk/useDevice";
 
 const decoWorker = createDecoWorkerEntry(serverEntry, {
   admin: {/* ... */},
@@ -143,7 +143,7 @@ Secret key for the cache purge endpoint. When `?__deco_purge_cache=<key>` is pre
 For site-version-level A/B (canary deploys, full-stack experiments), wrap the worker in `withABTesting`:
 
 ```ts
-import { withABTesting } from "@decocms/start/sdk/abTesting";
+import { withABTesting } from "@decocms/blocks/sdk/abTesting";
 
 export default withABTesting(decoWorker, {
   kvBinding: "SITES_KV",
@@ -158,11 +158,11 @@ See [A/B testing and redirects](/v2/en/deployment/ab-testing-and-redirects) for 
 
 ## Redirect loading
 
-`@decocms/start/sdk/redirects` exposes `loadRedirects(blocks)` that finds CMS-defined redirects in `.deco/blocks/` and produces a matcher you can call from `proxyHandler`:
+`@decocms/blocks/sdk/redirects` exposes `loadRedirects(blocks)` that finds CMS-defined redirects in `.deco/blocks/` and produces a matcher you can call from `proxyHandler`:
 
 ```ts
-import { loadBlocks } from "@decocms/start/cms";
-import { loadRedirects, matchRedirect } from "@decocms/start/sdk/redirects";
+import { loadBlocks } from "@decocms/blocks/cms";
+import { loadRedirects, matchRedirect } from "@decocms/blocks/sdk/redirects";
 
 const cmsRedirects = loadRedirects(loadBlocks());
 
@@ -184,7 +184,7 @@ Static assets (`/assets/*`, `/favicon.ico`, `/sprite.svg`) bypass the framework 
 
 ## Cache integration
 
-`createDecoWorkerEntry` calls `caches.default` directly. The cache key is the URL plus the segment from `buildSegment`. TTLs are derived from URL profiles via [`@decocms/start/sdk/cacheHeaders`](/v2/en/framework/caching).
+`createDecoWorkerEntry` calls `caches.default` directly. The cache key is the URL plus the segment from `buildSegment`. TTLs are derived from URL profiles via [`@decocms/blocks/sdk/cacheHeaders`](/v2/en/framework/caching).
 
 <Callout type="info">
 **Cache API ignores `s-maxage`.** The framework writes `max-age` (browser) and stores entries with the equivalent of `s-maxage` for the duration. This works around a Cloudflare Cache API quirk.

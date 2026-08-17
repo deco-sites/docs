@@ -1,86 +1,95 @@
 ---
 title: "Framework overview"
-description: "Map of the @decocms/start surface area — what lives where."
+description: "Map of the split @decocms/* framework surface — what lives in which package."
 icon: "Map"
 ---
 
 import Callout from "../../../../components/ui/Callout.astro";
 
-This page is the index of `@decocms/start`. Each section links to a deeper reference. If you're unsure where to look, scan this page first.
+This page is the index of the framework packages. Each section links to a deeper reference. If you're unsure where to look, scan this page first.
 
-## What's in the box
+<Callout type="info">
+**The framework is a monorepo, not one package.** The former single `@decocms/start` package was split into focused packages with real boundaries, so no package bundles another's compiled output. Pick the binding that matches your app — `@decocms/tanstack` (TanStack Start + Cloudflare Workers) or `@decocms/nextjs` (Next.js App Router) — both compose the same `@decocms/blocks` core.
+</Callout>
 
-`@decocms/start` is the framework layer. It exposes:
+## The packages
 
-- A **worker entry wrapper** (`createDecoWorkerEntry`) that runs admin routes, edge cache, and static asset bypass before the framework gets the request.
+| Package | Role |
+|---|---|
+| `@decocms/blocks` | Framework-agnostic **CMS core**: block resolution, section/loader registry, matchers, flags, middleware, hooks, and the SDK. Zero framework deps. |
+| `@decocms/blocks-admin` | **Admin protocol** handlers (`/live/_meta`, `/.decofile`, `/deco/render`, `/deco/invoke`) + `createAdminSetup`. |
+| `@decocms/blocks-cli` | **Code generation** (`generate`, `generate-blocks`, `generate-schema`, `generate-invoke`) + migration CLIs. |
+| `@decocms/tanstack` | **TanStack Start + Cloudflare Workers** binding: worker entry, CMS routes, Vite plugin, deferred sections, KV fast deploy. |
+| `@decocms/nextjs` | **Next.js App Router** binding: RSC pages, previews, route handlers, one-call setup. |
+| `@decocms/apps-*` | **Commerce & website** integrations (VTEX, Shopify, Magento, Salesforce, Algolia, Resend, blog, shared commerce types). |
+
+## What the core gives you
+
+`@decocms/blocks` (plus a binding) exposes:
+
 - A **CMS bridge** that resolves blocks into rendered React trees.
-- An **admin protocol** implementation (`/live/_meta`, `/.decofile`, `/deco/render`, `/deco/invoke`).
 - A **section/loader registry** with TS → JSON Schema generation.
-- A **Vite plugin** that handles the `blocks.gen` JSON fast-path and chunk hints.
 - A small **SDK** (caching, invoke, instrumented fetch, scripts, signals, cookies, etc.).
-- **Code generation scripts** (`generate-blocks`, `generate-schema`, `generate-invoke`, `migrate`, `tailwind-lint`).
-- **Three CLI binaries** (`deco-migrate`, `deco-post-cleanup`, `deco-htmx-analyze`).
+- **Middleware, matchers, and flags** for request-scoped behavior.
 
-## Source tree
+The binding adds the framework-specific glue:
+
+- **`@decocms/tanstack`** — a **worker entry wrapper** (`createDecoWorkerEntry`) that runs admin routes, edge cache, and static asset bypass; the **CMS routes** (`cmsRouteConfig`); and the **Vite plugin** (`decoVitePlugin`) for the `blocks.gen` JSON fast-path.
+- **`@decocms/nextjs`** — App Router **route handlers**, the RSC **preview page**, and `createNextSetup`.
+
+The **admin protocol** implementation lives in `@decocms/blocks-admin`; **code generation** lives in `@decocms/blocks-cli`.
+
+## Repository layout
 
 ```
-deco-start/src/
-├── admin/        # Admin protocol handlers, schema composition, preview shell
-├── apps/         # autoconfigApps + setupApps (CMS app wiring)
-├── cms/          # blocks.loader, registry, resolveDecoPage, sectionLoaders
-├── daemon/       # Local dev tunnel + auth + watcher (advanced)
-├── hooks/        # DecoPageRenderer, LazySection, LiveControls, NavigationProgress
-├── matchers/     # Built-in matchers + PostHog
-├── middleware/   # decoState, observability, healthMetrics, hydrationContext
-├── routes/       # cmsRouteConfig, cmsHomeRouteConfig, withSiteGlobals
-├── sdk/          # Worker entry, caching, invoke, fetch, scripts, signals, etc.
-├── types/        # FnContext, App, Section, widgets
-├── vite/         # decoVitePlugin (Vite plugin)
-└── setup.ts      # createSiteSetup (one-call site bootstrap)
+packages/
+├── blocks/          CMS runtime and portable SDK
+├── blocks-admin/    Admin protocol and admin setup
+├── blocks-cli/      Code generation, audits, and migrations
+├── tanstack/        TanStack Start + Cloudflare Workers binding
+├── nextjs/          Next.js App Router binding
+├── eitri/           Eitri schema and decofile generator
+└── apps-*/          Shared capabilities and platform integrations
 ```
-
-Every directory has a corresponding reference page below.
 
 ## Reference pages
 
 | Page | Covers |
 |---|---|
-| [Worker entry](/v2/en/framework/worker-entry) | `createDecoWorkerEntry`, A/B testing, redirects, proxy handler, segment builder |
-| [Vite plugin](/v2/en/framework/vite-plugin) | `decoVitePlugin`, chunking gotchas, blocks.gen fast-path |
-| [Setup](/v2/en/framework/setup) | `createSiteSetup`, sections glob, blocks, matchers, platform init |
+| [Worker entry](/v2/en/framework/worker-entry) | `createDecoWorkerEntry`, A/B testing, redirects, proxy handler, segment builder (`@decocms/tanstack`) |
+| [Vite plugin](/v2/en/framework/vite-plugin) | `decoVitePlugin`, chunking gotchas, blocks.gen fast-path (`@decocms/tanstack/vite`) |
+| [Setup](/v2/en/framework/setup) | `createSiteSetup`, `createAdminSetup`, sections glob, blocks, matchers, platform init |
 | [Routes](/v2/en/framework/routes) | `cmsRouteConfig`, `cmsHomeRouteConfig`, `loadCmsPage`, `loadDeferredSection`, `withSiteGlobals` |
-| [Hooks](/v2/en/framework/hooks) | `DecoPageRenderer`, `LazySection`, `LiveControls`, `NavigationProgress`, `useDevice`, `useHydrated` |
+| [Hooks](/v2/en/framework/hooks) | `DecoPageRenderer`, `LazySection`, `LiveControls`, `NavigationProgress`, `useDevice`, `useHydrated`; commerce hooks (Cart v2) |
 | [Caching](/v2/en/framework/caching) | Edge profiles, `cacheHeaders`, `cachedLoader`, `mergeCacheControl` |
 | [Invoke](/v2/en/framework/invoke) | `createInvoke`, `invoke`, batch invoke, generated client |
 | [Middleware & matchers](/v2/en/framework/middleware-and-matchers) | `decoState`, observability, hydration context, validate section, builtins, PostHog |
-| [SDK utilities](/v2/en/framework/sdk-utilities) | Everything else under `sdk/*` and the codegen scripts |
+| [SDK utilities](/v2/en/framework/sdk-utilities) | Everything else under `@decocms/blocks/sdk/*` and the codegen scripts |
 
 ## Package exports overview
 
-`@decocms/start` exposes ~60 entry points. The most-used:
+The most-used entry points across packages:
 
 | Import | What it is |
 |---|---|
-| `@decocms/start` | Barrel: re-exports `cms`, `admin`, `hooks`, `middleware`, `types` |
-| `@decocms/start/setup` | `createSiteSetup` |
-| `@decocms/start/cms` | Block loading, section/loader registry, resolveDecoPage |
-| `@decocms/start/admin` | Admin protocol handlers |
-| `@decocms/start/hooks` | `DecoPageRenderer`, `LazySection`, etc. |
-| `@decocms/start/routes` | `cmsRouteConfig`, `loadCmsPage`, etc. |
-| `@decocms/start/middleware` | Observability, decoState, hydration context |
-| `@decocms/start/sdk` | Caching, invoke, fetch, scripts, signals (barrel) |
-| `@decocms/start/sdk/workerEntry` | `createDecoWorkerEntry` |
-| `@decocms/start/sdk/cachedLoader` | `createCachedLoader` |
-| `@decocms/start/vite` | `decoVitePlugin()` |
-| `@decocms/start/types` | `FnContext`, `Section`, `App` |
-| `@decocms/start/types/widgets` | Widget types: `ImageWidget`, `RichText`, `Color`, etc. |
-| `@decocms/start/matchers/builtins` | `MatchUserAgent`, `MatchDate`, etc. |
-| `@decocms/start/matchers/posthog` | PostHog matcher |
+| `@decocms/blocks/setup` | `createSiteSetup` |
+| `@decocms/blocks/cms` | Block loading, section/loader registry, resolveDecoPage |
+| `@decocms/blocks/hooks` | `DecoPageRenderer`, `LazySection`, etc. |
+| `@decocms/blocks/middleware` | Observability, decoState, hydration context |
+| `@decocms/blocks/sdk` | Caching, invoke, fetch, scripts, signals (barrel) |
+| `@decocms/blocks/sdk/cachedLoader` | `createCachedLoader` |
+| `@decocms/blocks/types` | `FnContext`, `Section`, `App` |
+| `@decocms/blocks/types/widgets` | Widget types: `ImageWidget`, `RichText`, `Color`, etc. |
+| `@decocms/blocks/matchers/builtins` | `MatchUserAgent`, `MatchDate`, etc. |
+| `@decocms/blocks-admin` | Admin protocol handlers |
+| `@decocms/blocks-admin/setup` | `createAdminSetup` |
+| `@decocms/tanstack` | `cmsRouteConfig`, `loadCmsPage`, `createDecoWorkerEntry` |
+| `@decocms/tanstack/vite` | `decoVitePlugin()` |
 
-The full table is at [Package exports reference](/v2/en/reference/package-exports).
+The full tables are at [Package exports reference](/v2/en/reference/package-exports).
 
 <Callout type="warning">
-**Subpath vs. barrel imports.** Several SDK utilities have their own subpath export (`@decocms/start/sdk/cachedLoader`, `@decocms/start/sdk/encoding`, `@decocms/start/sdk/http`, etc.) that are NOT re-exported from the `@decocms/start/sdk` barrel. Always use the subpath for these. The reference table flags which are barrel-only vs. subpath-only.
+**Subpath vs. barrel imports.** Several SDK utilities have their own subpath export (`@decocms/blocks/sdk/cachedLoader`, `@decocms/blocks/sdk/encoding`, `@decocms/blocks/sdk/http`, etc.) that are NOT re-exported from the `@decocms/blocks/sdk` barrel. Always use the subpath for these. The reference tables flag which are barrel-only vs. subpath-only.
 </Callout>
 
 ## Three-layer architecture (as a reminder)
@@ -88,18 +97,20 @@ The full table is at [Package exports reference](/v2/en/reference/package-export
 ```
 Site repo                ← Components, sections, routes, styles, contexts
   ↑ depends on
-@decocms/apps            ← Commerce: VTEX, Shopify, Resend, types, SDK
+@decocms/apps-*          ← Commerce: VTEX, Shopify, Resend, types, SDK
   ↑ depends on
-@decocms/start           ← Framework: this package
+@decocms/tanstack        ← Binding: worker entry, routes, Vite plugin, edge cache
+  ↑ depends on           (or @decocms/nextjs for the App Router)
+@decocms/blocks          ← Framework core: CMS resolution, registry, SDK
   ↑ runs on
-TanStack Start + React 19 + Cloudflare Workers
+TanStack Start + React 19 + Cloudflare Workers  (or Next.js App Router)
 ```
 
-Things `@decocms/start` deliberately does **not** ship:
+Things the framework deliberately does **not** ship:
 
 - Preact references or compatibility shims.
 - Site-specific section maps.
-- Commerce API calls (those live in `@decocms/apps`).
+- Commerce API calls (those live in `@decocms/apps-*`).
 - UI components (those live in your site).
 
 If you find yourself wanting one of these, reconsider — usually there's a layered solution.
@@ -108,10 +119,10 @@ If you find yourself wanting one of these, reconsider — usually there's a laye
 
 Reading the source is encouraged. Two starting points:
 
-- **`CLAUDE.md`** at the repo root has the canonical architectural decisions.
+- **`CLAUDE.md`** at the repo root has the canonical architectural decisions and the one-way dependency graph.
 - **`MIGRATION_TOOLING_PLAN.md`** has the append-only record of how the migration story has evolved.
 
-Both live at [`@decocms/start`](https://github.com/decocms/deco-start).
+Both live in the [`decocms/blocks`](https://github.com/decocms/blocks) monorepo.
 
 ## See also
 

@@ -1,0 +1,154 @@
+---
+title: "Next.js binding"
+description: "@decocms/nextjs — the App Router sibling of @decocms/tanstack. Config, route handlers, RSC preview, setup."
+icon: "Layers"
+---
+
+import Callout from "../../../../components/ui/Callout.astro";
+
+`@decocms/nextjs` is the Next.js App Router binding — the **sibling of `@decocms/tanstack`**. Both compose the same `@decocms/blocks` core and `@decocms/blocks-admin` protocol; they differ only in the framework glue. Pick the binding that matches your app; the CMS content, sections, loaders, and commerce apps are identical either way.
+
+## TanStack vs. Next.js at a glance
+
+| Concern | `@decocms/tanstack` | `@decocms/nextjs` |
+|---|---|---|
+| Runtime target | Cloudflare Workers | Node / RSC |
+| Build | Vite (`decoVitePlugin`) | Next's own bundler (no Vite) |
+| Admin protocol mount | inside `createDecoWorkerEntry` | `createDecoRouteHandlers` at `app/deco/[[...deco]]/route.ts` |
+| Live preview | `handleRender` (plain HTML) | RSC preview **page** at `/deco/preview` |
+| Section registry | `import.meta.glob` (Vite) | `generate-sections --registry` → `sectionImports` |
+| Fast Deploy (KV) | ✅ available | ❌ not applicable (Node/RSC target) |
+| Setup | `createSiteSetup` + `createAdminSetup` | `createNextSetup` (one call) |
+
+<Callout type="info">
+**Fast Deploy is TanStack-only.** KV-first content and Cloudflare edge caching are a Workers concern; `@decocms/nextjs` deliberately does not carry them.
+</Callout>
+
+## The four surfaces
+
+`@decocms/nextjs` composes four exports:
+
+- **`@decocms/nextjs/config`** — `withDeco(nextConfig)`, a `next.config` wrapper that adds the rewrites and `transpilePackages` the admin protocol needs.
+- **`@decocms/nextjs/routeHandlers`** — `createDecoRouteHandlers({ setup })`, a single catch-all dispatcher for the whole Studio admin protocol.
+- **`@decocms/nextjs`** — `createDecoPreviewPage({ setup })` and `DecoRootLayout`, rendered through Next's RSC pipeline.
+- **`@decocms/nextjs/setup`** — `createNextSetup(options)`, the Next.js analogue of Vite's `createSiteSetup` + `createAdminSetup` + `import.meta.glob`.
+
+## Install
+
+```bash
+bun add @decocms/nextjs @decocms/blocks @decocms/blocks-admin
+```
+
+`next`, `react`, and `react-dom` are peer dependencies.
+
+## 1. `next.config` — `withDeco`
+
+`withDeco` adds the Studio-protocol rewrites (mapping `/.decofile`, `/live/_meta`, `/live/previews/*` onto `/deco/*`) and appends the `@decocms/*` packages to `transpilePackages` (they ship raw TypeScript, not a prebuilt `dist/`). It merges with your existing config — never replaces it.
+
+```ts
+// next.config.ts
+import type { NextConfig } from "next";
+import { withDeco } from "@decocms/nextjs/config";
+
+const nextConfig: NextConfig = {
+  // ...your own config
+};
+
+export default withDeco(nextConfig);
+```
+
+## 2. The catch-all route + RSC preview page
+
+Mount `createDecoRouteHandlers` at `app/deco/[[...deco]]/route.ts` — it serves the entire admin protocol (decofile, meta, invoke, previews).
+
+```ts
+// src/app/deco/[[...deco]]/route.ts
+import { createDecoRouteHandlers } from "@decocms/nextjs/routeHandlers";
+import { ensureSetup } from "../../../deco/setup";
+
+export const dynamic = "force-dynamic";
+
+export const { GET, POST, OPTIONS } = createDecoRouteHandlers({ setup: ensureSetup });
+```
+
+Preview GETs are redirected from the catch-all to a dedicated App Router **page** at the framework-owned `/deco/preview` (this path is not configurable). Mount it:
+
+```tsx
+// src/app/deco/preview/[[...path]]/page.tsx
+import { createDecoPreviewPage } from "@decocms/nextjs";
+import { ensureSetup } from "../../../../deco/setup";
+
+export const dynamic = "force-dynamic";
+
+export default createDecoPreviewPage({ setup: ensureSetup });
+```
+
+<Callout type="warning">
+**Two load-bearing rules for the preview.**
+
+1. **The preview must be a page, not a route handler.** `react-dom/server.renderToString` (used by a plain handler) cannot execute the client-reference proxies Next creates for `"use client"` modules — only the App Router RSC renderer can compose Server Components with Client Components and emit hydration metadata. Do **not** fix a preview failure by stripping `"use client"` from components that need hooks, events, or browser APIs.
+2. **In `route.ts`, import only from the subpaths** (`/routeHandlers`, `/config`, `/setup`) — never the root barrel. Route handlers evaluate their whole module graph against React's react-server build; the root barrel pulls in render components that use client-only React APIs at module scope and crash at import time. The root barrel is fine in `page.tsx` and `layout.tsx` (they are Server Components, not handlers).
+</Callout>
+
+## 3. `createNextSetup`
+
+`createNextSetup` returns a **memoized** `ensureSetup()`. Codegen artifacts default into `.deco/` at the site root; import them through a `deco/*` tsconfig path alias (`"deco/*": [".deco/*"]`).
+
+```ts
+// src/deco/setup.ts
+import { createNextSetup } from "@decocms/nextjs/setup";
+import blocks from "deco/blocksManifest.gen";
+import { sectionImports, sectionMeta, syncComponents, loadingFallbacks } from "deco/sections.gen";
+
+export const ensureSetup = createNextSetup({
+  blocks,
+  blocksDir: false, // the static-import manifest is the sole block source
+  sections: sectionImports,
+  conventions: { meta: sectionMeta, syncComponents, loadingFallbacks },
+  meta: () => import("deco/meta.gen.json").then((m) => m.default),
+});
+```
+
+`ensureSetup()` is awaited in three places: the catch-all route (above), the RSC preview page (above), and the **root layout** — page rendering has no setup hook of its own, so `app/layout.tsx` must await it directly:
+
+```tsx
+// src/app/layout.tsx
+import { DecoRootLayout } from "@decocms/nextjs";
+import { ensureSetup } from "../deco/setup";
+
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  await ensureSetup();
+  return <DecoRootLayout siteName="my-site">{children}</DecoRootLayout>;
+}
+```
+
+### Recommended block source: the static-import manifest
+
+`generate-blocks-manifest` (from `@decocms/blocks-cli`) emits `.deco/blocksManifest.gen.ts`, a module that statically imports every `.deco/blocks/*.json`. Passing its default export as `blocks` with `blocksDir: false` makes it the sole block source and the bootstrap pure (no filesystem read). Benefits: CMS content hot-reloads in `next dev` (the JSONs are part of Next's module graph), and deploys need no `outputFileTracingIncludes` hack. Trade-off: content is baked at build time (Studio's `POST /.decofile` still overrides the in-memory snapshot at runtime), and adding/removing a block *file* requires re-running the generator.
+
+## 4. Codegen scripts — non-colliding names
+
+```json
+{
+  "scripts": {
+    "generate:deco-meta": "tsx node_modules/@decocms/blocks-cli/scripts/generate-schema.ts",
+    "generate:deco-sections": "tsx node_modules/@decocms/blocks-cli/scripts/generate-sections.ts --registry",
+    "generate:deco-blocks": "tsx node_modules/@decocms/blocks-cli/scripts/generate-blocks-manifest.ts"
+  }
+}
+```
+
+<Callout type="warning">
+**Do not name any of these `generate:schema`.** FastStore sites already own that script name for their own commerce-schema codegen; a collision silently shadows one of the two generators. `generate-sections` needs **`--registry`** to emit `sectionImports` (Next has no `import.meta.glob`). All three default their output to `.deco/`.
+</Callout>
+
+## Verifying your setup
+
+`examples/nextjs-smoke` in the monorepo is a minimal, real App Router build exercising all four surfaces end to end (rewrites, catch-all route, RSC preview page, `createNextSetup`, a resolved page render), with a real interactive Client Component in the preview fixture. Use it as the working reference.
+
+## See also
+
+- [Framework overview](/v2/en/framework/overview)
+- [Setup](/v2/en/framework/setup)
+- [Worker entry](/v2/en/framework/worker-entry) (the TanStack equivalent)
+- [Package exports](/v2/en/reference/package-exports)

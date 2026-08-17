@@ -1,12 +1,12 @@
 ---
 title: "Visão geral de commerce"
-description: "@decocms/apps — VTEX, Shopify, Resend e tipos schema.org compartilhados."
+description: "@decocms/apps-* — VTEX, Shopify, Resend e tipos schema.org compartilhados."
 icon: "ShoppingCart"
 ---
 
 import Callout from "../../../../components/ui/Callout.astro";
 
-`@decocms/apps` é a camada de commerce — o lugar onde integrações VTEX, Shopify, Resend e qualquer outro provider externo moram. Esta página é o índice; cada plataforma tem sua referência.
+`@decocms/apps-*` é a camada de commerce — o lugar onde integrações VTEX, Shopify, Resend e qualquer outro provider externo moram. Esta página é o índice; cada plataforma tem sua referência.
 
 ## Plataformas suportadas
 
@@ -30,16 +30,16 @@ Você normalmente só usa `autoconfigApps` se quer customização explícita. Pa
 
 ```ts
 // caso simples
-import { initVtexFromBlocks } from "@decocms/apps/vtex/client";
+import { initVtexFromBlocks } from "@decocms/apps-vtex/client";
 
 createSiteSetup({
   initPlatform: () => initVtexFromBlocks(),
 });
 
 // caso explícito
-import { autoconfigApps } from "@decocms/start/apps";
-import vtex from "@decocms/apps/vtex";
-import shopify from "@decocms/apps/shopify";
+import { autoconfigApps } from "@decocms/blocks-admin/apps";
+import vtex from "@decocms/apps-vtex";
+import shopify from "@decocms/apps-shopify";
 
 autoconfigApps({
   apps: { vtex, shopify },
@@ -48,13 +48,13 @@ autoconfigApps({
 
 ## Peer dependencies
 
-`@decocms/apps` depende de `@decocms/start`. Toda loja já tem isso — só certifique-se da compatibilidade de versão:
+`@decocms/apps-*` depende de `@decocms/blocks`. Toda loja já tem isso — só certifique-se da compatibilidade de versão:
 
 ```jsonc
 {
   "dependencies": {
-    "@decocms/start": "^2.28.0",
-    "@decocms/apps": "^1.11.0"
+    "@decocms/blocks": "^2.28.0",
+    "@decocms/apps-*": "^1.11.0"
   }
 }
 ```
@@ -66,7 +66,7 @@ Quando você atualizar uma, atualize a outra.
 Toda integração de plataforma segue o mesmo formato:
 
 ```
-@decocms/apps/<plataforma>/
+@decocms/apps-<plataforma>/
 ├── actions/         # Mutações (adicionar ao carrinho, atualizar perfil)
 ├── loaders/         # Buscas (lista de produtos, detalhe do produto, sessão)
 ├── hooks/           # React hooks tipados (useCart, useUser, useWishlist)
@@ -113,10 +113,10 @@ Cada etapa é coberta na referência apropriada.
 
 ## Tipos schema.org
 
-`@decocms/apps/types/commerce` exporta tipos de produto, oferta, item de carrinho, ordem alinhados ao schema.org. Sites ficam neutros à plataforma quando codificam contra esses tipos.
+`@decocms/apps-commerce/types` exporta tipos de produto, oferta, item de carrinho, ordem alinhados ao schema.org. Sites ficam neutros à plataforma quando codificam contra esses tipos.
 
 ```ts
-import type { Product, ProductDetailsPage, BreadcrumbList } from "@decocms/apps/types/commerce";
+import type { Product, ProductDetailsPage, BreadcrumbList } from "@decocms/apps-commerce/types";
 ```
 
 VTEX e Shopify mapeiam suas formas nativas de API para esses tipos. Se você trocar de plataforma, suas sections continuam compilando.

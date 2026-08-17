@@ -6,7 +6,7 @@ icon: "Component"
 
 import Callout from "../../../../components/ui/Callout.astro";
 
-`@decocms/start/hooks` exports React components and hooks that connect resolved CMS data to the page. The headliner is `DecoPageRenderer`; everything else fills in around it.
+`@decocms/blocks/hooks` exports React components and hooks that connect resolved CMS data to the page. The headliner is `DecoPageRenderer`; everything else fills in around it.
 
 ## Import
 
@@ -19,7 +19,7 @@ import {
   NavigationProgress,
   useDevice,
   useHydrated,
-} from "@decocms/start/hooks";
+} from "@decocms/blocks/hooks";
 ```
 
 ## `DecoPageRenderer`
@@ -27,7 +27,7 @@ import {
 Renders a CMS page tree. It walks the resolved sections, lazy-wraps deferred ones, attaches error boundaries, and emits live controls in admin preview mode.
 
 ```tsx
-import { DecoPageRenderer } from "@decocms/start/hooks";
+import { DecoPageRenderer } from "@decocms/blocks/hooks";
 
 export default function Page() {
   return <DecoPageRenderer />;
@@ -52,7 +52,7 @@ You almost always use `DecoPageRenderer` as your CMS route's `component`.
 A pre-built `__root.tsx` shell. Use it unless you need control the framework shell can't give.
 
 ```tsx
-import { DecoRootLayout } from "@decocms/start/hooks";
+import { DecoRootLayout } from "@decocms/blocks/hooks";
 
 export const Route = createRootRoute({
   component: () => (
@@ -84,7 +84,7 @@ Wraps a section that should hydrate on scroll. You don't usually instantiate thi
 If you do want manual control:
 
 ```tsx
-import { LazySection } from "@decocms/start/hooks";
+import { LazySection } from "@decocms/blocks/hooks";
 
 <LazySection
   pageId={pageId}
@@ -105,7 +105,7 @@ Behavior:
 A script that lets admin's preview iframe communicate hover, click-to-source, and live-reload events. Loaded by `DecoRootLayout` automatically; you only embed it manually if you have a custom shell.
 
 ```tsx
-import { LiveControls } from "@decocms/start/hooks";
+import { LiveControls } from "@decocms/blocks/hooks";
 
 <LiveControls />
 ```
@@ -117,7 +117,7 @@ It only emits content in admin preview mode (`?_admin=1`). In production, it's a
 A top-of-viewport progress bar that activates during TanStack Router transitions. Cosmetic but improves perceived performance.
 
 ```tsx
-import { NavigationProgress } from "@decocms/start/hooks";
+import { NavigationProgress } from "@decocms/blocks/hooks";
 
 <NavigationProgress />
 ```
@@ -129,7 +129,7 @@ Mount once in your root layout. The bar shows automatically when `useRouterState
 Returns `{ type: "mobile" | "tablet" | "desktop" }` based on the request's user-agent.
 
 ```tsx
-import { useDevice } from "@decocms/start/hooks";
+import { useDevice } from "@decocms/blocks/hooks";
 
 function Hero() {
   const device = useDevice();
@@ -150,7 +150,7 @@ The safer pattern is to use `useDevice` in a section loader (server-only) and pa
 Returns `true` after the first client-side render, `false` during SSR.
 
 ```tsx
-import { useHydrated } from "@decocms/start/hooks";
+import { useHydrated } from "@decocms/blocks/hooks";
 
 function Counter() {
   const hydrated = useHydrated();
@@ -168,7 +168,7 @@ Don't reach for this when you can use `"use client"` instead — it produces fli
 Lower-level than `DecoPageRenderer`. Renders a single resolved section in isolation. Used internally by the renderer; rarely used directly.
 
 ```tsx
-import { RenderSection } from "@decocms/start/hooks";
+import { RenderSection } from "@decocms/blocks/hooks";
 
 <RenderSection section={resolvedSection} />
 ```
@@ -191,7 +191,7 @@ If a section's loader throws, the framework renders the `ErrorFallback` instead 
 A wrapper around TanStack Router's `<Outlet />` that prevents flicker on navigation by keeping the previous render visible until the new route's data is ready.
 
 ```tsx
-import { StableOutlet } from "@decocms/start/hooks";
+import { StableOutlet } from "@decocms/blocks/hooks";
 
 <StableOutlet />
 ```

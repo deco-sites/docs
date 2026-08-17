@@ -86,7 +86,7 @@ VTEX Intelligent Search rejects unknown `sort` values with a 400. Common cases t
 The inline-loader layer enforces a whitelist via `VALID_IS_SORTS`:
 
 ```ts
-import { VALID_IS_SORTS } from "@decocms/apps/vtex/utils/intelligentSearch";
+import { VALID_IS_SORTS } from "@decocms/apps-vtex/utils/intelligentSearch";
 
 if (!VALID_IS_SORTS.includes(sort)) sort = "";
 ```
@@ -115,9 +115,9 @@ If a product's slug changes in admin, the cached entry can serve the old SKU unt
 ## README drift
 
 <Callout type="warning">
-**`@decocms/apps/vtex/invoke` does not exist.**
+**`@decocms/apps-vtex/invoke` does not exist.**
 
-The `@decocms/apps` README references `@decocms/apps/vtex/invoke`, but it's not in `package.json` `exports`. Don't try to import from this path.
+The `@decocms/apps-*` README references `@decocms/apps-vtex/invoke`, but it's not in `package.json` `exports`. Don't try to import from this path.
 
 The real invoke surface is:
 1. **`/deco/invoke/...`** HTTP routes (handled automatically by the framework).

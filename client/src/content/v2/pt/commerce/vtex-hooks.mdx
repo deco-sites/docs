@@ -1,12 +1,128 @@
 ---
 title: "VTEX — hooks"
-description: "useCart, useUser, useWishlist, useAutocomplete; legacy createUse* factories."
+description: "Cart v2 (createCart, useAddToCart, useCartSummary), além de useCart, useUser, useWishlist, useAutocomplete para o browser."
 icon: "Anchor"
 ---
 
 import Callout from "../../../../components/ui/Callout.astro";
 
-`@decocms/apps/vtex/hooks` provê hooks React para as interações de UI commerce mais comuns. Embrulham `invoke` com TanStack Query para que cache, refetching e mutações otimistas sejam pagos uma vez.
+`@decocms/apps-vtex/hooks` provê hooks React para as interações de UI commerce mais comuns. Use-os em client components em vez de chamar fetch direto.
+
+<Callout type="info">
+**Duas gerações de carrinho.** O [**Cart v2**](#cart-v2-recomendado) (a factory `createCart` + hooks granulares) é o caminho recomendado para código novo — é econômico em chamadas de API, lazy e agnóstico de framework. O `useCart` original mais abaixo (["Carrinho legado"](#carrinho-legado-v1)) continua funcionando e intocado, mas cria um OrderForm da VTEX para todo visitante e sempre devolve o payload completo (~40 KB). `useUser`, `useWishlist` e `useAutocomplete` não são afetados por essa separação.
+</Callout>
+
+## Cart v2 (recomendado)
+
+O Cart v2 torna o tráfego do carrinho **granular e lazy**. Dois botões independentes por operação:
+
+- **`sections`** — o que você pede para a VTEX computar (`expectedOrderFormSections`). Menos sections = payload menor da VTEX.
+- **`projection`** — o que o servidor de fato envia ao browser, independente de `sections`.
+
+Todo hook usa por padrão a opção mais barata; pedir mais é sempre explícito. **Nenhum OrderForm é criado até o primeiro add-to-cart** — um visitante que só navega gera zero chamadas a `/api/checkout/pub/orderForm`.
+
+### Setup — `createCart`
+
+Crie os hooks uma vez por site e injete o proxy `invoke` gerado:
+
+```ts
+// src/hooks/cart.ts
+import { createCart } from "@decocms/apps-vtex/hooks/createCart";
+import { invoke } from "~/server/invoke"; // seu invoke TanStack / Next.js gerado
+
+export const {
+  useCart, useCartSummary, useAddToCart, useShipping, useGifts, useAttachments, resetCart,
+} = createCart({ invoke });
+```
+
+Cada chamada a `createCart` devolve um module-singleton independente — **chame uma vez por site**, em escopo de módulo. Hooks da mesma chamada compartilham estado; de chamadas diferentes ficam isolados.
+
+### Projections
+
+| `projection` | O que chega ao browser | Quando usar |
+|---|---|---|
+| `"none"` | `{ ok: true }` | Update puramente otimista, sem reconciliação |
+| `"summary"` | `{ orderFormId, totalItems, total }` | Só atualizar o badge |
+| `"summary+items"` | summary + itens enxutos | **Padrão do add-to-cart** (toast) |
+| `"minicart"` | `Minicart` canônico completo | Abrir o drawer |
+| `"raw"` | OrderForm cru da VTEX | GTM / pixels / integrações custom |
+
+Regra de bolso: **badge → `summary`, toast → `summary+items`, drawer → `minicart`.** Os presets de sections (`SECTIONS_MINIMAL`, `SECTIONS_DRAWER`, `SECTIONS_FULL`) e os tipos do contrato ficam em `@decocms/apps-commerce/types/cart`.
+
+### `useCartSummary()` — badge
+
+Lê estado local; **nunca dispara chamada à VTEX sozinho.**
+
+```tsx
+function CartBadge() {
+  const { totalItems, loading } = useCartSummary();
+  return <span>{loading ? "…" : totalItems}</span>;
+}
+```
+
+### `useAddToCart(opts?)` — adicionar com update otimista embutido
+
+```tsx
+function BuyButton({ id, seller }: { id: string; seller: string }) {
+  const { add, loading } = useAddToCart(); // projection padrão: "summary+items"
+  return (
+    <button disabled={loading} onClick={() => add({ id, seller, quantity: 1 })}>
+      Adicionar ao carrinho
+    </button>
+  );
+}
+```
+
+No `add(...)`: o badge incrementa otimisticamente → `getOrCreateCartV2` roda **só se ainda não existe carrinho** (lazy) → `addItemsToCartV2` é chamado com `SECTIONS_MINIMAL` + sua `projection` → a resposta projetada reconcilia o badge (ou o minicart completo) → em erro, o incremento otimista faz rollback. O `add()` **retorna o payload projetado**, então você dispara um toast sem um segundo fetch:
+
+```tsx
+const res = await add({ id, seller }); // { totalItems, total, items: [slim] }
+if (res.items?.[0]) toast(`Adicionado: ${res.items[0].item_name}`);
+```
+
+Passe `projection: "minicart"` para abrir o drawer direto da resposta, ou `projection: "none"` para uma UI puramente otimista.
+
+### `useCart(opts?)` — drawer / carrinho completo
+
+```tsx
+const { minicart, summary, loading, updateQuantity, removeItem, addCoupon } = useCart({
+  include: { full: open },   // só busca o carrinho completo quando o drawer abre
+  freeShippingTarget: 15000,
+  locale: "pt-BR",
+  checkoutHref: "/checkout",
+  enableCoupon: true,
+});
+```
+
+`include.full: false` (padrão) expõe apenas o summary sem chamada à VTEX. `updateQuantity`, `removeItem` e `addCoupon` chamam as actions v2 com `projection: "minicart"` e reconciliam o drawer.
+
+### Extras sob demanda
+
+- **`useShipping()`** — `estimate({ items, postalCode })` devolve opções de frete para o drawer.
+- **`useGifts()`** — `load()` devolve brindes selecionáveis / promoções (`ratesAndBenefits`).
+- **`useAttachments()`** — `load(itemIndex)` devolve os attachments de uma linha + slots oferecidos.
+- **`resetCart()`** — limpa o estado do singleton após logout ou pedido finalizado.
+
+### Opcional: adapter TanStack Query
+
+Para sites já em `@tanstack/react-query`, o `createCartQuery({ invoke })` de `@decocms/apps-vtex/hooks/cartQuery` expõe os mesmos seis hooks ligados a um `QueryClient` (queries lazy com `enabled: false`, `useShipping` com key + cache por `staleTime`). Requer um `QueryClientProvider` na árvore.
+
+### Wiring
+
+- **TanStack Start** — as actions v2 são declaradas no `invoke` do app; rode `npm run generate` (ou `generate:invoke`) para emitir os bindings `createServerFn` locais do site. O handler gerado chama `forwardResponseCookies()` para que os cookies do carrinho VTEX cheguem ao browser.
+- **Next.js** — loaders/actions resolvem via `handleInvoke` (montado em `app/deco/[[...deco]]/route.ts`); sem passo extra de geração. O forwarding de cookies é feito por `vtexFetchWithCookies` dentro de cada action.
+
+<Callout type="warning">
+**Toda mutação de carrinho deve usar `vtexFetchWithCookies`.** `vtexFetch` / `vtexCachedFetch` não rotacionam os cookies `checkout.vtex.com` / `CheckoutOrderFormOwnership`, o que faz o carrinho do storefront divergir do estado server-side da VTEX.
+</Callout>
+
+---
+
+## Carrinho legado (v1)
+
+<Callout type="info">
+O `useCart` abaixo é o **carrinho original**. Continua funcionando e não está deprecado, mas prefira o [Cart v2](#cart-v2-recomendado) para código novo — o v1 cria um OrderForm no mount para todo visitante e sempre devolve o OrderForm completo. Durante uma migração gradual, mantenha **uma única fonte de verdade para o badge**: não rode um badge v1 e um v2 lado a lado, ou eles divergem (os dois sistemas têm estado independente).
+</Callout>
 
 ## Import
 
@@ -16,7 +132,7 @@ import {
   useUser,
   useWishlist,
   useAutocomplete,
-} from "@decocms/apps/vtex/hooks";
+} from "@decocms/apps-vtex/hooks";
 ```
 
 ## `useCart`
@@ -113,7 +229,7 @@ Em v1, lojas frequentemente reimplementavam `useCart` no zero porque o context p
 Se sua loja v1 customizou `useCart` (e.g. para mostrar loading states diferentes), porte essa lógica como wrapper:
 
 ```tsx
-import { useCart as useCartBase } from "@decocms/apps/vtex/hooks";
+import { useCart as useCartBase } from "@decocms/apps-vtex/hooks";
 
 export function useCart() {
   const cart = useCartBase();
@@ -126,10 +242,10 @@ export function useCart() {
 
 ## Legacy: factories `createUse*`
 
-`@decocms/apps/vtex/hooks/legacy` ainda exporta:
+`@decocms/apps-vtex/hooks/legacy` ainda exporta:
 
 ```ts
-import { createUseCart, createUseUser } from "@decocms/apps/vtex/hooks/legacy";
+import { createUseCart, createUseUser } from "@decocms/apps-vtex/hooks/legacy";
 ```
 
 Eram a forma de extensibilidade no v1 (embrulhar o hook com transformação custom). Mantidas para compat de migração; **prefira embrulhar os hooks novos diretamente**.
@@ -171,7 +287,7 @@ Mitigação:
 - Defina `staleTime: 30_000` em `useCart` para mudança de UI ser bloqueada na primeira hidratação.
 - Em ambientes server-render-known-different, vire o hook com `enabled: false` e oba via `useState` na hidratação inicial.
 
-`@decocms/apps/vtex/middleware/cookies` cuida da maioria dos casos automaticamente — veja [VTEX gotchas](/v2/pt/commerce/vtex-gotchas).
+`@decocms/apps-vtex/middleware/cookies` cuida da maioria dos casos automaticamente — veja [VTEX gotchas](/v2/pt/commerce/vtex-gotchas).
 
 ## Veja também
 

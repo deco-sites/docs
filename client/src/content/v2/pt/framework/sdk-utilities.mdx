@@ -6,12 +6,12 @@ icon: "Wrench"
 
 import Callout from "../../../../components/ui/Callout.astro";
 
-`@decocms/start/sdk/*` é a caixa de ferramentas. Esta página é uma referência rápida — cada utility com `import`, assinatura e quando usar.
+`@decocms/blocks/sdk/*` é a caixa de ferramentas. Esta página é uma referência rápida — cada utility com `import`, assinatura e quando usar.
 
 ## `useScript` & `inlineScript`
 
 ```ts
-import { inlineScript } from "@decocms/start/sdk/useScript";
+import { inlineScript } from "@decocms/blocks/sdk/useScript";
 ```
 
 Inline um trecho de script no HTML render server-side. Substitui o padrão `useScript(fn)` do v1.
@@ -29,7 +29,7 @@ Para conteúdo dinâmico (necessidade de prop) prefira componente client-only co
 ## `signal`
 
 ```ts
-import { signal, computed, effect } from "@decocms/start/sdk/signal";
+import { signal, computed, effect } from "@decocms/blocks/sdk/signal";
 ```
 
 Wrapper baseado em `@tanstack/store` espelhando a API do `@preact/signals` que loaders v1 usavam. Migrar `useSignal()` → `signal()` é geralmente direto.
@@ -41,7 +41,7 @@ Wrapper baseado em `@tanstack/store` espelhando a API do `@preact/signals` que l
 ## `clx` / `cn`
 
 ```ts
-import { clx, cn } from "@decocms/start/sdk/clx";
+import { clx, cn } from "@decocms/blocks/sdk/clx";
 ```
 
 Class joiner — equivalente ao `clsx` mas re-exportado para que sites não precisem instalar à parte. `cn` é alias para `clx`.
@@ -53,7 +53,7 @@ Class joiner — equivalente ao `clsx` mas re-exportado para que sites não prec
 ## `encoding`
 
 ```ts
-import { encodeBase64Url, decodeBase64Url } from "@decocms/start/sdk/encoding";
+import { encodeBase64Url, decodeBase64Url } from "@decocms/blocks/sdk/encoding";
 ```
 
 Encoding base64-url-safe. Útil em cookies, URL params, computação de ETag.
@@ -61,7 +61,7 @@ Encoding base64-url-safe. Útil em cookies, URL params, computação de ETag.
 ## `retry`
 
 ```ts
-import { retry } from "@decocms/start/sdk/retry";
+import { retry } from "@decocms/blocks/sdk/retry";
 
 const result = await retry(() => fetch(...), {
   maxAttempts: 3,
@@ -75,7 +75,7 @@ Retry com backoff exponencial. Use ao redor de chamadas instáveis upstream em l
 ## `urlUtils`
 
 ```ts
-import { stableUrl, joinPath, isAbsolute } from "@decocms/start/sdk/urlUtils";
+import { stableUrl, joinPath, isAbsolute } from "@decocms/blocks/sdk/urlUtils";
 ```
 
 - `stableUrl(url, ignoreParams)` — produz URL canônica para cache keys.
@@ -85,7 +85,7 @@ import { stableUrl, joinPath, isAbsolute } from "@decocms/start/sdk/urlUtils";
 ## `redirects`
 
 ```ts
-import { loadRedirects, matchRedirect } from "@decocms/start/sdk/redirects";
+import { loadRedirects, matchRedirect } from "@decocms/blocks/sdk/redirects";
 
 const redirects = loadRedirects(blocks);
 const match = matchRedirect("/old-path", redirects);
@@ -96,14 +96,14 @@ Carrega redirects definidos pelo CMS de `.deco/blocks/` e casa contra um pathnam
 ## `sitemap`
 
 ```ts
-import { generateSitemap } from "@decocms/start/sdk/sitemap";
+import { generateSitemap } from "@decocms/blocks/sdk/sitemap";
 ```
 
 Gera sitemap.xml a partir de uma lista de URLs ou de um loader. Tipicamente conectado em `src/routes/sitemap.xml.tsx`:
 
 ```tsx
 import { createFileRoute } from "@tanstack/react-router";
-import { generateSitemap } from "@decocms/start/sdk/sitemap";
+import { generateSitemap } from "@decocms/blocks/sdk/sitemap";
 
 export const Route = createFileRoute("/sitemap.xml")({
   loader: () => generateSitemap({ urls: [...], baseUrl: "https://minha-loja.com" }),
@@ -113,18 +113,18 @@ export const Route = createFileRoute("/sitemap.xml")({
 ## `cookies`
 
 ```ts
-import { parseCookie, serializeCookie } from "@decocms/start/sdk/cookies";
+import { parseCookie, serializeCookie } from "@decocms/blocks/sdk/cookies";
 
 const cookies = parseCookie(request.headers.get("cookie") ?? "");
 const setCookie = serializeCookie("session_id", "abc123", { maxAge: 86400 });
 ```
 
-Helpers leves de cookie. `@decocms/apps` usa internamente para propagação de cookies VTEX/Shopify.
+Helpers leves de cookie. `@decocms/apps-*` usa internamente para propagação de cookies VTEX/Shopify.
 
 ## `responseUtils`
 
 ```ts
-import { jsonResponse, htmlResponse, redirectResponse } from "@decocms/start/sdk/responseUtils";
+import { jsonResponse, htmlResponse, redirectResponse } from "@decocms/blocks/sdk/responseUtils";
 ```
 
 Constructors de Response com headers consistentes (Content-Type, charset, cache-control).
@@ -132,7 +132,7 @@ Constructors de Response com headers consistentes (Content-Type, charset, cache-
 ## `headersUtils`
 
 ```ts
-import { mergeHeaders, withCorsHeaders } from "@decocms/start/sdk/headersUtils";
+import { mergeHeaders, withCorsHeaders } from "@decocms/blocks/sdk/headersUtils";
 ```
 
 Funde headers e aplica CORS. `withCorsHeaders` honra a whitelist de `productionOrigins` do `createSiteSetup`.
@@ -148,7 +148,7 @@ Coberto em [Caching](/v2/pt/framework/caching).
 ## `instrumentedFetch`
 
 ```ts
-import { createInstrumentedFetch } from "@decocms/start/sdk/instrumentedFetch";
+import { createInstrumentedFetch } from "@decocms/blocks/sdk/instrumentedFetch";
 
 const vtexFetch = createInstrumentedFetch("vtex");
 ```
@@ -158,7 +158,7 @@ Embrulha `fetch` com tracing OpenTelemetry e Server-Timing. Toda chamada vira um
 ## `requestContext`
 
 ```ts
-import { RequestContext } from "@decocms/start/sdk/requestContext";
+import { RequestContext } from "@decocms/blocks/sdk/requestContext";
 
 const ctx = RequestContext.current;
 const env = ctx?.env;
@@ -170,7 +170,7 @@ AsyncLocalStorage para state por request. Acessível a partir de qualquer códig
 ## `useDevice`
 
 ```ts
-import { detectDevice } from "@decocms/start/sdk/useDevice";
+import { detectDevice } from "@decocms/blocks/sdk/useDevice";
 
 const device = detectDevice(request);
 ```
@@ -180,7 +180,7 @@ Sniff de UA pra `mobile | tablet | desktop`. Server-safe (sem dependência de br
 ## `abTesting`
 
 ```ts
-import { withABTesting } from "@decocms/start/sdk/abTesting";
+import { withABTesting } from "@decocms/blocks/sdk/abTesting";
 ```
 
 Embrulhador de A/B no nível do worker, salvando variants no Workers KV. Veja [A/B testing e redirects](/v2/pt/deployment/ab-testing-and-redirects).
@@ -188,7 +188,7 @@ Embrulhador de A/B no nível do worker, salvando variants no Workers KV. Veja [A
 ## `workerEntry`
 
 ```ts
-import { createDecoWorkerEntry } from "@decocms/start/sdk/workerEntry";
+import { createDecoWorkerEntry } from "@decocms/tanstack";
 ```
 
 Coberto em [Worker entry](/v2/pt/framework/worker-entry).
@@ -196,14 +196,14 @@ Coberto em [Worker entry](/v2/pt/framework/worker-entry).
 ## `invoke`
 
 ```ts
-import { invoke, createInvoke, setInvokeLoaders } from "@decocms/start/sdk/invoke";
+import { invoke, createInvoke, setInvokeLoaders } from "@decocms/blocks/sdk/invoke";
 ```
 
 Coberto em [Invoke](/v2/pt/framework/invoke).
 
 ## Scripts de codegen
 
-`@decocms/start/scripts` expõe scripts CLI Node:
+`@decocms/blocks-cli` expõe scripts CLI Node:
 
 | Script | Função |
 |---|---|
@@ -222,7 +222,7 @@ Tipicamente executados via scripts do `package.json`:
 ```jsonc
 {
   "scripts": {
-    "generate:blocks": "node --experimental-strip-types ./node_modules/@decocms/start/scripts/generate-blocks.ts",
+    "generate:blocks": "node --experimental-strip-types ./node_modules/@decocms/blocks-cli/generate-blocks.ts",
     "generate:schema": "node ... generate-schema.ts",
     "generate:sections": "node ... generate-sections.ts",
     "generate:loaders": "node ... generate-loaders.ts --decofile-dir .deco/blocks",
@@ -241,17 +241,17 @@ import type {
   Section,
   App,
   LoaderProps,
-} from "@decocms/start/types";
+} from "@decocms/blocks/types";
 
 import type {
   ImageWidget,
   RichText,
   Color,
   ButtonStyle,
-} from "@decocms/start/types/widgets";
+} from "@decocms/blocks/types/widgets";
 ```
 
-Tipos widget devem vir de `@decocms/start/types/widgets`, não do barrel. O gerador de schema só pega imports do subpath.
+Tipos widget devem vir de `@decocms/blocks/types/widgets`, não do barrel. O gerador de schema só pega imports do subpath.
 
 ## Veja também
 

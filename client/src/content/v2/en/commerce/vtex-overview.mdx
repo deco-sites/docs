@@ -6,7 +6,7 @@ icon: "Store"
 
 import Callout from "../../../../components/ui/Callout.astro";
 
-The VTEX integration in `@decocms/apps/vtex` covers Intelligent Search, Catalog, Checkout (orderForm), Sessions, Profile, Wishlist, and the customer-facing UI hooks. This page is the entry point — read [VTEX loaders and actions](/v2/en/commerce/vtex-loaders-and-actions) and [VTEX hooks](/v2/en/commerce/vtex-hooks) for the full surface.
+The VTEX integration in `@decocms/apps-vtex` covers Intelligent Search, Catalog, Checkout (orderForm), Sessions, Profile, Wishlist, and the customer-facing UI hooks. This page is the entry point — read [VTEX loaders and actions](/v2/en/commerce/vtex-loaders-and-actions) and [VTEX hooks](/v2/en/commerce/vtex-hooks) for the full surface.
 
 ## What you need
 
@@ -47,7 +47,7 @@ Two pieces:
 
 ```ts
 // src/setup.ts
-import { initVtexFromBlocks } from "@decocms/apps/vtex/client";
+import { initVtexFromBlocks } from "@decocms/apps-vtex/client";
 
 createSiteSetup({
   // ...
@@ -60,8 +60,8 @@ createSiteSetup({
 ### 2. Register the inline-loader manifest
 
 ```ts
-import { createVtexCommerceLoaders } from "@decocms/apps/vtex/commerceLoaders";
-import { registerCommerceLoaders } from "@decocms/start/cms";
+import { createVtexCommerceLoaders } from "@decocms/apps-vtex/commerceLoaders";
+import { registerCommerceLoaders } from "@decocms/blocks/cms";
 
 const commerceLoaders = createVtexCommerceLoaders();
 registerCommerceLoaders(commerceLoaders);
@@ -72,8 +72,8 @@ This wires CMS `__resolveType` keys (e.g. `vtex/loaders/intelligentSearch/produc
 ### 3. Replace the VTEX fetch with an instrumented one (recommended)
 
 ```ts
-import { setVtexFetch } from "@decocms/apps/vtex/client";
-import { createInstrumentedFetch } from "@decocms/start/sdk/instrumentedFetch";
+import { setVtexFetch } from "@decocms/apps-vtex/client";
+import { createInstrumentedFetch } from "@decocms/blocks/sdk/instrumentedFetch";
 
 setVtexFetch(createInstrumentedFetch("vtex"));
 ```
@@ -92,7 +92,7 @@ import {
   extractVtexContext,
   vtexCacheControl,
   propagateISCookies,
-} from "@decocms/apps/vtex/middleware";
+} from "@decocms/apps-vtex/middleware";
 
 export const myMiddleware = createMiddleware().middleware([
   extractVtexContext,

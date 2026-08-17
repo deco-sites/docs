@@ -11,7 +11,7 @@ import Callout from "../../../../components/ui/Callout.astro";
 ## Import
 
 ```ts
-import { createSiteSetup } from "@decocms/start/setup";
+import { createSiteSetup } from "@decocms/blocks/setup";
 ```
 
 ## Minimum usage
@@ -20,8 +20,8 @@ import { createSiteSetup } from "@decocms/start/setup";
 // src/setup.ts
 import "./cache-config";   // optional: cache profile overrides
 
-import { createSiteSetup } from "@decocms/start/setup";
-import { applySectionConventions } from "@decocms/start/cms";
+import { createSiteSetup } from "@decocms/blocks/setup";
+import { applySectionConventions } from "@decocms/blocks/cms";
 
 import blocks from "./server/cms/blocks.gen";
 import sectionsGen from "./server/cms/sections.gen";
@@ -82,7 +82,7 @@ productionOrigins: [
 Platform-specific bootstrap. For VTEX:
 
 ```ts
-import { initVtexFromBlocks } from "@decocms/apps/vtex/client";
+import { initVtexFromBlocks } from "@decocms/apps-vtex/client";
 
 createSiteSetup({
   // ...
@@ -94,10 +94,10 @@ This reads the `deco-vtex` block from the decofile and calls `configureVtex` wit
 
 ### `getCommerceLoaders`
 
-Returns the inline-loader registry. Used to wire `@decocms/apps/vtex` or `@decocms/apps/shopify` loaders to CMS `__resolveType` keys.
+Returns the inline-loader registry. Used to wire `@decocms/apps-vtex` or `@decocms/apps-shopify` loaders to CMS `__resolveType` keys.
 
 ```ts
-import { createVtexCommerceLoaders } from "@decocms/apps/vtex/commerceLoaders";
+import { createVtexCommerceLoaders } from "@decocms/apps-vtex/commerceLoaders";
 
 createSiteSetup({
   // ...
@@ -112,7 +112,7 @@ See [VTEX inline loaders](/v2/en/commerce/vtex-inline-loaders).
 A map of matcher name → matcher function for site-specific A/B logic.
 
 ```ts
-import { registerBuiltinMatchers } from "@decocms/start/matchers/builtins";
+import { registerBuiltinMatchers } from "@decocms/blocks/matchers/builtins";
 
 createSiteSetup({
   // ...
@@ -189,7 +189,7 @@ Putting `import "./setup"` at the top of every server-side entry guarantees the 
 Header, Footer, and Theme are special. They appear on every page; re-resolving them every request is wasteful. Register them as layout sections:
 
 ```ts
-import { registerLayoutSections } from "@decocms/start/cms";
+import { registerLayoutSections } from "@decocms/blocks/cms";
 
 registerLayoutSections({
   Header: () => import("~/sections/Header/Header"),
@@ -205,13 +205,13 @@ The framework caches the resolved layout across requests (within the same decofi
 For VTEX-backed sites, the typical full setup looks like:
 
 ```ts
-import { createSiteSetup } from "@decocms/start/setup";
-import { applySectionConventions, registerCommerceLoaders, registerLayoutSections, setAsyncRenderingConfig } from "@decocms/start/cms";
-import { createInstrumentedFetch } from "@decocms/start/sdk/instrumentedFetch";
-import { initVtexFromBlocks, setVtexFetch } from "@decocms/apps/vtex/client";
-import { createVtexCommerceLoaders } from "@decocms/apps/vtex/commerceLoaders";
-import { configureWebsite } from "@decocms/apps/website";
-import { registerBuiltinMatchers } from "@decocms/start/matchers/builtins";
+import { createSiteSetup } from "@decocms/blocks/setup";
+import { applySectionConventions, registerCommerceLoaders, registerLayoutSections, setAsyncRenderingConfig } from "@decocms/blocks/cms";
+import { createInstrumentedFetch } from "@decocms/blocks/sdk/instrumentedFetch";
+import { initVtexFromBlocks, setVtexFetch } from "@decocms/apps-vtex/client";
+import { createVtexCommerceLoaders } from "@decocms/apps-vtex/commerceLoaders";
+import { configureWebsite } from "@decocms/apps-website";
+import { registerBuiltinMatchers } from "@decocms/blocks/matchers/builtins";
 
 import blocks from "./server/cms/blocks.gen";
 import sectionsGen from "./server/cms/sections.gen";

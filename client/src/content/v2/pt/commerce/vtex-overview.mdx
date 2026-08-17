@@ -6,15 +6,15 @@ icon: "Building2"
 
 import Callout from "../../../../components/ui/Callout.astro";
 
-A integração VTEX é a mais profunda em `@decocms/apps`. Esta página cobre setup; loaders, actions, hooks, client e gotchas têm páginas dedicadas.
+A integração VTEX é a mais profunda em `@decocms/apps-*`. Esta página cobre setup; loaders, actions, hooks, client e gotchas têm páginas dedicadas.
 
 ## Install
 
 ```bash
-npm install @decocms/apps
+npm install @decocms/apps-*
 ```
 
-`@decocms/apps` traz tudo — não há subpacote VTEX-only.
+`@decocms/apps-*` traz tudo — não há subpacote VTEX-only.
 
 ## Config block no admin
 
@@ -43,10 +43,10 @@ Crie um block `deco-vtex` em `.deco/blocks/deco-vtex.json` (ou via UI do admin):
 Em `src/setup.ts`:
 
 ```ts
-import { initVtexFromBlocks, setVtexFetch } from "@decocms/apps/vtex/client";
-import { createVtexCommerceLoaders } from "@decocms/apps/vtex/commerceLoaders";
-import { registerCommerceLoaders } from "@decocms/start/cms";
-import { createInstrumentedFetch } from "@decocms/start/sdk/instrumentedFetch";
+import { initVtexFromBlocks, setVtexFetch } from "@decocms/apps-vtex/client";
+import { createVtexCommerceLoaders } from "@decocms/apps-vtex/commerceLoaders";
+import { registerCommerceLoaders } from "@decocms/blocks/cms";
+import { createInstrumentedFetch } from "@decocms/blocks/sdk/instrumentedFetch";
 
 createSiteSetup({
   // ...
@@ -82,7 +82,7 @@ import {
   useUser,
   useWishlist,
   useAutocomplete,
-} from "@decocms/apps/vtex/hooks";
+} from "@decocms/apps-vtex/hooks";
 ```
 
 Embrulham `invoke` com TanStack Query. Cobrem 90% das interações de UI commerce comuns. Veja [VTEX hooks](/v2/pt/commerce/vtex-hooks).
@@ -95,7 +95,7 @@ Sales channel decide preço, estoque e visibilidade de produto. Padrões:
 - **Sales channel detectado** (regional, B2B vs B2C) — sobrescreva via `salesChannel` no body do POST do loader, ou role o seu próprio:
 
 ```ts
-import { configure } from "@decocms/apps/vtex/client";
+import { configure } from "@decocms/apps-vtex/client";
 
 configure({
   account: "loja",
@@ -138,11 +138,11 @@ VTEX rastreia sessão, segmento, regionId, orderForm via cookies. Se eles não c
 - Estoque vazio (regionId perdido).
 - Carrinho zumbi (orderFormId não persistente).
 
-`@decocms/apps/vtex/middleware` lida com a propagação automaticamente quando você usa `vtexFetch` — não precisa orquestrar manualmente. Veja [VTEX gotchas](/v2/pt/commerce/vtex-gotchas) para a lista completa.
+`@decocms/apps-vtex/middleware` lida com a propagação automaticamente quando você usa `vtexFetch` — não precisa orquestrar manualmente. Veja [VTEX gotchas](/v2/pt/commerce/vtex-gotchas) para a lista completa.
 
 ## Versionamento
 
-`@decocms/apps` é versionado independente de `@decocms/start`. Cheque a referência cruzada no README. Em geral:
+`@decocms/apps-*` é versionado independente de `@decocms/blocks`. Cheque a referência cruzada no README. Em geral:
 
 - Major do `apps` casa com a major suportada do `start`.
 - Patches de `apps` adicionam features ou corrigem bugs sem requerer bump de `start`.

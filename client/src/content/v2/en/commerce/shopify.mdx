@@ -6,7 +6,7 @@ icon: "ShoppingCart"
 
 import Callout from "../../../../components/ui/Callout.astro";
 
-`@decocms/apps/shopify` integrates Shopify Storefront API via GraphQL. It's leaner than the VTEX integration: simpler config, no middleware, no SWR cache layer in the client.
+`@decocms/apps-shopify` integrates Shopify Storefront API via GraphQL. It's leaner than the VTEX integration: simpler config, no middleware, no SWR cache layer in the client.
 
 ## Configuration
 
@@ -25,7 +25,7 @@ import Callout from "../../../../components/ui/Callout.astro";
 
 ```ts
 // src/setup.ts
-import { initShopifyFromBlocks } from "@decocms/apps/shopify/init";
+import { initShopifyFromBlocks } from "@decocms/apps-shopify/init";
 
 createSiteSetup({
   // ...
@@ -36,7 +36,7 @@ createSiteSetup({
 Or with `autoconfigApps()`:
 
 ```ts
-import { autoconfigApps } from "@decocms/start/apps/autoconfig";
+import { autoconfigApps } from "@decocms/blocks-admin/apps/autoconfig";
 createSiteSetup({ initPlatform: () => autoconfigApps() });
 ```
 
@@ -45,7 +45,7 @@ The Storefront API endpoint is `https://{storeName}.myshopify.com/api/2025-04/gr
 ## Client
 
 ```ts
-import { setShopifyFetch } from "@decocms/apps/shopify/client";
+import { setShopifyFetch } from "@decocms/apps-shopify/client";
 
 setShopifyFetch(createInstrumentedFetch("shopify"));
 ```
@@ -53,16 +53,16 @@ setShopifyFetch(createInstrumentedFetch("shopify"));
 The client is a typed GraphQL wrapper. It sends `X-Shopify-Storefront-Access-Token` and parses GraphQL errors into typed exceptions.
 
 <Callout type="info">
-**No SWR layer for Shopify.** Unlike VTEX, the Shopify client does **not** ship with a `fetchWithCache` analog. You can wrap individual loaders with `createCachedLoader` from `@decocms/start/sdk/cachedLoader` if you want caching.
+**No SWR layer for Shopify.** Unlike VTEX, the Shopify client does **not** ship with a `fetchWithCache` analog. You can wrap individual loaders with `createCachedLoader` from `@decocms/blocks/sdk/cachedLoader` if you want caching.
 </Callout>
 
 ## Loaders
 
 ```ts
-import productDetailsPageLoader from "@decocms/apps/shopify/loaders/ProductDetailsPage";
-import productListingPageLoader from "@decocms/apps/shopify/loaders/ProductListingPage";
-import { getCart } from "@decocms/apps/shopify/loaders/cart";
-import shopLoader from "@decocms/apps/shopify/loaders/shop";
+import productDetailsPageLoader from "@decocms/apps-shopify/loaders/ProductDetailsPage";
+import productListingPageLoader from "@decocms/apps-shopify/loaders/ProductListingPage";
+import { getCart } from "@decocms/apps-shopify/loaders/cart";
+import shopLoader from "@decocms/apps-shopify/loaders/shop";
 ```
 
 | Loader | Purpose |
@@ -120,9 +120,9 @@ await addItems({ lines, requestHeaders, responseHeaders });
 ## Actions
 
 ```ts
-import { addItems, updateItems, updateCoupons } from "@decocms/apps/shopify/actions/cart";
-import { signIn } from "@decocms/apps/shopify/actions/user/signIn";
-import { signUp } from "@decocms/apps/shopify/actions/user/signUp";
+import { addItems, updateItems, updateCoupons } from "@decocms/apps-shopify/actions/cart";
+import { signIn } from "@decocms/apps-shopify/actions/user/signIn";
+import { signUp } from "@decocms/apps-shopify/actions/user/signUp";
 ```
 
 | Action | Purpose |
@@ -138,7 +138,7 @@ All cart actions require `requestHeaders` to read the cart cookie. Pass `respons
 ## Hooks
 
 <Callout type="info">
-**No Shopify hooks ship in `@decocms/apps/shopify`.** VTEX gets `useCart`, `useUser`, etc.; Shopify currently does not. Sites using Shopify build their own React Query hooks on top of `/deco/invoke/shopify/...`.
+**No Shopify hooks ship in `@decocms/apps-shopify`.** VTEX gets `useCart`, `useUser`, etc.; Shopify currently does not. Sites using Shopify build their own React Query hooks on top of `/deco/invoke/shopify/...`.
 
 The pattern looks like:
 

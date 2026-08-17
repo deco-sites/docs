@@ -82,7 +82,7 @@ Uma section que renderiza um placeholder server-side e hidrata em scroll. Veja [
 
 ### `defineTool`
 
-O padrão para declarar uma tool tipada e auditável — usado em `@decocms/start` para handlers de admin. A maioria dos usuários do app não escreve tools direto.
+O padrão para declarar uma tool tipada e auditável — usado em `@decocms/blocks` para handlers de admin. A maioria dos usuários do app não escreve tools direto.
 
 ## E
 
@@ -234,7 +234,7 @@ O framework full-stack React em que v2 é construído. Substitui Fresh em v1.
 
 ### Vite plugin
 
-`decoVitePlugin()` de `@decocms/start/vite`. Obrigatório em todo Vite config de site. Cuida do fast-path do `blocks.gen`, stubs de server, daemon de dev. Veja [Vite plugin](/v2/pt/framework/vite-plugin).
+`decoVitePlugin()` de `@decocms/tanstack/vite`. Obrigatório em todo Vite config de site. Cuida do fast-path do `blocks.gen`, stubs de server, daemon de dev. Veja [Vite plugin](/v2/pt/framework/vite-plugin).
 
 ### `vtex_segment`
 
@@ -244,7 +244,7 @@ O cookie que carrega região, sales channel e currency do usuário VTEX. Crític
 
 ### Widget
 
-Uma anotação tipada em `@decocms/start/types/widgets` que diz para o gerador de schema renderizar um controle de UI custom no admin (image picker, color picker, editor de rich text). Veja [Sections](/v2/pt/concepts/sections).
+Uma anotação tipada em `@decocms/blocks/types/widgets` que diz para o gerador de schema renderizar um controle de UI custom no admin (image picker, color picker, editor de rich text). Veja [Sections](/v2/pt/concepts/sections).
 
 ### `withABTesting`
 
@@ -264,6 +264,6 @@ O arquivo de config do Cloudflare Workers. Veja [Deployment Cloudflare Workers](
 
 ## Veja também
 
-- [Exports do package (@decocms/start)](/v2/pt/reference/package-exports)
-- [Exports de commerce (@decocms/apps)](/v2/pt/reference/commerce-exports)
+- [Exports do package (@decocms/blocks)](/v2/pt/reference/package-exports)
+- [Exports de commerce (@decocms/apps-*)](/v2/pt/reference/commerce-exports)
 - [Visão geral da stack](/v2/pt/getting-started/stack-overview)

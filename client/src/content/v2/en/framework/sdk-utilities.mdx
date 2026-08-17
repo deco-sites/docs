@@ -1,6 +1,6 @@
 ---
 title: "SDK utilities"
-description: "Everything else under @decocms/start/sdk/* and the codegen scripts."
+description: "Everything else under @decocms/blocks/sdk/* and the codegen scripts."
 icon: "Toolbox"
 ---
 
@@ -9,7 +9,7 @@ import Callout from "../../../../components/ui/Callout.astro";
 The SDK is a grab-bag of small utilities the framework exposes for use inside sections, loaders, and worker code. Most are tiny; collectively they save a lot of boilerplate. This page is the index.
 
 <Callout type="warning">
-**Subpath imports vs. barrel.** Several utilities have their own `package.json` export but are NOT re-exported from the `@decocms/start/sdk` barrel. Flagged below as "subpath only". Always use the subpath form for these.
+**Subpath imports vs. barrel.** Several utilities have their own `package.json` export but are NOT re-exported from the `@decocms/blocks/sdk` barrel. Flagged below as "subpath only". Always use the subpath form for these.
 </Callout>
 
 ## Scripts and DOM glue
@@ -17,7 +17,7 @@ The SDK is a grab-bag of small utilities the framework exposes for use inside se
 ### `useScript`
 
 ```ts
-import { useScript, inlineScript } from "@decocms/start/sdk/useScript";
+import { useScript, inlineScript } from "@decocms/blocks/sdk/useScript";
 ```
 
 Two patterns:
@@ -34,7 +34,7 @@ Two patterns:
 ### `signal` (subpath only)
 
 ```ts
-import { signal } from "@decocms/start/sdk/signal";
+import { signal } from "@decocms/blocks/sdk/signal";
 ```
 
 Lightweight `@tanstack/store`-backed signal. v1 sites that used `@preact/signals` map their signal usage to this.
@@ -53,7 +53,7 @@ For most React components, prefer `@tanstack/store` directly with `useStore`.
 ### `clx` (barrel)
 
 ```ts
-import { clx } from "@decocms/start/sdk/clx";
+import { clx } from "@decocms/blocks/sdk/clx";
 ```
 
 Conditional class joiner. Like `clsx`:
@@ -65,7 +65,7 @@ Conditional class joiner. Like `clsx`:
 ### `cn` (subpath only)
 
 ```ts
-import { cn } from "@decocms/start/sdk/cn";
+import { cn } from "@decocms/blocks/sdk/cn";
 ```
 
 `clx` plus `tailwind-merge`. Resolves Tailwind class conflicts:
@@ -82,7 +82,7 @@ Use `cn` when you have variant overrides; use `clx` when you don't.
 ### `encoding` (subpath only)
 
 ```ts
-import { toBase64, fromBase64 } from "@decocms/start/sdk/encoding";
+import { toBase64, fromBase64 } from "@decocms/blocks/sdk/encoding";
 ```
 
 Base64 encoding that produces output **compatible with `btoa()` padding** — the admin uses `btoa()` for definition refs, so the encoder must match exactly.
@@ -90,7 +90,7 @@ Base64 encoding that produces output **compatible with `btoa()` padding** — th
 ### `crypto` (subpath only)
 
 ```ts
-import { djb2 } from "@decocms/start/sdk/crypto";
+import { djb2 } from "@decocms/blocks/sdk/crypto";
 ```
 
 DJB2 content hash, used for ETags. Not cryptographically secure — fast hash for cache invariants.
@@ -100,7 +100,7 @@ DJB2 content hash, used for ETags. Not cryptographically secure — fast hash fo
 ### `http` (subpath only)
 
 ```ts
-import { httpClient } from "@decocms/start/sdk/http";
+import { httpClient } from "@decocms/blocks/sdk/http";
 ```
 
 Thin `fetch` wrapper with sane defaults (timeouts, JSON parsing, error normalization). Most sites use [`createInstrumentedFetch`](/v2/en/framework/caching#instrumentedfetch-and-caching) instead.
@@ -108,7 +108,7 @@ Thin `fetch` wrapper with sane defaults (timeouts, JSON parsing, error normaliza
 ### `retry` (subpath only)
 
 ```ts
-import { retry } from "@decocms/start/sdk/retry";
+import { retry } from "@decocms/blocks/sdk/retry";
 ```
 
 Exponential-backoff retry helper for flaky upstreams.
@@ -122,7 +122,7 @@ const result = await retry(() => fetchSomething(), { attempts: 3, delay: 200 });
 ### `cookie` (barrel)
 
 ```ts
-import { parseCookies, setCookieHeader } from "@decocms/start/sdk/cookie";
+import { parseCookies, setCookieHeader } from "@decocms/blocks/sdk/cookie";
 ```
 
 Parse `Cookie` headers into objects; build `Set-Cookie` strings.
@@ -130,17 +130,17 @@ Parse `Cookie` headers into objects; build `Set-Cookie` strings.
 ### `cookiePassthrough` (barrel + subpath)
 
 ```ts
-import { passthroughCookies } from "@decocms/start/sdk/cookiePassthrough";
+import { passthroughCookies } from "@decocms/tanstack/sdk/cookiePassthrough";
 ```
 
-Helper for forwarding inbound cookies to upstream APIs. Used internally by `@decocms/apps/vtex` middleware.
+Helper for forwarding inbound cookies to upstream APIs. Used internally by `@decocms/apps-vtex` middleware.
 
 ## CSP & redirects
 
 ### `csp` (barrel)
 
 ```ts
-import { buildCsp } from "@decocms/start/sdk/csp";
+import { buildCsp } from "@decocms/blocks/sdk/csp";
 ```
 
 Construct Content-Security-Policy headers programmatically. Useful when your CSP varies by route or includes nonces.
@@ -148,7 +148,7 @@ Construct Content-Security-Policy headers programmatically. Useful when your CSP
 ### `redirects` (barrel)
 
 ```ts
-import { loadRedirects, matchRedirect, addRedirects } from "@decocms/start/sdk/redirects";
+import { loadRedirects, matchRedirect, addRedirects } from "@decocms/blocks/sdk/redirects";
 ```
 
 Load redirects from blocks (CMS-defined) or programmatically:
@@ -162,7 +162,7 @@ For sites with thousands of legacy redirects, add CSV-imported redirects on top:
 
 ```ts
 import redirectsCsv from "../redirect.csv?raw";
-import { addRedirects, parseSemicolonRedirectsCsv } from "@decocms/start/sdk/redirects";
+import { addRedirects, parseSemicolonRedirectsCsv } from "@decocms/blocks/sdk/redirects";
 
 addRedirects(parseSemicolonRedirectsCsv(redirectsCsv));
 ```
@@ -172,7 +172,7 @@ addRedirects(parseSemicolonRedirectsCsv(redirectsCsv));
 ### `sitemap` (subpath only)
 
 ```ts
-import { generateSitemap } from "@decocms/start/sdk/sitemap";
+import { generateSitemap } from "@decocms/blocks/sdk/sitemap";
 ```
 
 Build a `sitemap.xml` from page blocks plus custom URLs.
@@ -189,7 +189,7 @@ return generateSitemap({
 ### `serverTimings` (barrel)
 
 ```ts
-import { measure, getTimings } from "@decocms/start/sdk/serverTimings";
+import { measure, getTimings } from "@decocms/blocks/sdk/serverTimings";
 ```
 
 Per-request timing collector. Use inside loaders to record sub-operations:
@@ -205,7 +205,7 @@ The framework adds collected timings to the `Server-Timing` response header auto
 ### `abTesting` (subpath only)
 
 ```ts
-import { withABTesting } from "@decocms/start/sdk/abTesting";
+import { withABTesting } from "@decocms/blocks/sdk/abTesting";
 ```
 
 Worker wrapper for site-version A/B. See [A/B testing and redirects](/v2/en/deployment/ab-testing-and-redirects).
@@ -215,7 +215,7 @@ Worker wrapper for site-version A/B. See [A/B testing and redirects](/v2/en/depl
 ### `router` (subpath only)
 
 ```ts
-import { router } from "@decocms/start/sdk/router";
+import { router } from "@decocms/blocks/sdk/router";
 ```
 
 Helper around TanStack Router for handling preload errors and graceful fallbacks. Used internally by `cmsRouteConfig`.
@@ -225,7 +225,7 @@ Helper around TanStack Router for handling preload errors and graceful fallbacks
 ### `urlUtils` (barrel)
 
 ```ts
-import { canonicalUrl } from "@decocms/start/sdk/urlUtils";
+import { canonicalUrl } from "@decocms/blocks/sdk/urlUtils";
 ```
 
 URL canonicalization — used by the cache key builder and SEO components.
@@ -233,7 +233,7 @@ URL canonicalization — used by the cache key builder and SEO components.
 ### `normalizeUrls` (barrel)
 
 ```ts
-import { normalizeUrls } from "@decocms/start/sdk/normalizeUrls";
+import { normalizeUrls } from "@decocms/blocks/sdk/normalizeUrls";
 ```
 
 Bulk URL normalization. Strips known tracking params, normalizes trailing slashes, lowercases the host.
@@ -243,7 +243,7 @@ Bulk URL normalization. Strips known tracking params, normalizes trailing slashe
 ### `wrapCaughtErrors` (barrel)
 
 ```ts
-import { wrapCaughtErrors } from "@decocms/start/sdk/wrapCaughtErrors";
+import { wrapCaughtErrors } from "@decocms/blocks/sdk/wrapCaughtErrors";
 ```
 
 Wraps an async function so thrown errors carry a useful stack trace through the framework's error boundaries.
@@ -253,7 +253,7 @@ Wraps an async function so thrown errors carry a useful stack trace through the 
 ### `useHydrated` (barrel + via hooks)
 
 ```ts
-import { useHydrated } from "@decocms/start/sdk/useHydrated";
+import { useHydrated } from "@decocms/blocks/sdk/useHydrated";
 ```
 
 Boolean — true after first client render. See [Hooks](/v2/en/framework/hooks).
@@ -261,7 +261,7 @@ Boolean — true after first client render. See [Hooks](/v2/en/framework/hooks).
 ### `useId` (subpath)
 
 ```ts
-import { useId } from "@decocms/start/sdk/useId";
+import { useId } from "@decocms/blocks/sdk/useId";
 ```
 
 SSR-stable ID generator. Use when you need a unique element id that matches between server and client renders.
@@ -271,7 +271,7 @@ SSR-stable ID generator. Use when you need a unique element id that matches betw
 ### `useDevice` (barrel)
 
 ```ts
-import { useDevice, detectDevice } from "@decocms/start/sdk/useDevice";
+import { useDevice, detectDevice } from "@decocms/blocks/sdk/useDevice";
 ```
 
 Returns request-derived device classification. See [Hooks](/v2/en/framework/hooks).
@@ -281,7 +281,7 @@ Returns request-derived device classification. See [Hooks](/v2/en/framework/hook
 ### `otel` (subpath only)
 
 ```ts
-import { initTelemetry } from "@decocms/start/sdk/otel";
+import { initTelemetry } from "@decocms/blocks/sdk/otel";
 ```
 
 OpenTelemetry initialization for the Worker. Auto-wired when `@microlabs/otel-cf-workers` is installed and `OTEL_*` env vars are set. See [Observability](/v2/en/deployment/observability).
@@ -291,7 +291,7 @@ OpenTelemetry initialization for the Worker. Auto-wired when `@microlabs/otel-cf
 ### `requestContext` (barrel)
 
 ```ts
-import { RequestContext } from "@decocms/start/sdk/requestContext";
+import { RequestContext } from "@decocms/blocks/sdk/requestContext";
 
 const ctx = RequestContext.current;
 const env = ctx?.env;
@@ -305,14 +305,14 @@ AsyncLocalStorage-backed request context. Available in any code that runs during
 ### `useSuggestions` (subpath only)
 
 ```ts
-import { useSuggestions } from "@decocms/start/sdk/useSuggestions";
+import { useSuggestions } from "@decocms/blocks/sdk/useSuggestions";
 ```
 
 Debounced search suggestion hook. Use in autocomplete components. Drops a fetch when input changes faster than the debounce.
 
 ## Codegen scripts
 
-The framework ships several scripts under `@decocms/start/scripts/`:
+The framework ships several scripts under `@decocms/blocks-cli/scripts/`:
 
 | Script | Purpose |
 |---|---|
@@ -323,14 +323,14 @@ The framework ships several scripts under `@decocms/start/scripts/`:
 | `migrate-post-cleanup` | Post-migration cleanup of leftover boilerplate |
 | `tailwind-lint` | Tailwind v3 → v4 lint/fix |
 
-Invoke them via `npx tsx node_modules/@decocms/start/scripts/<name>.ts` or via npm scripts in your `package.json`. Wire them as composite scripts (e.g. `"generate": "npm run generate:blocks && npm run generate:schema && npm run generate:sections && npm run generate:loaders"`) so a single command keeps everything in sync.
+Invoke them via `npx tsx node_modules/@decocms/blocks-cli/scripts/<name>.ts` or via npm scripts in your `package.json`. Wire them as composite scripts (e.g. `"generate": "npm run generate:blocks && npm run generate:schema && npm run generate:sections && npm run generate:loaders"`) so a single command keeps everything in sync.
 
 ## Types and widgets
 
 ### `types` (subpath)
 
 ```ts
-import type { Section, App, FnContext, SectionProps } from "@decocms/start/types";
+import type { Section, App, FnContext, SectionProps } from "@decocms/blocks/types";
 ```
 
 Shared TypeScript types — `Section` for section components, `App` for app definitions, `FnContext` for loaders/actions.
@@ -344,7 +344,7 @@ import type {
   Color,
   ButtonGroupWidget,
   HTMLWidget,
-} from "@decocms/start/types/widgets";
+} from "@decocms/blocks/types/widgets";
 ```
 
 Widget types that the schema generator translates into custom admin UI controls. Use in section `Props`:
