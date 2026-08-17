@@ -12,7 +12,7 @@ Uma referência curta para o vocabulário que aparece nestes docs. Quando um ter
 
 ### Action
 
-Uma função server-side que **muta** estado — adicionar ao carrinho, sign-in, enviar email. Espelho de um [loader](#loader) mas para escritas. Vive em `vtex/actions/`, `shopify/actions/`, etc. Veja [VTEX loaders e actions](/v2/pt/commerce/vtex-loaders-and-actions).
+Uma função server-side que **muta** estado — adicionar ao carrinho, sign-in, enviar email. Espelho de um [loader](#loader) mas para escritas. Vive em `vtex/actions/`, `shopify/actions/`, etc. Veja [VTEX loaders e actions](/v2/pt/commerce/vtex/loaders-and-actions).
 
 ### Admin
 
@@ -96,7 +96,7 @@ Um hash de conteúdo usado por `/live/_meta` e `/.decofile` para que o admin cac
 
 ### `expectedOrderFormSections`
 
-A lista de seções `orderForm` VTEX requisitadas por um loader/action de cart. O cart server-side e o `useCart` client-side têm que requisitar a mesma lista. Veja [VTEX gotchas](/v2/pt/commerce/vtex-gotchas).
+A lista de seções `orderForm` VTEX requisitadas por um loader/action de cart. O cart server-side e o `useCart` client-side têm que requisitar a mesma lista. Veja [VTEX gotchas](/v2/pt/commerce/vtex/gotchas).
 
 ## F
 
@@ -108,7 +108,7 @@ Em `setAsyncRenderingConfig`, o índice da primeira section deferred. Sections [
 
 ### Inline loader
 
-Um loader em forma de CMS que compõe múltiplos fetches de baixo nível em uma payload de página (PDP, PLP, prateleira, busca). Veja [VTEX inline loaders](/v2/pt/commerce/vtex-inline-loaders).
+Um loader em forma de CMS que compõe múltiplos fetches de baixo nível em uma payload de página (PDP, PLP, prateleira, busca). Veja [VTEX inline loaders](/v2/pt/commerce/vtex/inline-loaders).
 
 ### `instrumentedFetch`
 
@@ -170,7 +170,7 @@ Um block de `__resolveType: "$live/pages/Page.ts"` com `path` e array `sections`
 
 ### `pageType`
 
-Classificação VTEX de uma URL: `Department`, `Category`, `Brand`, `Product`, etc. Dirige roteamento de PLP. Veja [VTEX loaders e actions](/v2/pt/commerce/vtex-loaders-and-actions).
+Classificação VTEX de uma URL: `Department`, `Category`, `Brand`, `Product`, etc. Dirige roteamento de PLP. Veja [VTEX loaders e actions](/v2/pt/commerce/vtex/loaders-and-actions).
 
 ### Profile (cache)
 
@@ -190,7 +190,7 @@ A função interna que resolve a lista de sections de um block de página em uma
 
 ### Sales channel
 
-Conceito específico VTEX: um slot numerado para produtos + preços + currency. Default `"1"`. Veja [VTEX gotchas](/v2/pt/commerce/vtex-gotchas).
+Conceito específico VTEX: um slot numerado para produtos + preços + currency. Default `"1"`. Veja [VTEX gotchas](/v2/pt/commerce/vtex/gotchas).
 
 ### Section
 
@@ -210,7 +210,7 @@ Sobrescreve TTLs de um cache profile. Veja [Estratégia de cache](/v2/pt/deploym
 
 ### `setVtexFetch`
 
-Substitui o fetch VTEX global por uma versão embrulhada (instrumentada, region-aware). Veja [VTEX overview](/v2/pt/commerce/vtex-overview).
+Substitui o fetch VTEX global por uma versão embrulhada (instrumentada, region-aware). Veja [VTEX overview](/v2/pt/commerce/vtex/overview).
 
 ### `siteName`
 
@@ -218,7 +218,7 @@ O identificador usado por `admin.deco.cx` para identificar sua loja. Case com o 
 
 ### Slug cache
 
-O mapa de slug do produto → SKU canônico, usado para skip de round-trip em PDP. Veja [VTEX gotchas](/v2/pt/commerce/vtex-gotchas).
+O mapa de slug do produto → SKU canônico, usado para skip de round-trip em PDP. Veja [VTEX gotchas](/v2/pt/commerce/vtex/gotchas).
 
 ### SWR (stale-while-revalidate)
 
@@ -238,7 +238,7 @@ O framework full-stack React em que v2 é construído. Substitui Fresh em v1.
 
 ### `vtex_segment`
 
-O cookie que carrega região, sales channel e currency do usuário VTEX. Crítico para commerce regional — tem que propagar de request entrante para chamadas upstream. Veja [VTEX client e middleware](/v2/pt/commerce/vtex-client-and-middleware).
+O cookie que carrega região, sales channel e currency do usuário VTEX. Crítico para commerce regional — tem que propagar de request entrante para chamadas upstream. Veja [VTEX client e middleware](/v2/pt/commerce/vtex/client-and-middleware).
 
 ## W
 

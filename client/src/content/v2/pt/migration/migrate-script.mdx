@@ -113,7 +113,7 @@ npx -p @decocms/blocks-cli deco-htmx-analyze
 
 ## O que o script NÃO faz
 
-- **Não migra overrides de `useCart` / `useUser` / `useWishlist`.** Se sua loja v1 sobrescreveu, porte manualmente usando as factories v2. Veja [Hooks VTEX](/v2/pt/commerce/vtex-hooks).
+- **Não migra overrides de `useCart` / `useUser` / `useWishlist`.** Se sua loja v1 sobrescreveu, porte manualmente usando as factories v2. Veja [Hooks VTEX](/v2/pt/commerce/vtex/hooks).
 - **Não migra lógica custom de worker.** Proxies, harness AB, transforms de borda — o script gera um `worker-entry.ts` baunilha e deixa você camadear lógica custom em cima usando [`createDecoWorkerEntry`](/v2/pt/framework/worker-entry).
 - **Não corrige correção em runtime.** Migração bem-sucedida produz código que compila; problemas em runtime (carrinho não carrega, PDP errado, mismatches de hidratação) precisam de atenção humana.
 - **Não traduz sites não-loja.** Tunado para o arquétipo de loja deco.cx. Sites de marketing com setups Fresh muito custom devem esperar mais trabalho manual.

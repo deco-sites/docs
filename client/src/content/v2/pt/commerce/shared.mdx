@@ -82,7 +82,7 @@ Para PDPs com múltiplas variantes (cor, tamanho), produz um mapa estruturado pa
 ## Componente `Image`
 
 ```tsx
-import Image from "@decocms/blocks/hooks";
+import { Image, registerImageCdnDomain } from "@decocms/blocks/hooks";
 
 <Image
   src="https://..."
@@ -104,7 +104,7 @@ Wrapper em volta de `<img>` que automaticamente:
 ## Componente `Picture`
 
 ```tsx
-import Picture from "@decocms/blocks/hooks";
+import { Picture, Source } from "@decocms/blocks/hooks";
 
 <Picture src="https://..." alt="Tênis">
   <Source media="(max-width: 768px)" src="https://.../mobile.jpg" />
@@ -117,10 +117,11 @@ import Picture from "@decocms/blocks/hooks";
 ## `JsonLd`
 
 ```tsx
-import { JsonLd } from "@decocms/blocks/hooks";
+import { ProductJsonLd, BreadcrumbJsonLd, PLPJsonLd } from "@decocms/blocks/hooks";
 
-<JsonLd data={product} />
-<JsonLd data={breadcrumbList} />
+<ProductJsonLd product={product} url={pageUrl} />
+<BreadcrumbJsonLd breadcrumbs={breadcrumbList} />
+<PLPJsonLd page={productListingPage} />
 ```
 
 Renderiza `<script type="application/ld+json">` com payload schema.org. Use em PDP e PLP para SEO.
@@ -163,6 +164,6 @@ Helpers para tarefas comuns de URL específicas de commerce — extrair regionId
 ## Veja também
 
 - [Visão geral de commerce](/v2/pt/commerce/overview)
-- [VTEX inline loaders](/v2/pt/commerce/vtex-inline-loaders)
-- [VTEX hooks](/v2/pt/commerce/vtex-hooks)
+- [VTEX inline loaders](/v2/pt/commerce/vtex/inline-loaders)
+- [VTEX hooks](/v2/pt/commerce/vtex/hooks)
 - [Reference de exports de commerce](/v2/pt/reference/commerce-exports)

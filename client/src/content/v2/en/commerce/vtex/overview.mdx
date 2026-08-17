@@ -4,9 +4,9 @@ description: "Configure the VTEX app: account, secrets, sales channel, install s
 icon: "Store"
 ---
 
-import Callout from "../../../../components/ui/Callout.astro";
+import Callout from "../../../../../components/ui/Callout.astro";
 
-The VTEX integration in `@decocms/apps-vtex` covers Intelligent Search, Catalog, Checkout (orderForm), Sessions, Profile, Wishlist, and the customer-facing UI hooks. This page is the entry point — read [VTEX loaders and actions](/v2/en/commerce/vtex-loaders-and-actions) and [VTEX hooks](/v2/en/commerce/vtex-hooks) for the full surface.
+The VTEX integration in `@decocms/apps-vtex` covers Intelligent Search, Catalog, Checkout (orderForm), Sessions, Profile, Wishlist, and the customer-facing UI hooks. This page is the entry point — read [VTEX loaders and actions](/v2/en/commerce/vtex/loaders-and-actions) and [VTEX hooks](/v2/en/commerce/vtex/hooks) for the full surface.
 
 ## What you need
 
@@ -67,7 +67,7 @@ const commerceLoaders = createVtexCommerceLoaders();
 registerCommerceLoaders(commerceLoaders);
 ```
 
-This wires CMS `__resolveType` keys (e.g. `vtex/loaders/intelligentSearch/productDetailsPage.ts`) to their inline-loader implementations. See [VTEX inline loaders](/v2/en/commerce/vtex-inline-loaders).
+This wires CMS `__resolveType` keys (e.g. `vtex/loaders/intelligentSearch/productDetailsPage.ts`) to their inline-loader implementations. See [VTEX inline loaders](/v2/en/commerce/vtex/inline-loaders).
 
 ### 3. Replace the VTEX fetch with an instrumented one (recommended)
 
@@ -80,7 +80,7 @@ setVtexFetch(createInstrumentedFetch("vtex"));
 
 This adds OpenTelemetry tracing, metrics, and Server-Timing entries to every VTEX call.
 
-For region-aware behavior (where the `vtex_segment` cookie must propagate to upstream calls), wrap further — see [VTEX client and middleware → Region-aware fetch](/v2/en/commerce/vtex-client-and-middleware#region-aware-fetch-advanced).
+For region-aware behavior (where the `vtex_segment` cookie must propagate to upstream calls), wrap further — see [VTEX client and middleware → Region-aware fetch](/v2/en/commerce/vtex/client-and-middleware#region-aware-fetch-advanced).
 
 ## Middleware
 
@@ -101,7 +101,7 @@ export const myMiddleware = createMiddleware().middleware([
 ]);
 ```
 
-The framework also exposes `vtexCacheKeySuffix` for use in `buildSegment` on `createDecoWorkerEntry`. See [VTEX client and middleware](/v2/en/commerce/vtex-client-and-middleware).
+The framework also exposes `vtexCacheKeySuffix` for use in `buildSegment` on `createDecoWorkerEntry`. See [VTEX client and middleware](/v2/en/commerce/vtex/client-and-middleware).
 
 ## What you get
 
@@ -138,7 +138,7 @@ Both should return JSON with VTEX-shaped data (or an empty cart).
 </Callout>
 
 <Callout type="warning">
-**Missing region propagation.** VTEX uses the `vtex_segment` cookie to convey region (CEP-driven). If your storefront calls VTEX without forwarding this cookie, the server-side render shows a default region while the client-side hydration shows the user's region — a hydration mismatch waiting to happen. See [VTEX gotchas → Region ID from segment](/v2/en/commerce/vtex-gotchas#region-id-from-segment) for the canonical fix.
+**Missing region propagation.** VTEX uses the `vtex_segment` cookie to convey region (CEP-driven). If your storefront calls VTEX without forwarding this cookie, the server-side render shows a default region while the client-side hydration shows the user's region — a hydration mismatch waiting to happen. See [VTEX gotchas → Region ID from segment](/v2/en/commerce/vtex/gotchas#region-id-from-segment) for the canonical fix.
 </Callout>
 
 <Callout type="warning">
@@ -147,8 +147,8 @@ Both should return JSON with VTEX-shaped data (or an empty cart).
 
 ## See also
 
-- [VTEX loaders and actions](/v2/en/commerce/vtex-loaders-and-actions)
-- [VTEX inline loaders](/v2/en/commerce/vtex-inline-loaders)
-- [VTEX hooks](/v2/en/commerce/vtex-hooks)
-- [VTEX client and middleware](/v2/en/commerce/vtex-client-and-middleware)
-- [VTEX gotchas](/v2/en/commerce/vtex-gotchas)
+- [VTEX loaders and actions](/v2/en/commerce/vtex/loaders-and-actions)
+- [VTEX inline loaders](/v2/en/commerce/vtex/inline-loaders)
+- [VTEX hooks](/v2/en/commerce/vtex/hooks)
+- [VTEX client and middleware](/v2/en/commerce/vtex/client-and-middleware)
+- [VTEX gotchas](/v2/en/commerce/vtex/gotchas)

@@ -4,7 +4,7 @@ description: "configure(), VtexConfig, secrets, salesChannel, passos de install.
 icon: "Building2"
 ---
 
-import Callout from "../../../../components/ui/Callout.astro";
+import Callout from "../../../../../components/ui/Callout.astro";
 
 A integração VTEX é a mais profunda em `@decocms/apps-*`. Esta página cobre setup; loaders, actions, hooks, client e gotchas têm páginas dedicadas.
 
@@ -72,7 +72,7 @@ Inline loaders VTEX prontos cobrem:
 - **Wishlist** — `vtex/loaders/wishlist/list.ts`
 - **Pedidos** — `vtex/loaders/orders/list.ts`
 
-E muitos mais. Veja [VTEX loaders e actions](/v2/pt/commerce/vtex-loaders-and-actions) para a lista completa.
+E muitos mais. Veja [VTEX loaders e actions](/v2/pt/commerce/vtex/loaders-and-actions) para a lista completa.
 
 ## Que hooks VTEX você pega
 
@@ -85,7 +85,7 @@ import {
 } from "@decocms/apps-vtex/hooks";
 ```
 
-Embrulham `invoke` com TanStack Query. Cobrem 90% das interações de UI commerce comuns. Veja [VTEX hooks](/v2/pt/commerce/vtex-hooks).
+Embrulham `invoke` com TanStack Query. Cobrem 90% das interações de UI commerce comuns. Veja [VTEX hooks](/v2/pt/commerce/vtex/hooks).
 
 ## Sales channel
 
@@ -138,7 +138,7 @@ VTEX rastreia sessão, segmento, regionId, orderForm via cookies. Se eles não c
 - Estoque vazio (regionId perdido).
 - Carrinho zumbi (orderFormId não persistente).
 
-`@decocms/apps-vtex/middleware` lida com a propagação automaticamente quando você usa `vtexFetch` — não precisa orquestrar manualmente. Veja [VTEX gotchas](/v2/pt/commerce/vtex-gotchas) para a lista completa.
+`@decocms/apps-vtex/middleware` lida com a propagação automaticamente quando você usa `vtexFetch` — não precisa orquestrar manualmente. Veja [VTEX gotchas](/v2/pt/commerce/vtex/gotchas) para a lista completa.
 
 ## Versionamento
 
@@ -150,7 +150,7 @@ VTEX rastreia sessão, segmento, regionId, orderForm via cookies. Se eles não c
 ## Veja também
 
 - [Visão geral de commerce](/v2/pt/commerce/overview)
-- [VTEX loaders e actions](/v2/pt/commerce/vtex-loaders-and-actions)
-- [VTEX inline loaders](/v2/pt/commerce/vtex-inline-loaders)
-- [VTEX hooks](/v2/pt/commerce/vtex-hooks)
-- [VTEX gotchas](/v2/pt/commerce/vtex-gotchas)
+- [VTEX loaders e actions](/v2/pt/commerce/vtex/loaders-and-actions)
+- [VTEX inline loaders](/v2/pt/commerce/vtex/inline-loaders)
+- [VTEX hooks](/v2/pt/commerce/vtex/hooks)
+- [VTEX gotchas](/v2/pt/commerce/vtex/gotchas)

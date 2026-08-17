@@ -4,7 +4,7 @@ description: "Cart v2 (createCart, useAddToCart, useCartSummary), plus useCart, 
 icon: "Hook"
 ---
 
-import Callout from "../../../../components/ui/Callout.astro";
+import Callout from "../../../../../components/ui/Callout.astro";
 
 `@decocms/apps-vtex/hooks` exports React hooks that wrap VTEX endpoints — caching, deduplication, optimistic updates. Use these in client components instead of calling fetch directly.
 
@@ -292,7 +292,7 @@ export default function MiniCart() {
 }
 ```
 
-For SSR cart rendering (initial badge count without a flash), use [`vtex/inline-loaders/minicart.ts`](/v2/en/commerce/vtex-inline-loaders) which composes the cart payload server-side from cookies.
+For SSR cart rendering (initial badge count without a flash), use [`vtex/inline-loaders/minicart.ts`](/v2/en/commerce/vtex/inline-loaders) which composes the cart payload server-side from cookies.
 
 ## Hydration concerns
 
@@ -302,12 +302,12 @@ Three things can cause hydration mismatches with these hooks:
 2. **Logged-in state** — server renders "Sign in" link, client (after fetch) renders user menu. Solution: render a neutral placeholder in SSR, swap on hydration.
 3. **Wishlist heart state** — server renders empty heart, client renders filled heart. Solution: load wishlist data via SSR if it's above the fold; otherwise accept the brief flicker.
 
-See [VTEX gotchas](/v2/en/commerce/vtex-gotchas) for the full set.
+See [VTEX gotchas](/v2/en/commerce/vtex/gotchas) for the full set.
 
 ## See also
 
-- [VTEX overview](/v2/en/commerce/vtex-overview)
-- [VTEX loaders and actions](/v2/en/commerce/vtex-loaders-and-actions)
-- [VTEX inline loaders](/v2/en/commerce/vtex-inline-loaders)
-- [VTEX gotchas](/v2/en/commerce/vtex-gotchas)
+- [VTEX overview](/v2/en/commerce/vtex/overview)
+- [VTEX loaders and actions](/v2/en/commerce/vtex/loaders-and-actions)
+- [VTEX inline loaders](/v2/en/commerce/vtex/inline-loaders)
+- [VTEX gotchas](/v2/en/commerce/vtex/gotchas)
 - [Invoke](/v2/en/framework/invoke)

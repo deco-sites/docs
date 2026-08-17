@@ -4,7 +4,7 @@ description: "Cart v2 (createCart, useAddToCart, useCartSummary), além de useCa
 icon: "Anchor"
 ---
 
-import Callout from "../../../../components/ui/Callout.astro";
+import Callout from "../../../../../components/ui/Callout.astro";
 
 `@decocms/apps-vtex/hooks` provê hooks React para as interações de UI commerce mais comuns. Use-os em client components em vez de chamar fetch direto.
 
@@ -287,12 +287,12 @@ Mitigação:
 - Defina `staleTime: 30_000` em `useCart` para mudança de UI ser bloqueada na primeira hidratação.
 - Em ambientes server-render-known-different, vire o hook com `enabled: false` e oba via `useState` na hidratação inicial.
 
-`@decocms/apps-vtex/utils/cookies` cuida da maioria dos casos automaticamente — veja [VTEX gotchas](/v2/pt/commerce/vtex-gotchas).
+`@decocms/apps-vtex/utils/cookies` cuida da maioria dos casos automaticamente — veja [VTEX gotchas](/v2/pt/commerce/vtex/gotchas).
 
 ## Veja também
 
-- [Visão geral VTEX](/v2/pt/commerce/vtex-overview)
-- [VTEX loaders & actions](/v2/pt/commerce/vtex-loaders-and-actions)
-- [VTEX client e middleware](/v2/pt/commerce/vtex-client-and-middleware)
-- [VTEX gotchas](/v2/pt/commerce/vtex-gotchas)
+- [Visão geral VTEX](/v2/pt/commerce/vtex/overview)
+- [VTEX loaders & actions](/v2/pt/commerce/vtex/loaders-and-actions)
+- [VTEX client e middleware](/v2/pt/commerce/vtex/client-and-middleware)
+- [VTEX gotchas](/v2/pt/commerce/vtex/gotchas)
 - [Invoke](/v2/pt/framework/invoke)

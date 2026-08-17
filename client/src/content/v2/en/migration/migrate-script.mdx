@@ -113,7 +113,7 @@ npx -p @decocms/blocks-cli deco-htmx-analyze
 
 ## What the script doesn't do
 
-- **Doesn't migrate `useCart` / `useUser` / `useWishlist` overrides.** If your v1 site monkey-patched these, you'll need to port the overrides manually using the v2 hook factories. See [VTEX hooks](/v2/en/commerce/vtex-hooks).
+- **Doesn't migrate `useCart` / `useUser` / `useWishlist` overrides.** If your v1 site monkey-patched these, you'll need to port the overrides manually using the v2 hook factories. See [VTEX hooks](/v2/en/commerce/vtex/hooks).
 - **Doesn't migrate custom worker logic.** Custom proxies, A/B harnesses, edge transforms — the script generates a vanilla `worker-entry.ts` and leaves you to layer custom logic on top using [`createDecoWorkerEntry`](/v2/en/framework/worker-entry).
 - **Doesn't fix runtime correctness.** A successful migration produces compiling code; runtime issues (cart not loading, PDP showing wrong product, hydration mismatches) need human attention.
 - **Doesn't translate non-storefront sites.** The script is tuned for the deco.cx storefront archetype. Marketing sites with very custom Fresh setups should expect more manual work.
