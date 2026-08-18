@@ -1,0 +1,153 @@
+---
+title: "renderJson"
+description: "Sirva páginas do CMS como JSON enxuto por seção para apps nativos/mobile — e como isso se compara ao invoke e ao ?asJson legado."
+icon: "Smartphone"
+---
+
+import Callout from "../../../../components/ui/Callout.astro";
+
+Uma storefront v2 pode servir suas páginas como JSON, para um app mobile nativo (ou qualquer cliente não-HTML) consumir as mesmas páginas do CMS que a web renderiza. Há três caminhos, do mais granular ao de página inteira:
+
+| Caminho | Retorna | Peso | Use quando |
+|---|---|---|---|
+| [`/deco/invoke/<key>`](/v2/pt/framework/invoke) (+`?select=`) | um resultado de loader/action | mais leve | você precisa de um dado pontual (produto, carrinho, busca) |
+| `?renderJson` | a página resolvida, projetada por seção | leve (curado) | o app renderiza uma página inteira do CMS e você controla o payload |
+| `?asJson` | o objeto inteiro da página resolvida, cru | pesado | preview do admin / compat legada apenas |
+
+## `?renderJson` — a página como JSON curado
+
+Adicione `?renderJson` à URL de qualquer página. O framework resolve a página do CMS e devolve um documento **enxuto, projetado por seção**:
+
+```http
+GET /feminino/bolsas?renderJson
+```
+
+```jsonc
+{
+  "name": "Bolsas",
+  "path": "/feminino/bolsas",
+  "sections": [
+    { "component": "site/sections/product-listing/listing-page.tsx",
+      "props": { /* os props projetados da seção */ } },
+    { "component": "site/sections/home/home-banner-collection.tsx",
+      "props": { /* … */ } }
+  ]
+}
+```
+
+Não há envelope de `resolveChain`/metadata do admin (diferente do `?asJson`). Cada seção controla seu próprio JSON por um export reconhecido — mesma família de convenções de `loader`, `action` e `LoadingFallback`:
+
+```tsx
+// Seção só-web (theme, analytics, SEO, scripts): dropa do JSON.
+// Também é um short-circuit de perf — o loader da seção dropada NÃO roda.
+export const renderJson = false;
+
+// Projeção: enxuga os props resolvidos antes da serialização. Tipe contra os
+// props da própria seção para que um rename seja checado em compilação.
+import { deepOmit } from "@decocms/blocks/sdk";
+export const renderJson = (props: SectionProps<typeof loader>) =>
+  deepOmit(props, "storeConfig", "page.seo", "page.productsMap.*.hasFetchedSimilars");
+
+// Sem export nenhum → a seção serializa com os props resolvidos completos.
+```
+
+`deepOmit(obj, ...caminhosPontilhados)` remove caminhos de forma imutável; `*` distribui sobre elementos de array ou valores de record.
+
+### Dropando seções que o site não é dono
+
+Para seções de apps (`@decocms/apps-*`) que não devem chegar ao app, configure `renderJson.sectionsToIgnore` no app **Website** (admin/decofile) — casado por sufixo do resolveType:
+
+```jsonc
+// Config do app Website
+"renderJson": { "sectionsToIgnore": ["SeoV2.tsx", "DecoAnalytics.tsx"] }
+```
+
+Seções do próprio site devem preferir `export const renderJson = false` no próprio arquivo em vez de uma opinião de loja no `sectionsToIgnore`.
+
+### Contrato da resposta
+
+- Envelope: `{ name, path, sections: [{ component, props }] }`.
+- **CORS**: desligado por padrão — app nativo não precisa. Libere clientes browser de outras origens com `pageJsonCors` (veja [Ativando / desativando](#ativando--desativando)).
+- **Secrets removidos**: qualquer valor do tipo `Secret` (`{ get() }` ou um bloco de secret não-resolvido) é removido do payload — o app mobile nunca recebe um. Um secret em *plaintext* que um loader colocou num prop string não dá pra detectar automaticamente, então mantenha secrets como `Secret` e nunca os resolva num prop serializado.
+- **Cache**: um `ETag` sobre o body serializado — o app manda `If-None-Match` e recebe `304` quando a página não mudou.
+- **Não encontrado**: um envelope estável `{ status: 404, notFound: true }` (HTTP 404).
+- Chaves de framework derivadas do request (`__pageUrl`, `__pagePath`, `device`, `isMobile`) são removidas — não são conteúdo e quebrariam o ETag por request.
+
+### Seções lazy
+
+Seções que o CMS marca como deferidas (below-the-fold) não são resolvidas na resposta da página. Elas aparecem como um placeholder, interleaved na ordem da página:
+
+```jsonc
+{ "component": "site/sections/home/shelf.tsx",
+  "lazyUrl": "/feminino/bolsas?renderJson&__section=3" }
+```
+
+O app busca o `lazyUrl` (um GET simples, mesma origem) quando precisa daquela seção — por exemplo ao rolar — e recebe o `{ component, props }` resolvido. Seções above-the-fold vêm inline; as pesadas carregam sob demanda em vez de inchar a primeira resposta. Trate `lazyUrl` como opaco; só o formato (`{ component, lazyUrl }` vs `{ component, props }`) é o contrato.
+
+### Exemplo de fetch mobile
+
+```ts
+async function fetchPage(path: string, etag?: string) {
+  const res = await fetch(`https://loja.example.com${path}?renderJson`, {
+    headers: etag ? { "If-None-Match": etag } : {},
+  });
+  if (res.status === 304) return null; // usa o cache
+  return { page: await res.json(), etag: res.headers.get("ETag") };
+}
+```
+
+<Callout type="warning">
+Um export `renderJson` é invisível ao type system e ao schema do admin — dropar ou alterar um num refactor não gera **erro em lugar nenhum**, o payload do app só muda em silêncio. Um app mobile é um binário publicado que não dá hotfix, então proteja as projeções: mantenha um snapshot test do shape projetado de cada seção-chave, e versione o contrato antes de shippar uma mudança quebradora.
+</Callout>
+
+## `?asJson` — legado / preview apenas
+
+`?asJson` despeja o objeto **inteiro** da página resolvida cru (props completos de toda seção eager, mais o metadata `resolveChain` do admin). Ele roda o loader de toda seção eager e serializa tudo — multi-MB num PLP/PDP. Existe para o preview do admin e compat legada; prefira `?renderJson` para apps. Quando os dois params estão presentes, `?renderJson` vence.
+
+Por que `?renderJson` é o melhor padrão para apps:
+
+- **Tamanho** — `?asJson` serializa os props completos de toda seção eager mais o metadata `resolveChain` do admin (multi-MB num PLP/PDP). `?renderJson` projeta cada seção e dropa as só-web, então os payloads são uma fração do tamanho.
+- **Sem internals** — `?asJson` vaza `resolveChain`/metadata do admin e chaves derivadas do request que o app não usa. `?renderJson` devolve só `{ component, props }`.
+- **Controle por seção** — cada seção decide seu próprio JSON (uma projeção `renderJson` ou `false`), e o `sectionsToIgnore` dropa ruído de apps. `?asJson` é tudo-ou-nada.
+- **Lazy + cacheável** — `?renderJson` defere seções pesadas (`lazyUrl`) e remove chaves voláteis para um `ETag` estável. `?asJson` resolve tudo eager e não dá para cachear por página.
+- **Contrato estável** — `?renderJson` é um shape curado que você versiona de propósito. `?asJson` espelha a resolução interna e pode mudar sem aviso.
+
+**Exemplo medido** (loja real, UA mobile):
+
+| Página | `?asJson` | `?renderJson` |
+|---|---|---|
+| Home | ~50 KB · ~0,5 s | ~9 KB · ~0,3 s |
+| Categoria (PLP) | ~5,5 MB · 3–7 s | ~210 KB · ~0,5 s |
+
+O gap aumenta em páginas cheias de produto (PLP/PDP), onde o `?asJson` manda o JSON completo de cada item — na categoria acima isso é um payload **~26× menor** e cerca de **10× mais rápido**. Os números variam com a página, a quantidade de produtos e o cache.
+
+## Ativando / desativando
+
+`?renderJson` e `?asJson` vêm ligados por padrão. Desligue qualquer um deles para o site todo no seu `worker-entry.ts`, onde você chama `createDecoWorkerEntry`:
+
+```ts
+export default createDecoWorkerEntry(serverEntry, {
+  renderJson: false, // desativa ?renderJson no site todo
+  asJson: false,     // desativa o ?asJson legado
+
+  // Libera clientes browser de outras origens a ler o ?renderJson (app nativo
+  // não precisa). Omita para só-mesma-origem; use "*" para qualquer origem (sem credentials).
+  pageJsonCors: ["https://app.example.com"],
+});
+```
+
+Com a flag desligada, aquele query param cai na página HTML normal. `renderJson`/`asJson` são o liga/desliga do **endpoint**; o `pageJsonCors` controla **quais origens** podem ler do browser; o `renderJson.sectionsToIgnore` (no app Website) controla *quais seções* aparecem quando ligado.
+
+Sites migrados nascem com `renderJson` e `asJson` **desligados** — ligue quando for fazer um app.
+
+## Escolhendo
+
+- Um dado → [**invoke**](/v2/pt/framework/invoke) (`?select=` para enxugar).
+- Uma página inteira do CMS, payload sob seu controle → **`?renderJson`**.
+- Não use **`?asJson`** em código novo de app.
+
+## Veja também
+
+- [Invoke](/v2/pt/framework/invoke) — chamar um único loader/action via HTTP.
+- [Worker entry](/v2/pt/framework/worker-entry) — onde o branch `?renderJson` roda.
+- [Caching](/v2/pt/framework/caching) — perfis de cache de página e loader.
