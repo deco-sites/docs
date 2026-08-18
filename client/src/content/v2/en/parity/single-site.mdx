@@ -1,0 +1,40 @@
+---
+title: "Single-site (e2e & audit)"
+description: "Validate ONE live URL end-to-end — no prod baseline. For pre-launch and partner audits."
+icon: "SquareCheck"
+---
+
+import Callout from "../../../../components/ui/Callout.astro";
+
+When you have **one URL** and want to know "does it actually work?" (not compare it to another), use `e2e` or `audit`.
+
+## `parity e2e` — functional end-to-end
+
+Runs the same flows + checks as `run`, but in **single-site mode** (checks adapt with absolute criteria when there's no other side). It does the same selector automation as `run` — platform detection, grounded LLM selector discovery + live validation, and learning — so you rarely hand-write selectors.
+
+```bash
+parity e2e --url https://loja.com --flows search,cart-interactions,login
+```
+
+- `--flows` (default `homepage,plp,pdp,purchase-journey,search,cart-interactions`)
+- `--search-terms`, `--login-email` / `--login-password`
+- `--fail-on critical,high`
+
+Great for **pre-launch** or a **partner audit** — the verdict is on the site's own terms.
+
+## `parity audit` — absolute audit
+
+Lighter than `e2e` (no flows): runs the absolute checks — console, Web Vitals, network, images, SEO — on the given pages:
+
+```bash
+parity audit --url https://loja.com --pages "/,/categoria,/p/produto"
+```
+
+<Callout type="warning">
+Don't fake single-site with `parity run --prod X --cand X` — it runs everything twice and reports a degenerate self-diff. `run` rejects a missing `--prod` and points you here.
+</Callout>
+
+## See also
+
+- [`parity run`](/v2/en/parity/run) — the two-URL validator
+- [Configuration](/v2/en/parity/config) — selectors, flows, credentials

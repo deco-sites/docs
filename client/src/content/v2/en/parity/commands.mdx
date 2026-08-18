@@ -1,0 +1,39 @@
+---
+title: "Commands reference"
+description: "Every parity command — inspect probes, run management, and the full flag surface."
+icon: "Terminal"
+---
+
+import Callout from "../../../../components/ui/Callout.astro";
+
+The full command list. The flagship commands have their own pages ([`run`](/v2/en/parity/run), [`migrate`](/v2/en/parity/migrate), [`fix`/`section`](/v2/en/parity/pixel-perfect), [`vitals`/`cache`](/v2/en/parity/performance), [`e2e`/`audit`](/v2/en/parity/single-site), [`journey`](/v2/en/parity/journey), [`extract`](/v2/en/parity/extract), [`pr`](/v2/en/parity/ci)); the rest are here.
+
+## Inspect — sub-10s single-purpose probes
+
+| Command | What it does |
+| --- | --- |
+| `css-trace --selector <s> [--url \| --prod/--cand]` | List every CSS rule affecting an element, or diff computed styles prod vs cand. `--filter`, `--json`. |
+| `console --url <u>` | Capture console errors/warnings + network failures on one page. `--filter error,warning`, `--wait`, `--json`. |
+| `html --url <u> [--prod/--cand --diff] --selector <s>` | Dump a page/selector's HTML, or a unified prod × cand diff. `--pretty`, `--json`. |
+| `check <name> --prod --cand` | Run ONE named check on a single page (skips sitemap + LLM). See [Checks](/v2/en/parity/checks). |
+
+## Manage — saved runs & artifacts
+
+| Command | What it does |
+| --- | --- |
+| `list` / `list modules --json` | List saved runs; list the 8 selectable modules. |
+| `report <runId> [--section <name>] [--json]` | Reopen a run's HTML report, or extract one tab (HTML / JSON projection). |
+| `serve <runId> [--port]` | Local server for a run's report + an iframe proxy that strips `X-Frame-Options`/CSP for the side-by-side view. |
+| `compare <runId> --against <baseline>` | Compare a run to a saved baseline. |
+| `baseline set <runId> --name` / `list` / `unset <name>` | Manage baselines. |
+| `prompt <runId> [--min-severity] [--limit]` | Export a run's ranked issues as a Markdown prompt for any LLM. |
+| `explain <runId> <issueId>` | LLM deep-dive on one issue (needs an API key). |
+| `learned stats` / `learned validate --url` | Inspect / validate the learned-selectors library. |
+
+<Callout type="info">
+Run `parity <command> --help` for the exact, current flags — this page summarizes; `--help` is authoritative.
+</Callout>
+
+## See also
+
+- [`parity run`](/v2/en/parity/run) · [Checks reference](/v2/en/parity/checks) · [Configuration](/v2/en/parity/config)

@@ -1,97 +1,21 @@
 ---
-title: "Capture & validate with parity"
-description: "Extract a live storefront (theme, components, CMS content) into an agent-ready bundle, and validate the migrated site against the original."
+title: "Validate & capture with parity"
+description: "Use parity to extract a live storefront and validate the migrated site — see the Parity section."
 icon: "Radar"
 ---
 
 import Callout from "../../../../components/ui/Callout.astro";
 
-[`@decocms/parity`](https://github.com/decocms/parity) is a CLI that does two jobs in a migration:
+[`@decocms/parity`](https://github.com/decocms/parity) helps at both ends of a migration:
 
-- **`parity migrate` — capture.** Point it at a **live storefront URL** and it extracts everything you need to rebuild the store — theme tokens, fonts, logo/favicon/icons, per-component HTML + suggested Tailwind + e2e selectors, and (for VTEX IO stores) the **real block tree and the CMS content** — into a token-lean, agent-ready bundle.
-- **`parity run` — validate.** Give it two URLs (`prod` = source of truth, `cand` = the migrated site) and it reports UI, functional, SEO, performance, console, network and cache regressions, with an LLM-ranked HTML report.
+- **Capture** a live storefront (theme, fonts, components, and — for VTEX IO — the block tree + CMS content) into an agent-ready bundle with [`parity migrate`](/v2/en/parity/migrate).
+- **Validate** the migrated site against the original with [`parity run`](/v2/en/parity/run).
 
 <Callout type="info">
-`parity migrate` works whether or not you have the source code — it reads the rendered page. It's the fastest way to start a migration from a store you only have a URL for.
+Full documentation lives in the **[Parity section](/v2/en/parity/overview)** — every command, the module system, focused runs (pixel-perfect, SEO, cache, vitals), configuration, and CI setup.
 </Callout>
-
-## Install
-
-```bash
-# Global (auto-installs Playwright Chromium on first run)
-npm i -g @decocms/parity
-
-# Or run without installing
-npx @decocms/parity migrate --url https://loja.com --open
-```
-
-## Capture a store — `parity migrate`
-
-```bash
-parity migrate --url https://www.loja.com \
-  --target faststore \
-  --viewports mobile,desktop \
-  --open
-```
-
-It runs three resumable phases and writes everything to `./parity-migrate/<host>/`:
-
-1. **Theme + assets** — elects the primary/secondary/background/text colors and the typography / spacing / radii / breakpoint scales; downloads the **logo, favicon, web fonts** (`@font-face`) and an **icon inventory**; captures a full-page screenshot per viewport.
-2. **Sitemap** — discovers and classifies pages, then **samples across kinds** (home, PLPs, PDPs, search, and **institutional** pages) so you capture the whole store, not just the home page (`--sample plp=2,pdp=2,other=3,search=1`).
-3. **Components** — per page, detects each component and emits its rendered HTML, **deterministic Tailwind classes**, light interaction hints, and **suggested e2e selectors**. Structurally-identical repeats are collapsed to one representative + a count.
-
-### VTEX IO stores
-
-When the site is a VTEX IO storefront, `migrate` reads the store's **real declarative block tree** from the render-runtime **on every captured page** (home + PLP + PDP + institutional), merged and de-duplicated. It writes:
-
-- `blocks.json` — every block, **including its `props` — the CMS content the merchant registered** (banner images, texts, links, shelf config). Content-image references are resolved to absolute URLs.
-- `content-assets.json` + `assets/content/` — the content images (from block props **and** the Apollo state's product/catalog imagery), **downloaded** locally.
-- `component-map.json` — each VTEX block mapped to a target component (e.g. `product-summary → ProductCard`), with unknown/custom blocks flagged `custom-component`.
-
-### The output
-
-| File | What it is |
-|---|---|
-| `report.html` | **Self-contained visual report** (theme swatches, screenshots, per-page component tables, VTEX → target map) — a single file you can share as a link. `--open` opens it. |
-| `index.md` | The same, as token-lean Markdown for an AI agent. |
-| `MIGRATION_PROMPT.md` | Ready-to-paste agent instructions + the target playbook. |
-| `custom-theme.scss` | (`--target faststore`) brand tokens mapped to FastStore `--fs-*` global tokens. |
-| `blocks.json` / `content-assets.json` | The VTEX block tree + CMS content + downloaded images. |
-| `manifest.json` | The full raw bundle (HTML + computed styles) — the fallback tier. |
-
-<Callout type="warning">
-`parity migrate` output contains a real store's content and assets. The default `parity-migrate/` / `parity-extract/` directories should stay **gitignored** — never commit scraped store data.
-</Callout>
-
-### Targets
-
-`--target faststore` appends a **playbook** (CLI commands, doc links, section/CMS structure, Phosphor icons) and emits the `custom-theme.scss`. The capture itself is **target-agnostic** — the same rich data (theme, components, blocks, content) feeds any target (FastStore, TanStack Start, …); only the playbook and theme emitter change.
-
-## Validate a migration — `parity run`
-
-Once you have a migrated preview, compare it to the original:
-
-```bash
-# Fast smoke (~30s, no LLM)
-parity run --prod https://oldsite.com --cand https://new-preview.dev --preset smoke --open
-
-# Full audit with visual diff (needs ANTHROPIC_API_KEY)
-parity run --prod https://oldsite.com --cand https://new-preview.dev --preset full --open
-
-# CI/CD PR comment
-parity pr --prod https://oldsite.com --preview https://pr-123.preview.dev --github
-```
-
-The run writes `report.json` (the machine-readable source of truth) and an HTML report. Drive a fix loop by reading `topIssues` (LLM-ranked) and `visualDiff.parityOk`, fixing the candidate, and re-running.
-
-## Where it fits
-
-- **Starting from a live store (no source):** run `parity migrate` first — the bundle + `MIGRATION_PROMPT.md` are designed to be handed straight to an AI coding agent.
-- **After each migration commit:** run `parity run` (or `parity journey` in CI) to catch regressions against the original.
 
 ## See also
 
-- [Migration overview](/v2/en/migration/overview)
-- [Migration playbook](/v2/en/migration/playbook)
-- [Agent skills](/v2/en/migration/agent-skills)
-- [`@decocms/parity` on GitHub](https://github.com/decocms/parity)
+- [Parity overview](/v2/en/parity/overview)
+- [`parity migrate`](/v2/en/parity/migrate) · [`parity run`](/v2/en/parity/run)

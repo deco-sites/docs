@@ -1,0 +1,46 @@
+---
+title: "parity extract"
+description: "Single-site, AI-ready component extraction — HTML, computed styles, screenshots, assets per component."
+icon: "Boxes"
+---
+
+import Callout from "../../../../components/ui/Callout.astro";
+
+`parity extract` is the lower-level, single-site capture: it snapshots one site's UI **components** (header, footer, nav, shelves, hero, minicart, …) into a structured, AI-ready bundle — no prod × cand comparison.
+
+```bash
+parity extract --url https://loja.com \
+  --pages /,category-auto,pdp-auto --format both
+```
+
+Use it when there's no source code to read and you want the raw component inventory to feed an AI agent. ([`parity migrate`](/v2/en/parity/migrate) builds on the same primitives and adds theme, target playbooks, VTEX content, and a visual report.)
+
+## What it captures
+
+A heuristic pass **always** runs (no LLM required): semantic tags (`header`/`footer`/`nav`), Deco `[data-section]`, class heuristics (`shelf`/`carousel`/`minicart`), and a geometry pass for hero/banner. An optional LLM pass relabels the detected roles.
+
+Per component: rendered HTML, computed styles, a cropped screenshot, and asset/link/text inventories.
+
+## Flags
+
+| Flag | Default | What it does |
+| --- | --- | --- |
+| `--url` | required | Site to extract from |
+| `--pages` | `/` | Literal paths and/or `category-auto` / `pdp-auto` |
+| `--components` | all | Role allowlist (e.g. `header,footer,shelf`) |
+| `--viewport` | `mobile` | `mobile` \| `desktop` \| `tablet` |
+| `--format` | `both` | `md` \| `json` \| `both` |
+| `--out` | `./parity-extract` | Output directory |
+| `--no-llm` | LLM on | Skip the relabel pass |
+
+## Output
+
+`parity-extract/<host>/<timestamp>/` — `index.md` (overview), `manifest.json` (full bundle), and `components/<role>/` (README + `component.html` + `styles.json` + `screenshot.png`).
+
+<Callout type="warning">
+Keep `parity-extract/` **gitignored** — it contains a real store's content.
+</Callout>
+
+## See also
+
+- [`parity migrate`](/v2/en/parity/migrate) — the full migration bundle
