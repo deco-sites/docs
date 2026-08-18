@@ -103,6 +103,36 @@ Um export `renderJson` é invisível ao type system e ao schema do admin — dro
 
 `?asJson` despeja o objeto **inteiro** da página resolvida cru (props completos de toda seção eager, mais o metadata `resolveChain` do admin). Ele roda o loader de toda seção eager e serializa tudo — multi-MB num PLP/PDP. Existe para o preview do admin e compat legada; prefira `?renderJson` para apps. Quando os dois params estão presentes, `?renderJson` vence.
 
+Por que `?renderJson` é o melhor padrão para apps:
+
+- **Tamanho** — `?asJson` serializa os props completos de toda seção eager mais o metadata `resolveChain` do admin (multi-MB num PLP/PDP). `?renderJson` projeta cada seção e dropa as só-web, então os payloads são uma fração do tamanho.
+- **Sem internals** — `?asJson` vaza `resolveChain`/metadata do admin e chaves derivadas do request que o app não usa. `?renderJson` devolve só `{ component, props }`.
+- **Controle por seção** — cada seção decide seu próprio JSON (uma projeção `renderJson` ou `false`), e o `sectionsToIgnore` dropa ruído de apps. `?asJson` é tudo-ou-nada.
+- **Lazy + cacheável** — `?renderJson` defere seções pesadas (`lazyUrl`) e remove chaves voláteis para um `ETag` estável. `?asJson` resolve tudo eager e não dá para cachear por página.
+- **Contrato estável** — `?renderJson` é um shape curado que você versiona de propósito. `?asJson` espelha a resolução interna e pode mudar sem aviso.
+
+**Exemplo medido** (loja real, UA mobile):
+
+| Página | `?asJson` | `?renderJson` |
+|---|---|---|
+| Home | ~50 KB · ~0,5 s | ~9 KB · ~0,3 s |
+| Categoria (PLP) | ~5,5 MB · 3–7 s | ~210 KB · ~0,5 s |
+
+O gap aumenta em páginas cheias de produto (PLP/PDP), onde o `?asJson` manda o JSON completo de cada item — na categoria acima isso é um payload **~26× menor** e cerca de **10× mais rápido**. Os números variam com a página, a quantidade de produtos e o cache.
+
+## Ativando / desativando
+
+`?renderJson` e `?asJson` vêm ligados por padrão. Desligue qualquer um deles para o site todo no seu `worker-entry.ts`, onde você chama `createDecoWorkerEntry`:
+
+```ts
+export default createDecoWorkerEntry(serverEntry, {
+  renderJson: false, // desativa ?renderJson no site todo
+  asJson: false,     // desativa o ?asJson legado
+});
+```
+
+Com a flag desligada, aquele query param cai na página HTML normal. Esse é o liga/desliga do **endpoint**; o `renderJson.sectionsToIgnore` (no app Website) controla *quais seções* aparecem quando ele está ligado.
+
 ## Escolhendo
 
 - Um dado → [**invoke**](/v2/pt/framework/invoke) (`?select=` para enxugar).

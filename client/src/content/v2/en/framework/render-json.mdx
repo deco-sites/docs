@@ -103,6 +103,36 @@ A `renderJson` export is invisible to the type system and the admin schema — d
 
 `?asJson` dumps the **entire** resolved page object raw (full props of every eager section, plus admin `resolveChain` metadata). It runs every eager section's loader and serializes everything — multi-MB on a PLP/PDP. It exists for the admin preview and legacy compatibility; prefer `?renderJson` for apps. When both params are present, `?renderJson` wins.
 
+Why `?renderJson` is the better default for apps:
+
+- **Size** — `?asJson` serializes every eager section's full props plus admin `resolveChain` metadata (multi-MB on a PLP/PDP). `?renderJson` projects each section and drops web-only ones, so payloads are a fraction of the size.
+- **No internals** — `?asJson` leaks admin `resolveChain`/metadata and request-derived keys the app can't use. `?renderJson` returns only `{ component, props }`.
+- **Per-section control** — each section decides its own JSON (a `renderJson` projection or `false`), and `sectionsToIgnore` drops app-owned noise. `?asJson` is all-or-nothing.
+- **Lazy + cacheable** — `?renderJson` defers heavy sections (`lazyUrl`) and strips volatile keys for a stable `ETag`. `?asJson` resolves everything eagerly and can't be cached per-page.
+- **Stable contract** — `?renderJson` is a curated shape you version deliberately. `?asJson` mirrors internal resolution and can shift under you.
+
+**Measured example** (a real store, mobile UA):
+
+| Page | `?asJson` | `?renderJson` |
+|---|---|---|
+| Home | ~50 KB · ~0.5 s | ~9 KB · ~0.3 s |
+| Category (PLP) | ~5.5 MB · 3–7 s | ~210 KB · ~0.5 s |
+
+The gap widens on product-heavy pages (PLP/PDP), where `?asJson` ships the full product JSON for every item — on the category above that's a **~26× smaller** payload and roughly **10× faster**. Numbers vary with page, product count, and cache.
+
+## Enabling / disabling
+
+Both `?renderJson` and `?asJson` are on by default. Turn either off site-wide in your `worker-entry.ts`, where you call `createDecoWorkerEntry`:
+
+```ts
+export default createDecoWorkerEntry(serverEntry, {
+  renderJson: false, // disable ?renderJson site-wide
+  asJson: false,     // disable the legacy ?asJson
+});
+```
+
+With a flag off, that query param falls through to the normal HTML page. This is the on/off switch for the **endpoint**; `renderJson.sectionsToIgnore` (on the Website app) controls *which sections* appear when it's on.
+
 ## Choosing
 
 - One datum → [**invoke**](/v2/en/framework/invoke) (`?select=` to trim).
