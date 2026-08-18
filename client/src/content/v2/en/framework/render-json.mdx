@@ -67,7 +67,8 @@ Site-owned sections should prefer `export const renderJson = false` in their own
 ### Response contract
 
 - Envelope: `{ name, path, sections: [{ component, props }] }`.
-- **CORS**: the response reflects the request `Origin` with `Access-Control-Allow-Credentials: true`, so credentialed fetches work.
+- **CORS**: off by default — a native app needs none. Allow browser clients on other origins with `pageJsonCors` (see [Enabling / disabling](#enabling--disabling)).
+- **Secrets stripped**: any `Secret`-typed value (`{ get() }` or an unresolved secret block) is removed from the payload — a mobile app never receives one. A *plaintext* secret a loader put into a string prop can't be auto-detected, so keep secrets as `Secret` and never resolve them into a serialized prop.
 - **Caching**: an `ETag` over the serialized body — the app sends `If-None-Match` and gets `304` when the page is unchanged.
 - **Not found**: a stable `{ status: 404, notFound: true }` (HTTP 404).
 - Request-derived framework keys (`__pageUrl`, `__pagePath`, `device`, `isMobile`) are stripped — they are not content and would bust the ETag per request.
@@ -128,10 +129,16 @@ Both `?renderJson` and `?asJson` are on by default. Turn either off site-wide in
 export default createDecoWorkerEntry(serverEntry, {
   renderJson: false, // disable ?renderJson site-wide
   asJson: false,     // disable the legacy ?asJson
+
+  // Allow browser clients on other origins to read ?renderJson (native apps
+  // need none). Omit for same-origin only; use "*" for any origin (no credentials).
+  pageJsonCors: ["https://app.example.com"],
 });
 ```
 
-With a flag off, that query param falls through to the normal HTML page. This is the on/off switch for the **endpoint**; `renderJson.sectionsToIgnore` (on the Website app) controls *which sections* appear when it's on.
+With a flag off, that query param falls through to the normal HTML page. `renderJson`/`asJson` are the on/off switch for the **endpoint**; `pageJsonCors` controls **which origins** may read it from a browser; `renderJson.sectionsToIgnore` (on the Website app) controls *which sections* appear when it's on.
+
+Migrated sites scaffold with `renderJson` and `asJson` **off** — opt in when you build an app.
 
 ## Choosing
 
