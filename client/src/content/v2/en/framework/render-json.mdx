@@ -1,0 +1,116 @@
+---
+title: "renderJson"
+description: "Serve CMS pages as lean, per-section JSON for native/mobile apps — plus how it compares to invoke and the legacy ?asJson."
+icon: "Smartphone"
+---
+
+import Callout from "../../../../components/ui/Callout.astro";
+
+A v2 storefront can serve its pages as JSON, so a native mobile app (or any non-HTML client) consumes the same CMS-managed pages the web renders. There are three ways in, from most granular to whole-page:
+
+| Way | Returns | Weight | Use when |
+|---|---|---|---|
+| [`/deco/invoke/<key>`](/v2/en/framework/invoke) (+`?select=`) | one loader/action result | lightest | you need one piece of data (a product, cart, search) |
+| `?renderJson` | the resolved page, projected per-section | light (curated) | the app renders a whole CMS page and you control the payload |
+| `?asJson` | the entire resolved page object, raw | heavy | admin preview / legacy compat only |
+
+## `?renderJson` — the page as curated JSON
+
+Append `?renderJson` to any page URL. The framework resolves the CMS page and returns a **lean, per-section-projected** document:
+
+```http
+GET /feminino/bolsas?renderJson
+```
+
+```jsonc
+{
+  "name": "Bolsas",
+  "path": "/feminino/bolsas",
+  "sections": [
+    { "component": "site/sections/product-listing/listing-page.tsx",
+      "props": { /* the section's projected props */ } },
+    { "component": "site/sections/home/home-banner-collection.tsx",
+      "props": { /* … */ } }
+  ]
+}
+```
+
+There is no admin `resolveChain`/metadata envelope (unlike `?asJson`). Each section controls its own JSON through a recognized export — same convention family as `loader`, `action`, and `LoadingFallback`:
+
+```tsx
+// Web-only section (theme, analytics, SEO, scripts): drop it from the JSON.
+// Also a perf short-circuit — a dropped section's loader is NOT run.
+export const renderJson = false;
+
+// Projection: trim the resolved props before serialization. Type it against the
+// section's own props so a rename is compile-checked.
+import { deepOmit } from "@decocms/blocks/sdk";
+export const renderJson = (props: SectionProps<typeof loader>) =>
+  deepOmit(props, "storeConfig", "page.seo", "page.productsMap.*.hasFetchedSimilars");
+
+// No export at all → the section serializes with its full resolved props.
+```
+
+`deepOmit(obj, ...dottedPaths)` removes paths immutably; `*` fans over array elements or record values.
+
+### Dropping sections the site doesn't own
+
+For app-owned sections (from `@decocms/apps-*`) that shouldn't reach the app, set `renderJson.sectionsToIgnore` on the **Website** app (admin/decofile) — matched by resolveType suffix:
+
+```jsonc
+// Website app config
+"renderJson": { "sectionsToIgnore": ["SeoV2.tsx", "DecoAnalytics.tsx"] }
+```
+
+Site-owned sections should prefer `export const renderJson = false` in their own file over a store opinion in `sectionsToIgnore`.
+
+### Response contract
+
+- Envelope: `{ name, path, sections: [{ component, props }] }`.
+- **CORS**: the response reflects the request `Origin` with `Access-Control-Allow-Credentials: true`, so credentialed fetches work.
+- **Caching**: an `ETag` over the serialized body — the app sends `If-None-Match` and gets `304` when the page is unchanged.
+- **Not found**: a stable `{ status: 404, notFound: true }` (HTTP 404).
+- Request-derived framework keys (`__pageUrl`, `__pagePath`, `device`, `isMobile`) are stripped — they are not content and would bust the ETag per request.
+
+### Lazy sections
+
+Sections the CMS marks as deferred (below-the-fold) are not resolved in the page response. They appear as a placeholder, interleaved in page order:
+
+```jsonc
+{ "component": "site/sections/home/shelf.tsx",
+  "lazyUrl": "/feminino/bolsas?renderJson&__section=3" }
+```
+
+The app fetches `lazyUrl` (a plain GET, same origin) when it needs that section — e.g. as it scrolls — and gets the resolved `{ component, props }`. Above-the-fold sections arrive inline; heavy ones load on demand instead of bloating the first response. Treat `lazyUrl` as opaque; only its shape (`{ component, lazyUrl }` vs `{ component, props }`) is the contract.
+
+### Mobile fetch example
+
+```ts
+async function fetchPage(path: string, etag?: string) {
+  const res = await fetch(`https://loja.example.com${path}?renderJson`, {
+    headers: etag ? { "If-None-Match": etag } : {},
+  });
+  if (res.status === 304) return null; // use cached
+  return { page: await res.json(), etag: res.headers.get("ETag") };
+}
+```
+
+<Callout type="warning">
+A `renderJson` export is invisible to the type system and the admin schema — dropping or changing one during a refactor produces **no error anywhere**, the app payload just silently changes. A mobile app is a released binary that can't hot-fix, so guard the projections: keep a snapshot test of each key section's projected shape, and bump a contract version before shipping a breaking change.
+</Callout>
+
+## `?asJson` — legacy / preview only
+
+`?asJson` dumps the **entire** resolved page object raw (full props of every eager section, plus admin `resolveChain` metadata). It runs every eager section's loader and serializes everything — multi-MB on a PLP/PDP. It exists for the admin preview and legacy compatibility; prefer `?renderJson` for apps. When both params are present, `?renderJson` wins.
+
+## Choosing
+
+- One datum → [**invoke**](/v2/en/framework/invoke) (`?select=` to trim).
+- A whole CMS page, payload under your control → **`?renderJson`**.
+- Don't reach for **`?asJson`** in new app code.
+
+## See also
+
+- [Invoke](/v2/en/framework/invoke) — call a single loader/action over HTTP.
+- [Worker entry](/v2/en/framework/worker-entry) — where the `?renderJson` branch runs.
+- [Caching](/v2/en/framework/caching) — page and loader cache profiles.
