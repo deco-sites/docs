@@ -67,7 +67,7 @@ Seções do próprio site devem preferir `export const renderJson = false` no pr
 ### Contrato da resposta
 
 - Envelope: `{ name, path, sections: [{ component, props }] }`.
-- **CORS**: desligado por padrão — app nativo não precisa. Libere clientes browser de outras origens com `pageJsonCors` (veja [Ativando / desativando](#ativando--desativando)).
+- **CORS**: aberto por padrão (`Access-Control-Allow-Origin: *`, sem credentials) — é dado público de página, lido cross-origin como qualquer API pública. Restrinja a origens credenciadas, ou desligue, com `pageJsonCors` (veja [Ativando / desativando](#ativando--desativando)).
 - **Secrets removidos**: qualquer valor do tipo `Secret` (`{ get() }` ou um bloco de secret não-resolvido) é removido do payload — o app mobile nunca recebe um. Um secret em *plaintext* que um loader colocou num prop string não dá pra detectar automaticamente, então mantenha secrets como `Secret` e nunca os resolva num prop serializado.
 - **Cache**: um `ETag` sobre o body serializado — o app manda `If-None-Match` e recebe `304` quando a página não mudou.
 - **Não encontrado**: um envelope estável `{ status: 404, notFound: true }` (HTTP 404).
@@ -131,12 +131,14 @@ export default createDecoWorkerEntry(serverEntry, {
   asJson: false,     // desativa o ?asJson legado
 
   // Libera clientes browser de outras origens a ler o ?renderJson (app nativo
-  // não precisa). Omita para só-mesma-origem; use "*" para qualquer origem (sem credentials).
-  pageJsonCors: ["https://app.example.com"],
+  // CORS. Padrão (omitir): aberto pra qualquer origem, sem credentials — dado público.
+  //   ["https://app.example.com"] → só essas origens, *com* credentials.
+  //   false                        → sem CORS (só-mesma-origem + apps nativos).
+  pageJsonCors: "*",
 });
 ```
 
-Com a flag desligada, aquele query param cai na página HTML normal. `renderJson`/`asJson` são o liga/desliga do **endpoint**; o `pageJsonCors` controla **quais origens** podem ler do browser; o `renderJson.sectionsToIgnore` (no app Website) controla *quais seções* aparecem quando ligado.
+Com a flag desligada, aquele query param cai na página HTML normal. `renderJson`/`asJson` são o liga/desliga do **endpoint**; o `pageJsonCors` controla **quais origens** podem ler do browser (aberto por padrão); o `renderJson.sectionsToIgnore` (no app Website) controla *quais seções* aparecem quando ligado.
 
 Sites migrados nascem com `renderJson` e `asJson` **desligados** — ligue quando for fazer um app.
 
