@@ -1,0 +1,55 @@
+---
+title: "parity migrate"
+description: "Phased, target-agnostic capture of a live storefront into an agent-ready migration bundle."
+icon: "PackageOpen"
+---
+
+import Callout from "../../../../components/ui/Callout.astro";
+
+`parity migrate` captures a **live storefront** into a token-lean, **agent-ready bundle** for rebuilding it on a new stack (e.g. VTEX FastStore v4). It reads the rendered page, so it works **with or without source code**.
+
+```bash
+parity migrate --url https://www.loja.com \
+  --target faststore --viewports mobile,desktop --open
+```
+
+Everything is written to `./parity-migrate/<host>/`.
+
+## Phases (resumable)
+
+1. **Theme + assets** — elects the primary/secondary/background/text colors and the typography / spacing / radii / breakpoint scales; downloads the **logo, favicon, web fonts** (`@font-face`) and an **icon inventory**; a full-page screenshot per viewport.
+2. **Sitemap** — discovers and classifies pages, then **samples across kinds** (home, PLPs, PDPs, search, and **institutional** pages) so you capture the whole store — `--sample plp=2,pdp=2,other=3,search=1` (capped at 15).
+3. **Components** — per page, each component's rendered HTML, **deterministic Tailwind classes**, interaction hints and **suggested e2e selectors**. Structurally-identical repeats collapse to one representative + a count.
+
+The out dir is **stable per host**, so a re-run skips a completed phase; `--refresh` redoes everything.
+
+## VTEX IO stores
+
+For VTEX IO, `migrate` reads the store's real **block tree** from the render-runtime **on every captured page**, merged and de-duplicated. It writes:
+
+- `blocks.json` — every block **including its `props` — the CMS content the merchant registered** (banner images, texts, links, shelf config). Image references are resolved to absolute URLs.
+- `content-assets.json` + `assets/content/` — the content images (block props **and** the Apollo state's product/catalog imagery), **downloaded** locally.
+- `component-map.json` — each VTEX block mapped to a target component (`product-summary → ProductCard`), unknowns flagged `custom-component`.
+
+## Output
+
+| File | What it is |
+| --- | --- |
+| `report.html` | **Self-contained visual report** — theme swatches, screenshots, per-page component tables, VTEX → target map. A single file to share. `--open` opens it. |
+| `index.md` | The same as token-lean Markdown for an agent. |
+| `MIGRATION_PROMPT.md` | Ready-to-paste agent instructions + the target playbook. |
+| `custom-theme.scss` | (`--target faststore`) brand tokens → FastStore `--fs-*` global tokens. |
+| `manifest.json` | The full raw bundle (HTML + computed styles) — the fallback tier. |
+
+<Callout type="warning">
+The output contains a real store's content and assets. Keep `parity-migrate/` **gitignored** — never commit scraped store data.
+</Callout>
+
+## Targets
+
+`--target faststore` appends a playbook (CLI commands, doc links, section/CMS structure, Phosphor icons) and emits `custom-theme.scss`. The capture itself is **target-agnostic** — the same rich data feeds any target (FastStore, TanStack Start, …); only the playbook + theme emitter change.
+
+## See also
+
+- [`parity extract`](/v2/en/parity/extract) — the lower-level component snapshot
+- [Migration overview](/v2/en/migration/overview) · [`@decocms/parity`](https://github.com/decocms/parity)

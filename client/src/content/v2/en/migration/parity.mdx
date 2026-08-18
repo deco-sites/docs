@@ -1,0 +1,21 @@
+---
+title: "Validate & capture with parity"
+description: "Use parity to extract a live storefront and validate the migrated site — see the Parity section."
+icon: "Radar"
+---
+
+import Callout from "../../../../components/ui/Callout.astro";
+
+[`@decocms/parity`](https://github.com/decocms/parity) helps at both ends of a migration:
+
+- **Capture** a live storefront (theme, fonts, components, and — for VTEX IO — the block tree + CMS content) into an agent-ready bundle with [`parity migrate`](/v2/en/parity/migrate).
+- **Validate** the migrated site against the original with [`parity run`](/v2/en/parity/run).
+
+<Callout type="info">
+Full documentation lives in the **[Parity section](/v2/en/parity/overview)** — every command, the module system, focused runs (pixel-perfect, SEO, cache, vitals), configuration, and CI setup.
+</Callout>
+
+## See also
+
+- [Parity overview](/v2/en/parity/overview)
+- [`parity migrate`](/v2/en/parity/migrate) · [`parity run`](/v2/en/parity/run)

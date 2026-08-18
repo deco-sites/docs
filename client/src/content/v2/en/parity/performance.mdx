@@ -1,0 +1,45 @@
+---
+title: "Performance (vitals & cache)"
+description: "Compare Web Vitals and cache coverage across many pages, prod vs cand."
+icon: "Gauge"
+---
+
+import Callout from "../../../../components/ui/Callout.astro";
+
+Two commands focus on performance regressions across many pages — lighter than a full `run` (no flows).
+
+## `parity vitals` — Web Vitals
+
+Crawls N pages (from the sitemap or `--urls`) and compares **LCP, FCP, TTFB, INP, CLS** between prod and cand:
+
+```bash
+parity vitals --prod https://old.com --cand https://new.dev --limit 20 --runs 3
+```
+
+- `--limit` — how many pages to sample (default 20)
+- `--runs` — repeats per page; the **median** is used (default 1)
+- `--viewports` (default `mobile`), `--concurrency` (default 4)
+
+Writes an HTML report with the worst/best regressions expanded. (You can also get the vitals module inside a full run with `parity run --only vitals`.)
+
+## `parity cache` — cache coverage
+
+Crawls N cand pages (no screenshots/vitals — fast) and groups requests by category, surfacing **MISS assets** that should be cached:
+
+```bash
+parity cache --cand https://new.dev --pages 30 --cand-only
+```
+
+- `--pages` (default 30), `--urls` (explicit list), `--concurrency` (default 6)
+- `--cand-only` — skip the prod comparison
+
+Writes an HTML report grouping requests + the caching opportunities.
+
+<Callout type="info">
+For a single page's deep Lighthouse-style profile, use Chrome DevTools / Lighthouse directly — `parity` focuses on **prod × cand deltas across many pages**.
+</Callout>
+
+## See also
+
+- [`parity run --only vitals` / `--only cache`](/v2/en/parity/run#focused-runs)
+- [Checks reference](/v2/en/parity/checks)

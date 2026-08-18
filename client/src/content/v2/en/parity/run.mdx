@@ -1,0 +1,94 @@
+---
+title: "parity run"
+description: "Compare two URLs (prod × cand) and produce a parity report — with module selection for focused runs (SEO, visual, cache, vitals, DOM/CSS)."
+icon: "GitCompareArrows"
+---
+
+import Callout from "../../../../components/ui/Callout.astro";
+
+`parity run` is the flagship command: it drives **two URLs** — `prod` (the source of truth) and `cand` (the migrated site / PR preview) — through the same flows and checks, then reports what differs.
+
+```bash
+# Fast smoke (~30s, no LLM) — validate the URLs respond and render
+parity run --prod https://old.com --cand https://new.dev --preset smoke --open
+
+# Full audit with visual diff (needs an LLM key)
+parity run --prod https://old.com --cand https://new.dev --preset full --open
+```
+
+## Presets
+
+| Preset | What it runs |
+| --- | --- |
+| `smoke` | Homepage, mobile only, no LLM, no visual/vitals crawl. ~30s — cheap enough to ping after every deploy. |
+| `full` | Purchase-journey + search + cart-interactions, both viewports, vitals-pages 10 / visual-pages 5. Deep audit. |
+| `ci` | Purchase-journey, mobile, vitals-pages 5 / visual-pages 3, `--only e2e,html,console`. Tuned for CI. |
+
+Your explicit flags always win over the preset.
+
+## Output
+
+A run writes `parity-output/runs/<runId>/report.json` (the machine-readable source of truth) and `report.html`. Key `report.json` fields:
+
+- `verdict` — `status` (pass/warn/fail), `score` (0–100), severity counts, `modulesRun`. The score reflects **only the modules that ran** and rises as issues are fixed.
+- `topIssues` — LLM-ranked, de-duplicated (5–10 items); each has a `severity`, `check`, and `suggestedFix`.
+- `moduleVerdicts[]` — per-module score/status + `pagesAnalyzed`.
+- `visualDiff` — per-page prod/cand screenshots, a **pixelmatch heatmap**, sections missing in cand, and (with an LLM) semantic diffs. `visualDiff.parityOk` is the binary "is it rendering right?" signal.
+
+<Callout type="info">
+Use `--json runs.jsonl` to stream one line per check as it completes, and `parity report <runId> --section <name> --json` to extract one tab as structured JSON — both are designed for agents driving `parity` in a loop.
+</Callout>
+
+## Focused runs
+
+Every check belongs to exactly one **module**. Select what runs with `--only` / `--skip`; the **score reflects only what ran**. `--why` prints the selection reasoning.
+
+| Module | Focus | Example |
+| --- | --- | --- |
+| `e2e` | Purchase journey, search, cart, login, PDP/PLP | `--only e2e` |
+| `seo` | Meta tags, deep SEO audit, 404, pagination, HTTP status | `--only seo` |
+| `visual` | **Pixel-perfect** — visual regression + pixelmatch heatmap + LLM Vision diff | `--only visual` |
+| `vitals` | Web Vitals (LCP/FCP/TTFB/INP/CLS) | `--only vitals` |
+| `cache` | Cache coverage / MISS opportunities | `--only cache` |
+| `console` | Console errors + hydration warnings | `--only console` |
+| `html` | **Component DOM/CSS** — structural diff, lazy sections, image dims | `--only html` |
+| `network` | Request-count / payload deltas | `--only network` |
+
+```bash
+# Only SEO
+parity run --prod ... --cand ... --only seo
+
+# Everything except visual (skip the LLM Vision cost)
+parity run --prod ... --cand ... --skip visual
+
+# One specific check, plus explain the selection
+parity run --prod ... --cand ... --only check:meta-seo-parity --why
+```
+
+<Callout type="info">
+For the deepest **pixel-perfect** loop on a single section (screenshots + heatmap + computed styles + an LLM-ready prompt), use [`parity fix` / `parity section`](/v2/en/parity/pixel-perfect) instead of a full run.
+</Callout>
+
+## Picking pages
+
+By default `run` samples a representative set from prod's sitemap. Force exact coverage with `--pages "/,/account,/p/known"` or `--pages-file targets.txt`. These scope the visual-diff / vitals passes; the flows crawl always runs.
+
+## Key flags
+
+| Flag | Default | What it does |
+| --- | --- | --- |
+| `--prod` / `--cand` | required | The two URLs to compare |
+| `--preset` | — | `smoke` \| `full` \| `ci` |
+| `--only` / `--skip` / `--why` | — | Module/check selection (see above) |
+| `--viewports` | `mobile,desktop` | Viewports to test |
+| `--no-visual-diff` | visual on | Skip the visual-diff pass |
+| `--no-cache` / `--bypass-cache` | cache on | Ignore / wipe the cross-run verdict cache |
+| `--fail-on` | `critical` | Exit 1 when an issue at/above this severity is hit |
+| `--llm` | auto | `anthropic` \| `openrouter` \| `claude-code` \| `none` \| `auto` |
+| `--json` | off | Stream JSONL of check results |
+
+## See also
+
+- [Pixel-perfect (`fix` / `section`)](/v2/en/parity/pixel-perfect)
+- [Performance (`vitals` / `cache`)](/v2/en/parity/performance)
+- [CI/CD & workflows](/v2/en/parity/ci) · [Checks reference](/v2/en/parity/checks)

@@ -1,0 +1,62 @@
+---
+title: "Configuration"
+description: ".parityrc.json selectors + run defaults, .parityignore noise filters, and environment variables."
+icon: "Settings"
+---
+
+import Callout from "../../../../components/ui/Callout.astro";
+
+Two optional files at the project root, both **gitignored by default** (per-user, not per-repo).
+
+## `.parityrc.json`
+
+Selector overrides and run defaults. Any key you don't set falls back to **defaults → learned-selectors → LLM discovery**, in that order — so you rarely need to write selectors by hand.
+
+```json
+{
+  "cep": "01310-100",
+  "selectors": {
+    "categoryLink": "header a[href*='/c/']",
+    "productCard": "[data-product-card] a",
+    "buyButton": "button:has-text('Comprar')",
+    "minicartTrigger": "[data-minicart-trigger]",
+    "checkoutButton": "a:has-text('Finalizar compra')",
+    "searchInput": "input[type='search']",
+    "cartCouponInput": "input[name*='coupon']",
+    "paginationNext": "a[rel='next']"
+  },
+  "search": { "terms": ["camisa", "promocao"] },
+  "footer": { "maxLinks": 20, "followExternal": false },
+  "notFound": { "testUrl": "/this-page-definitely-does-not-exist" },
+  "login": { "enabled": true },
+  "coupon": { "invalidCode": "INVALIDCOUPON123-XYZ", "validCode": "PARITY10" },
+  "serverFnFloodBudget": 10,
+  "serverFnPattern": "_serverFn",
+  "addToCartConfirmMs": 2000,
+  "overlaySelectors": ["#NewsletterPopup", "[data-newsletter-popup]"],
+  "minicartPanel": "[data-qa-minicart]"
+}
+```
+
+`selectors` has ~28 keys (cart / PDP-gallery / login / pagination / search included). `serverFnFloodBudget` / `serverFnPattern` tune the `serverfn-hover-flood` check (default: 10 requests matching `_serverFn`, TanStack Start's convention — override for other frameworks; it skips cleanly when the pattern never matches).
+
+## `.parityignore`
+
+Noise filters — visual regions, network URLs, and console messages to ignore (one pattern per line, `#` for comments). Use it to silence known-flaky third-party widgets, analytics beacons, or intentional design differences.
+
+## Environment variables
+
+| Variable | What it does |
+| --- | --- |
+| `ANTHROPIC_API_KEY` | Enables Claude passes (issue ranking, visual semantic diff, selector discovery). |
+| `OPENROUTER_API_KEY` | Alternative LLM provider. |
+| Login credentials | For the opt-in `login` flow (see `--login-email`/`--login-password`). |
+| `GITHUB_STEP_SUMMARY` | Set by GitHub Actions — `--github` writes the PR/run summary here. |
+
+<Callout type="info">
+Without any LLM key, `parity` still runs — issues are severity-sorted (not LLM-ranked), the visual diff keeps only the pixelmatch heatmap, and selectors fall back to defaults/learned. The CLI never fails just because the LLM is unavailable.
+</Callout>
+
+## See also
+
+- [`parity run`](/v2/en/parity/run) · [Checks reference](/v2/en/parity/checks)

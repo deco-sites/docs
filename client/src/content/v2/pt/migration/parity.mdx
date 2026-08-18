@@ -1,0 +1,97 @@
+---
+title: "Capturar e validar com o parity"
+description: "Extraia uma loja ao vivo (tema, componentes, conteúdo do CMS) num bundle pronto pra agente, e valide o site migrado contra o original."
+icon: "Radar"
+---
+
+import Callout from "../../../../components/ui/Callout.astro";
+
+O [`@decocms/parity`](https://github.com/decocms/parity) é uma CLI que faz duas coisas numa migração:
+
+- **`parity migrate` — capturar.** Aponte para a **URL de uma loja ao vivo** e ele extrai tudo que você precisa pra reconstruir a loja — tokens de tema, fontes, logo/favicon/ícones, HTML por componente + Tailwind sugerido + seletores e2e, e (para lojas VTEX IO) a **árvore de blocos real e o conteúdo do CMS** — num bundle enxuto e pronto pra um agente.
+- **`parity run` — validar.** Passe duas URLs (`prod` = fonte da verdade, `cand` = site migrado) e ele reporta regressões de UI, funcionais, SEO, performance, console, rede e cache, com um relatório HTML ranqueado por LLM.
+
+<Callout type="info">
+O `parity migrate` funciona **mesmo sem o código-fonte** — ele lê a página renderizada. É a forma mais rápida de começar uma migração quando você só tem a URL da loja.
+</Callout>
+
+## Instalação
+
+```bash
+# Global (instala o Playwright Chromium no primeiro uso)
+npm i -g @decocms/parity
+
+# Ou rode sem instalar
+npx @decocms/parity migrate --url https://loja.com --open
+```
+
+## Capturar uma loja — `parity migrate`
+
+```bash
+parity migrate --url https://www.loja.com \
+  --target faststore \
+  --viewports mobile,desktop \
+  --open
+```
+
+Ele roda três fases resumíveis e grava tudo em `./parity-migrate/<host>/`:
+
+1. **Tema + assets** — elege as cores primária/secundária/fundo/texto e as escalas de tipografia / espaçamento / raio / breakpoints; baixa o **logo, favicon, fontes** (`@font-face`) e um **inventário de ícones**; tira um screenshot full-page por viewport.
+2. **Sitemap** — descobre e classifica as páginas e **amostra por tipo** (home, PLPs, PDPs, busca e páginas **institucionais**) pra capturar a loja inteira, não só a home (`--sample plp=2,pdp=2,other=3,search=1`).
+3. **Componentes** — por página, detecta cada componente e emite o HTML renderizado, **classes Tailwind determinísticas**, dicas de interação e **seletores e2e sugeridos**. Repetições estruturalmente idênticas são colapsadas num representativo + contagem.
+
+### Lojas VTEX IO
+
+Quando o site é uma loja VTEX IO, o `migrate` lê a **árvore de blocos declarativa real** do render-runtime **em cada página capturada** (home + PLP + PDP + institucional), com merge e deduplicação. Ele grava:
+
+- `blocks.json` — todos os blocos, **incluindo os `props` — o conteúdo do CMS que o lojista cadastrou** (imagens de banner, textos, links, config de shelf). URLs de imagem são resolvidas para absolutas.
+- `content-assets.json` + `assets/content/` — as imagens de conteúdo (dos props **e** do catálogo no Apollo state), **baixadas** localmente.
+- `component-map.json` — cada bloco VTEX mapeado para um componente do alvo (ex.: `product-summary → ProductCard`); blocos desconhecidos/custom viram `custom-component`.
+
+### A saída
+
+| Arquivo | O que é |
+|---|---|
+| `report.html` | **Relatório visual autocontido** (swatches de tema, screenshots, tabelas de componentes por página, mapa VTEX → alvo) — um arquivo único pra compartilhar num link. `--open` abre. |
+| `index.md` | O mesmo, em Markdown enxuto pra um agente de IA. |
+| `MIGRATION_PROMPT.md` | Instruções prontas pro agente + o playbook do alvo. |
+| `custom-theme.scss` | (`--target faststore`) tokens de marca mapeados pros global tokens `--fs-*` do FastStore. |
+| `blocks.json` / `content-assets.json` | A árvore de blocos VTEX + conteúdo do CMS + imagens baixadas. |
+| `manifest.json` | O bundle cru completo (HTML + estilos computados) — a camada de fallback. |
+
+<Callout type="warning">
+A saída do `parity migrate` contém conteúdo e assets de uma loja real. As pastas padrão `parity-migrate/` / `parity-extract/` devem ficar **no gitignore** — nunca commite dados scraped de loja.
+</Callout>
+
+### Alvos
+
+`--target faststore` anexa um **playbook** (comandos da CLI, links de doc, estrutura de sections/CMS, ícones Phosphor) e emite o `custom-theme.scss`. A captura em si é **agnóstica de alvo** — o mesmo dado rico (tema, componentes, blocos, conteúdo) alimenta qualquer alvo (FastStore, TanStack Start, …); só o playbook e o emissor de tema mudam.
+
+## Validar uma migração — `parity run`
+
+Com um preview migrado em mãos, compare com o original:
+
+```bash
+# Smoke rápido (~30s, sem LLM)
+parity run --prod https://oldsite.com --cand https://new-preview.dev --preset smoke --open
+
+# Auditoria completa com visual diff (precisa de ANTHROPIC_API_KEY)
+parity run --prod https://oldsite.com --cand https://new-preview.dev --preset full --open
+
+# Comentário de PR no CI/CD
+parity pr --prod https://oldsite.com --preview https://pr-123.preview.dev --github
+```
+
+O run grava `report.json` (a fonte da verdade machine-readable) e um relatório HTML. Rode um loop de correção lendo `topIssues` (ranqueado por LLM) e `visualDiff.parityOk`, corrigindo o candidato e rodando de novo.
+
+## Onde encaixa
+
+- **Começando de uma loja ao vivo (sem fonte):** rode `parity migrate` primeiro — o bundle + `MIGRATION_PROMPT.md` foram feitos pra entregar direto pra um agente de IA.
+- **Após cada commit da migração:** rode `parity run` (ou `parity journey` no CI) pra pegar regressões contra o original.
+
+## Veja também
+
+- [Visão geral da migração](/v2/pt/migration/overview)
+- [Playbook de migração](/v2/pt/migration/playbook)
+- [Agent skills](/v2/pt/migration/agent-skills)
+- [`@decocms/parity` no GitHub](https://github.com/decocms/parity)

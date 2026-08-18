@@ -1,0 +1,61 @@
+---
+title: "CI/CD & workflows"
+description: "Gate PRs with parity in GitHub Actions, and drive an AI fix loop from the report."
+icon: "Workflow"
+---
+
+import Callout from "../../../../components/ui/Callout.astro";
+
+## PR comment — `parity pr`
+
+`parity pr` wraps `run` (preset `ci`) and emits a Markdown comment with the verdict, top issues, and a link to the full report:
+
+```bash
+parity pr --prod https://old.com --preview https://pr-123.preview.dev --github
+```
+
+`--github` writes to `$GITHUB_STEP_SUMMARY` and emits annotations. Drop the output into a PR with `gh pr comment -F` or `actions/github-script`.
+
+## GitHub Actions
+
+```yaml
+name: parity
+on: pull_request
+jobs:
+  parity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: oven-sh/setup-bun@v2
+      - run: npx @decocms/parity journey \
+          --prod https://old.com \
+          --cand ${{ steps.deploy.outputs.preview-url }} \
+          --junit results.xml --github
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+```
+
+- **Tightest loop:** [`parity journey --junit --github`](/v2/en/parity/journey) — only the purchase journey, JUnit + annotations, no LLM aggregation.
+- **Full audit:** `parity run --preset ci` (or `parity pr`) for the ranked report.
+- **Smoke after deploy:** `parity run --preset smoke` (~30s, no LLM).
+
+<Callout type="info">
+Exit codes: `--fail-on` (default `critical`) gates the exit. Any blocking issue exits `1`, so the job fails the PR.
+</Callout>
+
+## The AI fix loop
+
+The report is designed to be driven by an AI coding agent:
+
+1. `parity run --preset full` → read `report.json`.
+2. For each `topIssue` with severity ≥ high, open the file(s) in `suggestedFix`.
+3. For visual diffs, read `visualDiff.results[].sectionsOnlyInProd` — sections present in prod's DOM but missing in cand (usually not registered in the new site).
+4. Fix the candidate, then re-run [`parity journey`](/v2/en/parity/journey) (cheaper) to confirm.
+
+<Callout type="warning">
+prod is the source of truth — never change prod to make a check pass; always fix cand.
+</Callout>
+
+## See also
+
+- [`parity journey`](/v2/en/parity/journey) · [`parity run`](/v2/en/parity/run)
+- [Configuration](/v2/en/parity/config) — CI env vars

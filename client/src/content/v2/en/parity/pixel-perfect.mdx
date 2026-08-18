@@ -1,0 +1,60 @@
+---
+title: "Pixel-perfect (fix & section)"
+description: "Diff one section between prod and cand — screenshots, pixelmatch heatmap, computed styles — into an LLM-ready bundle."
+icon: "Crosshair"
+---
+
+import Callout from "../../../../components/ui/Callout.astro";
+
+When a **single section** renders differently, `parity fix` and `parity section` capture everything an agent needs to make it pixel-perfect.
+
+## `parity fix` — the shortcut
+
+`fix` runs `section` with **all signals on** and produces an LLM-ready Markdown bundle:
+
+```bash
+parity fix --prod https://old.com --cand https://new.dev --selector "[data-section='Hero']"
+```
+
+Writes to `parity-output/`:
+
+- `section-<hash>-prod.png` / `-cand.png` — cropped screenshots of the section on each side
+- `section-<hash>-heatmap.png` — **pixelmatch** overlay of the differing pixels
+- `section-<hash>-bundle.json` — HTML diff + computed-style diff + asset lists
+- `section-<hash>-prompt.md` — a ready-to-paste prompt
+- an LLM paragraph diagnosing the difference (with an API key; `--no-llm` skips it)
+
+## `parity section` — pick your facets
+
+`section` is the lower-level command — capture exactly the facets you want:
+
+```bash
+parity section --prod ... --cand ... --selector "footer" \
+  --screenshot --computed-styles --heatmap --css-source --prompt
+```
+
+| Flag | What it adds |
+| --- | --- |
+| `--screenshot` | Per-side cropped screenshot |
+| `--computed-styles` | Computed-style diff (curated ~35 properties) |
+| `--heatmap` | pixelmatch bounding-box + hotspots of the pixel diff |
+| `--css-source` | Resolves which CSS **rules** produce the styles (via CDP) |
+| `--output-html` | HTML diff of the section |
+| `--prompt` / `--llm-summary` | Emits `bundle.json` + `prompt.md` / an LLM paragraph |
+
+## Inspecting CSS rules — `parity css-trace`
+
+To see **which CSS rules** affect an element (single URL) or how computed styles differ between the two sides:
+
+```bash
+# Every matched rule for a selector on one URL
+parity css-trace --url https://loja.com --selector ".price"
+
+# Computed-style diff prod vs cand
+parity css-trace --prod ... --cand ... --selector ".price" --json
+```
+
+## See also
+
+- [`parity run --only visual`](/v2/en/parity/run#focused-runs) — the whole-page visual module
+- [Inspect commands](/v2/en/parity/commands) — `css-trace`, `html`, `console`

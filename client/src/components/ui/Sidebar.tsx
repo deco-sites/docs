@@ -99,7 +99,9 @@ function TreeItem({
         {node.type === "folder" ? (
           <Icon
             name={
-              node.id === "getting-started"
+              node.id === "parity"
+                ? "Radar"
+                : node.id === "getting-started"
                 ? "Rocket"
                 : node.id === "cms-capabilities"
                   ? "LayoutDashboard"

@@ -1,0 +1,34 @@
+---
+title: "parity journey"
+description: "Run only the purchase journey, step-by-step, prod vs cand — the tightest CI loop."
+icon: "Footprints"
+---
+
+import Callout from "../../../../components/ui/Callout.astro";
+
+`parity journey` runs **only the purchase journey** (home → PLP → PDP → shipping → cart → checkout) step-by-step on both sides. It skips the sitemap crawl and the LLM aggregation, so it's the **cheapest CI loop** for "is checkout still working?".
+
+```bash
+parity journey --prod https://old.com --cand https://new.dev \
+  --cep 01310-100 --junit results.xml --github
+```
+
+| Flag | What it does |
+| --- | --- |
+| `--cep` | CEP for the shipping-calculation step (default `01310-100`) |
+| `--junit <file>` | Emit JUnit XML for CI test reporting |
+| `--github` | Emit GitHub annotations + write `$GITHUB_STEP_SUMMARY` |
+| `--json` | One-line JSON verdict to stdout |
+| `--no-report` | Skip the HTML report (fastest) |
+| `--accept-prod-quirks` | Don't fail on known prod-side quirks (e.g. VTEX seller-null) |
+
+Writes `report.html` / `report.json` plus the optional JUnit XML / GH annotations.
+
+<Callout type="info">
+Use `journey` in the tight per-commit loop and a full [`parity run`](/v2/en/parity/run) (or [`parity pr`](/v2/en/parity/ci)) for the deep audit.
+</Callout>
+
+## See also
+
+- [CI/CD & workflows](/v2/en/parity/ci) — wiring `journey` / `pr` into GitHub Actions
+- [`parity run`](/v2/en/parity/run)

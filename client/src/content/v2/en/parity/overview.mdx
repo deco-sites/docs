@@ -1,0 +1,56 @@
+---
+title: "Parity overview"
+description: "A CLI that captures a live storefront into an agent-ready bundle and validates a migrated site against the original."
+icon: "Radar"
+---
+
+import Callout from "../../../../components/ui/Callout.astro";
+
+[`@decocms/parity`](https://github.com/decocms/parity) is a Playwright-based CLI with two jobs in a migration:
+
+- **Capture** — point it at a **live storefront URL** and it extracts the theme, fonts, logo/icons, per-component HTML (+ suggested Tailwind + e2e selectors) and, for VTEX IO, the real block tree and CMS content, into a token-lean, **agent-ready bundle**.
+- **Validate** — give it two URLs (`prod` = source of truth, `cand` = the migrated site) and it reports UI, functional, SEO, performance, console, network and cache regressions with an LLM-ranked report.
+
+<Callout type="info">
+Capture works **whether or not you have the source code** — it reads the rendered page. It's the fastest way to start a migration from a store you only have a URL for.
+</Callout>
+
+## Install
+
+```bash
+# Global (auto-installs Playwright Chromium on first run)
+npm i -g @decocms/parity
+
+# Or run without installing
+npx @decocms/parity run --prod https://old.com --cand https://new.dev --preset smoke --open
+```
+
+Set `ANTHROPIC_API_KEY` (or `OPENROUTER_API_KEY`) to enable the LLM passes (issue ranking, visual semantic diff, selector discovery). Everything degrades gracefully without a key — see [Configuration](/v2/en/parity/config).
+
+## The command families
+
+| Family | Commands | Use it to… |
+| --- | --- | --- |
+| **Validate (prod × cand)** | [`run`](/v2/en/parity/run), [`journey`](/v2/en/parity/journey), [`pr`](/v2/en/parity/ci), `compare` | Compare a migrated site to the original and gate a PR. |
+| **Pixel-perfect** | [`fix`, `section`](/v2/en/parity/pixel-perfect) | Diff one section (screenshots + heatmap + computed styles) into an LLM-ready bundle. |
+| **Performance** | [`vitals`, `cache`](/v2/en/parity/performance) | Compare Web Vitals / cache coverage across many pages. |
+| **Single-site** | [`e2e`, `audit`](/v2/en/parity/single-site) | Validate ONE site end-to-end (no baseline). |
+| **Capture** | [`migrate`](/v2/en/parity/migrate), [`extract`](/v2/en/parity/extract) | Extract a store into a migration/agent bundle. |
+| **Inspect** | [`css-trace`, `console`, `html`, `check`](/v2/en/parity/commands) | Sub-10s single-purpose probes. |
+| **Manage** | [`serve`, `report`, `baseline`, `list`, `prompt`, `explain`, `learned`](/v2/en/parity/commands) | Work with saved runs + artifacts. |
+
+## Which command?
+
+- **Two URLs, "did anything regress?"** → [`parity run`](/v2/en/parity/run) (`--preset smoke` first, then `--preset full`).
+- **One section looks off** → [`parity fix`](/v2/en/parity/pixel-perfect) (pixel diff + heatmap + prompt).
+- **Only care about SEO / vitals / cache / DOM** → `parity run --only seo` (or `vitals`/`cache`/`html`) — see [Focused runs](/v2/en/parity/run#focused-runs).
+- **One live URL, "does it work?"** → [`parity e2e`](/v2/en/parity/single-site).
+- **Rebuild a store from a URL** → [`parity migrate`](/v2/en/parity/migrate).
+- **In CI** → [`parity pr` / `parity journey`](/v2/en/parity/ci).
+
+## See also
+
+- [`parity run`](/v2/en/parity/run) — the flagship validator
+- [`parity migrate`](/v2/en/parity/migrate) — capture a store
+- [Configuration](/v2/en/parity/config) · [Checks reference](/v2/en/parity/checks)
+- [`@decocms/parity` on GitHub](https://github.com/decocms/parity)
