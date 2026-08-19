@@ -6,7 +6,24 @@ icon: "Gauge"
 
 import Callout from "../../../../components/ui/Callout.astro";
 
-Two commands focus on performance regressions across many pages — lighter than a full `run` (no flows).
+These commands focus on performance — lighter than a full `run` (no flows).
+
+## `parity benchmark` — User Navigation Benchmark
+
+A client-facing **before/after** story for a Fresh→TanStack migration. It simulates a real returning visitor and times each step of a shopping journey on **both** sites, producing a **single self-contained HTML** report (PT/EN toggle, mobile/desktop tabs, per-page pagination, scrollable full-page prints, links to every tested page):
+
+```bash
+parity benchmark --prod https://old.com --cand https://new.dev
+parity benchmark --prod ... --cand ... --plp /novidades --viewports mobile,desktop --open
+```
+
+A **scout** first validates, in the browser, a category (PLP) and a product (PDP) that actually work on **both** sites (render products, no error) and pins the same pages for both. Then, as a returning visitor, each side warms the edge **and the browser cache** (`--warmup-runs`, default 2) and is measured `--measured-runs` times (default 3, median). Each navigation is timed by **wall-clock from the click to the first product image rendering** — not `networkidle` (ad-tracker noise) and not the HAR. Steps: home load, home→PLP (hamburger menu), pagination (per page × per technology), PDP entry, a product→product **SPA shelf hop**, and — only when the product has a colour variant — a variant switch. **Lighthouse** Web Vitals (cold first visit) are added per viewport, and a full HAR of the session is saved per side.
+
+- `--viewports mobile,desktop` (default both) · `--warmup-runs` (2) · `--measured-runs` (3, median)
+- `--paginations` (3) · `--plp <path>` (pin the PLP, skip discovery) · `--no-vitals` (skip Lighthouse)
+- `--lang pt|en` · `--open` · `--no-auto-selectors`
+
+Steps that break (a route the candidate lacks, pagination that didn't advance) are flagged red and listed in a warning banner instead of being reported as a fake win.
 
 ## `parity vitals` — Web Vitals
 
