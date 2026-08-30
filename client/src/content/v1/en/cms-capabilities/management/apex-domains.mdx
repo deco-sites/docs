@@ -134,6 +134,21 @@ X-Redirect-By: deco
 
 If you see `X-Redirect-By: deco`, the migration is complete and the apex redirect is running on the new system.
 
+## Troubleshooting
+
+**The certificate is stuck and the entry never becomes Active**
+
+If the DNS records are correctly pointing to deco.cx but the entry remains pending, check whether there is a **redirect rule configured at your DNS provider or CDN** (e.g. a Cloudflare Page Rule or Redirect Rule) that sends all traffic from the apex domain to another address.
+
+When such a rule exists, the Let's Encrypt validation request — which deco.cx sends to `http://yourdomain.com/.well-known/acme-challenge/...` — is intercepted and redirected before it reaches deco.cx servers. Let's Encrypt never receives the expected response, so the certificate cannot be issued.
+
+**The deco.cx redirect and a third-party redirect are mutually exclusive.** If you keep a redirect active at your DNS provider or CDN, deco.cx cannot issue the certificate. You have two options:
+
+- **Use deco.cx's redirect** — remove the redirect rule from your DNS provider/CDN. Once the certificate is issued the entry will become Active automatically.
+- **Keep the third-party redirect** — in this case there is nothing to configure on deco.cx. The `DecoRedirect` entry will remain pending until the external redirect is removed.
+
+---
+
 ## Migration Troubleshooting
 
 **The new entry won't become Active**
