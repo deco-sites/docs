@@ -3,6 +3,8 @@ import { createClient } from "@supabase/supabase-js";
 import { embed, generateText } from "ai";
 import { z } from "zod";
 import { chatModel, embeddingModel } from "../lib/mesh-provider";
+import { reformulateQuery } from "../lib/query-reformulation";
+import { rerankResults } from "../lib/reranker";
 
 const supabase = createClient(
   process.env.SUPABASE_URL!,
@@ -31,16 +33,21 @@ export const assistantTool = createTool({
   execute: async ({ context }) => {
     const { question, language } = context;
 
+    const RETRIEVAL_POOL_SIZE = 20;
+    const TOP_K = 5;
+
+    const optimizedQuery = await reformulateQuery(question);
+
     const { embedding } = await embed({
       model: embeddingModel(),
-      value: question,
+      value: optimizedQuery,
     });
 
     const filter = language ? { language } : {};
     const { data: docs, error } = await supabase.rpc("hybrid_search", {
       query_text: question,
       query_embedding: embedding,
-      match_count: 5,
+      match_count: RETRIEVAL_POOL_SIZE,
       rrf_k: 60,
       semantic_weight: 0.5,
       filter_metadata: filter,
@@ -50,8 +57,17 @@ export const assistantTool = createTool({
       throw new Error(`Search failed: ${error.message}`);
     }
 
-    const docsContext = (docs || [])
-      .map((doc: any, i: number) => `[${i + 1}] ${doc.metadata?.title || "Doc"}\n${doc.content}`)
+    const candidates = (docs || []).map((doc: any) => ({
+      content: doc.content,
+      title: doc.metadata?.title || "Untitled",
+      source: doc.metadata?.source || "",
+    }));
+
+    const reranked = await rerankResults(question, candidates);
+    const topDocs = reranked.slice(0, TOP_K);
+
+    const docsContext = topDocs
+      .map((doc, i) => `[${i + 1}] ${doc.title}\n${doc.content}`)
       .join("\n\n---\n\n");
 
     const { text } = await generateText({
@@ -64,9 +80,9 @@ export const assistantTool = createTool({
 
     const answer = text || "Sorry, I couldn't generate an answer.";
 
-    const sources = (docs || []).map((doc: any) => ({
-      title: doc.metadata?.title || "Untitled",
-      source: doc.metadata?.source || "",
+    const sources = topDocs.map((doc) => ({
+      title: doc.title,
+      source: doc.source,
     }));
 
     return { answer, sources };

@@ -1,22 +1,22 @@
 import { generateText } from "ai";
 import { chatModel } from "./mesh-provider";
 
-const REFORMULATION_PROMPT = `You are a query optimizer for semantic search in a documentation database.
-Your task is to transform user questions into optimized search queries.
+const REFORMULATION_PROMPT = `You are a query optimizer for semantic vector search in a documentation database.
+Your task is to transform user questions into dense, meaning-rich sentences optimized for embedding similarity.
 
 Rules:
-1. Extract the main concepts and keywords from the question
-2. Remove filler words and question structure
-3. Keep technical terms intact
-4. Output a concise search query (max 10 words)
+1. Rephrase the question as a declarative statement that captures the full semantic meaning
+2. Keep all technical terms intact
+3. Include relevant synonyms or related terms inline to broaden recall
+4. Output a single concise sentence (max 20 words)
 5. Output ONLY the reformulated query, nothing else
-6. Keep the same language as the input
+6. Always output in English regardless of input language (embeddings work best in English)
 
 Examples:
-- "O que é uma section no deco.cx?" → "section deco.cx definição conceito"
-- "How do I create a new page?" → "create new page tutorial"
-- "Como faço para editar uma seção?" → "editar seção como fazer"
-- "What are the best practices for loaders?" → "loaders best practices guidelines"`;
+- "O que é uma section no deco.cx?" → "definition and concept of sections as UI building blocks in deco.cx"
+- "How do I create a new page?" → "guide to creating and setting up a new page in deco.cx"
+- "Como faço para editar uma seção?" → "how to edit and modify sections in deco.cx pages"
+- "What are the best practices for loaders?" → "best practices and guidelines for using loaders and data fetching in deco.cx"`;
 
 export async function reformulateQuery(query: string): Promise<string> {
   try {
